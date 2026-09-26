@@ -1,14 +1,15 @@
 import type { NextRequest } from "next/server";
 import { getMahniStore } from "@/mahni-dosadnoto/store";
 import { readSessionTokenFromRequest } from "@/mahni-dosadnoto/session";
-import { jsonOk } from "@/mahni-dosadnoto/server/http";
+import { handleStoreError, jsonOk } from "@/mahni-dosadnoto/server/http";
 
 export async function GET(request: NextRequest) {
-  const store = getMahniStore();
-  const campaign = await store.ensureCampaign();
-  const token = readSessionTokenFromRequest(request);
-  const ctx = await store.getParticipantContext(token);
-  return jsonOk({
+  try {
+    const store = getMahniStore();
+    const campaign = await store.ensureCampaign();
+    const token = readSessionTokenFromRequest(request);
+    const ctx = await store.getParticipantContext(token);
+    return jsonOk({
     phase: campaign.phase,
     campaignTitle: campaign.title,
     participant: ctx.participant
@@ -23,5 +24,8 @@ export async function GET(request: NextRequest) {
     votesUsed: ctx.votesUsed,
     votesRemaining: Math.max(0, 3 - ctx.votesUsed),
     interestThemeIds: ctx.interestThemeIds,
-  });
+    });
+  } catch (error) {
+    return handleStoreError(error);
+  }
 }
