@@ -1,0 +1,84 @@
+import { z } from "zod";
+import { CONSENT_VERSION, IDEA_FREQUENCIES } from "./types";
+
+const text = (max: number) => z.string().trim().min(1, "Задължително поле.").max(max);
+
+export const registrationSchema = z.object({
+  firstName: text(80),
+  lastName: text(80),
+  organization: text(160),
+  role: text(120),
+  email: z.string().trim().email("Невалиден имейл.").max(200),
+  phone: z.string().trim().max(40).optional().or(z.literal("")),
+  marketingConsent: z.boolean().default(false),
+  recoveryEmail: z.string().trim().email().max(200).optional(),
+});
+
+export type RegistrationInput = z.infer<typeof registrationSchema>;
+
+export const ideaSubmitSchema = z.object({
+  body: text(4000),
+  frequency: z.enum(IDEA_FREQUENCIES).optional(),
+  idempotencyKey: z.string().trim().min(8).max(64).optional(),
+});
+
+export const voteSchema = z.object({
+  themeId: z.string().uuid(),
+  idempotencyKey: z.string().trim().min(8).max(64).optional(),
+});
+
+export const interestSchema = z.object({
+  themeId: z.string().uuid(),
+});
+
+export const followupSchema = z.object({
+  themeId: z.string().uuid(),
+});
+
+export const clusteringThemeSchema = z.object({
+  title: z.string().min(3).max(200),
+  description: z.string().min(10).max(1200),
+  ideaIds: z.array(z.string().uuid()).min(1),
+});
+
+export const clusteringOutputSchema = z.object({
+  themes: z.array(clusteringThemeSchema).min(8).max(14),
+  wildcard: z.object({
+    title: z.string().min(3).max(200),
+    description: z.string().min(10).max(1200),
+  }),
+});
+
+export type ClusteringOutput = z.infer<typeof clusteringOutputSchema>;
+
+export const juryPickSchema = z.object({
+  themeId: z.string().uuid(),
+  rank: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  rationale: z.string().min(10).max(800),
+});
+
+export const juryOutputSchema = z.object({
+  picks: z.array(juryPickSchema).length(3),
+});
+
+export type JuryOutput = z.infer<typeof juryOutputSchema>;
+
+export function validateClusteringAgainstIdeas(
+  output: ClusteringOutput,
+  ideaIds: Set<string>,
+): { ok: true } | { ok: false; reason: string } {
+  const seen = new Set<string>();
+  for (const theme of output.themes) {
+    for (const id of theme.ideaIds) {
+      if (!ideaIds.has(id)) return { ok: false, reason: `Unknown idea id: ${id}` };
+      if (seen.has(id)) return { ok: false, reason: `Duplicate idea id in themes: ${id}` };
+      seen.add(id);
+    }
+  }
+  for (const id of ideaIds) {
+    if (!seen.has(id)) return { ok: false, reason: `Missing idea id in clustering: ${id}` };
+  }
+  return { ok: true };
+}
+
+export { CONSENT_VERSION };

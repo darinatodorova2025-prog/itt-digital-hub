@@ -1,0 +1,634 @@
+import { randomUUID } from "node:crypto";
+import {
+  CAMPAIGN_SLUG,
+  CONSENT_VERSION,
+  MAX_VOTES_PER_PARTICIPANT,
+  type AiJuryRun,
+  type AiJuryVote,
+  type AnalysisRun,
+  type EventCampaign,
+  type EventPhase,
+  type FollowupRequest,
+  type Idea,
+  type IdeaFrequency,
+  type InterestSignal,
+  type Participant,
+  type Theme,
+  type Vote,
+} from "../types";
+import {
+  assertTransition,
+  followupAllowed,
+  ideasAllowed,
+  interestAllowed,
+  votingAllowed,
+} from "../state-machine";
+import { hashSessionToken } from "../session-crypto";
+import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validation";
+import { validateClusteringAgainstIdeas } from "../validation";
+import { aggregateAiJury, overlapCount, rankHumanThemes, type ThemeScoreRow } from "../tie-break";
+import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "./types";
+import { sanitizePlainText } from "../sanitize";
+
+type SessionRow = { tokenHash: string; participantId: string; expiresAt: number };
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function normalizeOrg(value: string) {
+  return value.trim().toLocaleLowerCase("bg-BG");
+}
+
+export class MemoryMahniStore implements MahniStore {
+  campaign: EventCampaign | null = null;
+  participants = new Map<string, Participant>();
+  sessions = new Map<string, SessionRow>();
+  ideas = new Map<string, Idea>();
+  themes = new Map<string, Theme>();
+  themeLinks = new Map<string, Set<string>>();
+  votes = new Map<string, Vote>();
+  interests = new Map<string, InterestSignal>();
+  followups = new Map<string, FollowupRequest>();
+  analysisRuns = new Map<string, AnalysisRun>();
+  juryRuns = new Map<string, AiJuryRun>();
+  juryVotes = new Map<string, AiJuryVote>();
+  idempotency = new Map<string, string>();
+  analysisStage = "idle";
+
+  async ensureCampaign(): Promise<EventCampaign> {
+    if (this.campaign) return this.campaign;
+    const t = nowIso();
+    this.campaign = {
+      id: randomUUID(),
+      slug: CAMPAIGN_SLUG,
+      title: "Махни досадното",
+      phase: "DRAFT",
+      showRecentIdeas: true,
+      votingEndsAt: null,
+      humanResultLockedAt: null,
+      isDemo: false,
+      createdAt: t,
+      updatedAt: t,
+    };
+    return this.campaign;
+  }
+
+  async getCampaign() {
+    return this.campaign;
+  }
+
+  private campaignOrThrow() {
+    if (!this.campaign) throw new Error("Campaign not initialized");
+    return this.campaign;
+  }
+
+  private resolveSession(token: string): Participant | null {
+    const hash = hashSessionToken(token);
+    const row = this.sessions.get(hash);
+    if (!row || row.expiresAt < Date.now()) return null;
+    return this.participants.get(row.participantId) ?? null;
+  }
+
+  private bindSession(token: string, participantId: string) {
+    const hash = hashSessionToken(token);
+    this.sessions.set(hash, { tokenHash: hash, participantId, expiresAt: Date.now() + 86400000 * 2 });
+  }
+
+  async registerParticipant(input: RegistrationInput, sessionToken: string, isDemo = false) {
+    const campaign = await this.ensureCampaign();
+    const existing = [...this.participants.values()].find(
+      (p) => p.email.toLowerCase() === input.email.toLowerCase() && p.campaignId === campaign.id,
+    );
+    if (existing) {
+      this.bindSession(sessionToken, existing.id);
+      return { participant: existing, recovered: true };
+    }
+    const t = nowIso();
+    const participant: Participant = {
+      id: randomUUID(),
+      campaignId: campaign.id,
+      firstName: sanitizePlainText(input.firstName, 80),
+      lastName: sanitizePlainText(input.lastName, 80),
+      organization: sanitizePlainText(input.organization, 160),
+      role: sanitizePlainText(input.role, 120),
+      email: input.email.trim().toLowerCase(),
+      phone: input.phone?.trim() || null,
+      marketingConsent: Boolean(input.marketingConsent),
+      marketingConsentAt: input.marketingConsent ? t : null,
+      marketingConsentVersion: input.marketingConsent ? CONSENT_VERSION : null,
+      isDemo,
+      createdAt: t,
+    };
+    this.participants.set(participant.id, participant);
+    this.bindSession(sessionToken, participant.id);
+    return { participant, recovered: false };
+  }
+
+  async resolveParticipant(sessionToken: string) {
+    return this.resolveSession(sessionToken);
+  }
+
+  async recoverParticipantByEmail(email: string, sessionToken: string) {
+    const campaign = await this.ensureCampaign();
+    const found = [...this.participants.values()].find(
+      (p) => p.email === email.trim().toLowerCase() && p.campaignId === campaign.id,
+    );
+    if (!found) return null;
+    this.bindSession(sessionToken, found.id);
+    return found;
+  }
+
+  async submitIdea(sessionToken: string, body: string, frequency: string | null, idempotencyKey?: string) {
+    const campaign = this.campaignOrThrow();
+    if (!ideasAllowed(campaign.phase)) throw new Error("not_collecting");
+    const participant = this.resolveSession(sessionToken);
+    if (!participant) throw new Error("unauthorized");
+    if (idempotencyKey) {
+      const key = `idea:${participant.id}:${idempotencyKey}`;
+      const existingId = this.idempotency.get(key);
+      if (existingId) {
+        const idea = this.ideas.get(existingId)!;
+        return { idea, duplicate: true };
+      }
+    }
+    const idea: Idea = {
+      id: randomUUID(),
+      campaignId: campaign.id,
+      participantId: participant.id,
+      organization: participant.organization,
+      role: participant.role,
+      body: sanitizePlainText(body, 4000),
+      frequency: (frequency as IdeaFrequency | null) ?? null,
+      createdAt: nowIso(),
+      isDemo: participant.isDemo,
+    };
+    this.ideas.set(idea.id, idea);
+    if (idempotencyKey) this.idempotency.set(`idea:${participant.id}:${idempotencyKey}`, idea.id);
+    return { idea, duplicate: false };
+  }
+
+  async listParticipantIdeas(sessionToken: string) {
+    const participant = this.resolveSession(sessionToken);
+    if (!participant) return [];
+    return [...this.ideas.values()].filter((i) => i.participantId === participant.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
+  private votesForParticipant(participantId: string) {
+    return [...this.votes.values()].filter((v) => v.participantId === participantId);
+  }
+
+  async castVote(sessionToken: string, themeId: string, idempotencyKey?: string) {
+    this.maybeAutoCloseVoting();
+    const campaign = this.campaignOrThrow();
+    if (!votingAllowed(campaign.phase, campaign.votingEndsAt)) throw new Error("not_voting");
+    const participant = this.resolveSession(sessionToken);
+    if (!participant) throw new Error("unauthorized");
+    if (!this.themes.has(themeId)) throw new Error("invalid_theme");
+    const existingForTheme = this.votesForParticipant(participant.id).find((v) => v.themeId === themeId);
+    if (existingForTheme) return { vote: existingForTheme, votesUsed: this.votesForParticipant(participant.id).length, duplicate: true };
+    const used = this.votesForParticipant(participant.id).length;
+    if (used >= MAX_VOTES_PER_PARTICIPANT) throw new Error("vote_limit");
+    if (idempotencyKey) {
+      const key = `vote:${participant.id}:${idempotencyKey}`;
+      const existingId = this.idempotency.get(key);
+      if (existingId) {
+        const vote = this.votes.get(existingId)!;
+        return { vote, votesUsed: this.votesForParticipant(participant.id).length, duplicate: true };
+      }
+    }
+    const vote: Vote = {
+      id: randomUUID(),
+      campaignId: campaign.id,
+      participantId: participant.id,
+      themeId,
+      createdAt: nowIso(),
+    };
+    this.votes.set(vote.id, vote);
+    if (idempotencyKey) this.idempotency.set(`vote:${participant.id}:${idempotencyKey}`, vote.id);
+    return { vote, votesUsed: this.votesForParticipant(participant.id).length, duplicate: false };
+  }
+
+  async setInterest(sessionToken: string, themeId: string) {
+    const campaign = this.campaignOrThrow();
+    if (!interestAllowed(campaign.phase)) throw new Error("not_allowed");
+    const participant = this.resolveSession(sessionToken);
+    if (!participant) throw new Error("unauthorized");
+    if (!this.themes.has(themeId)) throw new Error("invalid_theme");
+    const key = `${participant.id}:${themeId}`;
+    const existing = [...this.interests.values()].find((i) => i.participantId === participant.id && i.themeId === themeId);
+    if (existing) return { active: true };
+    const row: InterestSignal = {
+      id: randomUUID(),
+      campaignId: campaign.id,
+      participantId: participant.id,
+      themeId,
+      organization: participant.organization,
+      createdAt: nowIso(),
+    };
+    this.interests.set(key, row);
+    return { active: true };
+  }
+
+  async requestFollowup(sessionToken: string, themeId: string) {
+    const campaign = this.campaignOrThrow();
+    if (!followupAllowed(campaign.phase)) throw new Error("not_allowed");
+    const participant = this.resolveSession(sessionToken);
+    if (!participant) throw new Error("unauthorized");
+    if (!this.themes.has(themeId)) throw new Error("invalid_theme");
+    const row: FollowupRequest = {
+      id: randomUUID(),
+      campaignId: campaign.id,
+      participantId: participant.id,
+      organization: participant.organization,
+      themeId,
+      createdAt: nowIso(),
+    };
+    this.followups.set(row.id, row);
+    return row;
+  }
+
+  async getParticipantContext(sessionToken: string | null): Promise<ParticipantContext> {
+    const participant = sessionToken ? this.resolveSession(sessionToken) : null;
+    if (!participant) return { participant: null, ideaCount: 0, votesUsed: 0, interestThemeIds: [] };
+    return {
+      participant,
+      ideaCount: [...this.ideas.values()].filter((i) => i.participantId === participant.id).length,
+      votesUsed: this.votesForParticipant(participant.id).length,
+      interestThemeIds: [...this.interests.values()].filter((i) => i.participantId === participant.id).map((i) => i.themeId),
+    };
+  }
+
+  private orgCounts() {
+    const orgs = new Set<string>();
+    for (const p of this.participants.values()) orgs.add(normalizeOrg(p.organization));
+    return orgs.size;
+  }
+
+  private themeVoteCounts() {
+    const map = new Map<string, number>();
+    for (const v of this.votes.values()) map.set(v.themeId, (map.get(v.themeId) ?? 0) + 1);
+    return map;
+  }
+
+  private buildThemeScores(): ThemeScoreRow[] {
+    const voteCounts = this.themeVoteCounts();
+    const interestByTheme = new Map<string, Set<string>>();
+    for (const sig of this.interests.values()) {
+      if (!interestByTheme.has(sig.themeId)) interestByTheme.set(sig.themeId, new Set());
+      interestByTheme.get(sig.themeId)!.add(normalizeOrg(sig.organization));
+    }
+    return [...this.themes.values()].map((theme) => ({
+      theme,
+      voteCount: voteCounts.get(theme.id) ?? 0,
+      interestOrgCount: interestByTheme.get(theme.id)?.size ?? 0,
+      submissionOrgCount: theme.organizationCount,
+    }));
+  }
+
+  private maybeAutoCloseVoting() {
+    const campaign = this.campaign;
+    if (!campaign || campaign.phase !== "FINALIZING" || !campaign.votingEndsAt) return;
+    if (Date.parse(campaign.votingEndsAt) > Date.now()) return;
+    if (!campaign.humanResultLockedAt) campaign.humanResultLockedAt = nowIso();
+    campaign.phase = "AI_JURY";
+    campaign.updatedAt = nowIso();
+  }
+
+  async getPublicLiveSnapshot(): Promise<PublicLiveSnapshot> {
+    this.maybeAutoCloseVoting();
+    const campaign = await this.ensureCampaign();
+    const ideaList = [...this.ideas.values()].filter((i) => i.campaignId === campaign.id);
+    const recent = ideaList
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 8)
+      .map((i) => ({ body: i.body, createdAt: i.createdAt }));
+    const voteCounts = this.themeVoteCounts();
+    const themes = [...this.themes.values()]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        isAiWildcard: t.isAiWildcard,
+        voteCount: voteCounts.get(t.id) ?? 0,
+        ideaCount: t.ideaCount,
+        organizationCount: t.organizationCount,
+      }));
+    const ranked = rankHumanThemes(this.buildThemeScores());
+    const humanTop3 = ranked.slice(0, 3).map((r, idx) => ({
+      rank: idx + 1,
+      title: r.theme.title,
+      isAiWildcard: r.theme.isAiWildcard,
+    }));
+    const juryPicks = [...this.juryVotes.values()];
+    const aiAgg = aggregateAiJury(
+      juryPicks.map((p) => ({ themeId: p.themeId, rank: p.rank })),
+      [...this.themes.values()],
+    );
+    const aiTop3 = aiAgg.slice(0, 3).map((r, idx) => ({
+      rank: idx + 1,
+      title: r.theme.title,
+      isAiWildcard: r.theme.isAiWildcard,
+    }));
+    let countdownSeconds: number | null = null;
+    if (campaign.phase === "FINALIZING" && campaign.votingEndsAt) {
+      countdownSeconds = Math.max(0, Math.ceil((Date.parse(campaign.votingEndsAt) - Date.now()) / 1000));
+    }
+    return {
+      phase: campaign.phase,
+      title: campaign.title,
+      showRecentIdeas: campaign.showRecentIdeas,
+      stats: {
+        participants: this.participants.size,
+        organizations: this.orgCounts(),
+        ideas: ideaList.length,
+        votes: this.votes.size,
+      },
+      recentIdeas: campaign.showRecentIdeas && campaign.phase === "COLLECTING" ? recent : [],
+      analysisStage: campaign.phase === "ANALYZING" ? this.analysisStage : null,
+      themes: campaign.phase === "VOTING" || campaign.phase === "FINALIZING" || campaign.phase === "RESULTS" || campaign.phase === "CLOSED" ? themes : [],
+      votingEndsAt: campaign.votingEndsAt,
+      countdownSeconds,
+      humanTop3: campaign.phase === "RESULTS" || campaign.phase === "CLOSED" ? humanTop3 : [],
+      aiTop3: campaign.phase === "RESULTS" || campaign.phase === "CLOSED" ? aiTop3 : [],
+      overlap:
+        campaign.phase === "RESULTS" || campaign.phase === "CLOSED"
+          ? overlapCount(
+              ranked.slice(0, 3).map((r) => r.theme.id),
+              aiAgg.slice(0, 3).map((r) => r.themeId),
+            )
+          : null,
+    };
+  }
+
+  async transitionPhase(to: EventPhase, options?: { votingEndsAt?: string | null }) {
+    const campaign = this.campaignOrThrow();
+    assertTransition(campaign.phase, to);
+    if (campaign.phase === to) return campaign;
+    campaign.phase = to;
+    campaign.updatedAt = nowIso();
+    if (options && "votingEndsAt" in options) campaign.votingEndsAt = options.votingEndsAt ?? null;
+    if (to === "FINALIZING" && !campaign.votingEndsAt) {
+      campaign.votingEndsAt = new Date(Date.now() + 45_000).toISOString();
+    }
+    return campaign;
+  }
+
+  async setShowRecentIdeas(show: boolean) {
+    const campaign = this.campaignOrThrow();
+    campaign.showRecentIdeas = show;
+    campaign.updatedAt = nowIso();
+    return campaign;
+  }
+
+  async lockHumanResult() {
+    const campaign = this.campaignOrThrow();
+    campaign.humanResultLockedAt = nowIso();
+    campaign.updatedAt = nowIso();
+    return campaign;
+  }
+
+  async startAnalysisRun() {
+    const campaign = this.campaignOrThrow();
+    const run: AnalysisRun = {
+      id: randomUUID(),
+      campaignId: campaign.id,
+      status: "running",
+      provider: null,
+      model: null,
+      attempt: 1,
+      errorCode: null,
+      errorMessage: null,
+      startedAt: nowIso(),
+      finishedAt: null,
+      createdAt: nowIso(),
+    };
+    this.analysisRuns.set(run.id, run);
+    this.analysisStage = "reading";
+    return run;
+  }
+
+  async completeAnalysisRun(runId: string, output: ClusteringOutput, meta: { provider: string; model: string }) {
+    const campaign = this.campaignOrThrow();
+    const run = this.analysisRuns.get(runId);
+    if (!run) throw new Error("run_not_found");
+    const ideaIds = new Set([...this.ideas.values()].filter((i) => i.campaignId === campaign.id).map((i) => i.id));
+    const valid = validateClusteringAgainstIdeas(output, ideaIds);
+    if (!valid.ok) throw new Error(valid.reason);
+    this.themes.clear();
+    this.themeLinks.clear();
+    let order = 0;
+    for (const theme of output.themes) {
+      const orgs = new Set<string>();
+      for (const id of theme.ideaIds) {
+        const idea = this.ideas.get(id);
+        if (idea) orgs.add(normalizeOrg(idea.organization));
+      }
+      const row: Theme = {
+        id: randomUUID(),
+        campaignId: campaign.id,
+        analysisRunId: runId,
+        title: theme.title,
+        description: theme.description,
+        isAiWildcard: false,
+        sortOrder: order++,
+        ideaCount: theme.ideaIds.length,
+        organizationCount: orgs.size,
+        createdAt: nowIso(),
+      };
+      this.themes.set(row.id, row);
+      this.themeLinks.set(row.id, new Set(theme.ideaIds));
+    }
+    const wc: Theme = {
+      id: randomUUID(),
+      campaignId: campaign.id,
+      analysisRunId: runId,
+      title: output.wildcard.title,
+      description: output.wildcard.description,
+      isAiWildcard: true,
+      sortOrder: order,
+      ideaCount: 0,
+      organizationCount: 0,
+      createdAt: nowIso(),
+    };
+    this.themes.set(wc.id, wc);
+    this.themeLinks.set(wc.id, new Set());
+    run.status = "succeeded";
+    run.provider = meta.provider;
+    run.model = meta.model;
+    run.finishedAt = nowIso();
+    this.analysisStage = "complete";
+  }
+
+  async failAnalysisRun(runId: string, code: string, message: string) {
+    const run = this.analysisRuns.get(runId);
+    if (!run) return;
+    run.status = "failed";
+    run.errorCode = code;
+    run.errorMessage = message;
+    run.finishedAt = nowIso();
+    this.analysisStage = "failed";
+  }
+
+  async getAnalysisProgress() {
+    const runs = [...this.analysisRuns.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return { stage: this.analysisStage, run: runs[0] ?? null };
+  }
+
+  async startJuryRun(judge: import("../types").JudgeType) {
+    const campaign = this.campaignOrThrow();
+    const run: AiJuryRun = {
+      id: randomUUID(),
+      campaignId: campaign.id,
+      judgeType: judge,
+      status: "running",
+      provider: null,
+      model: null,
+      attempt: 1,
+      errorCode: null,
+      errorMessage: null,
+      startedAt: nowIso(),
+      finishedAt: null,
+      createdAt: nowIso(),
+    };
+    this.juryRuns.set(run.id, run);
+    return run;
+  }
+
+  async completeJuryRun(runId: string, output: JuryOutput, meta: { provider: string; model: string }) {
+    const run = this.juryRuns.get(runId);
+    if (!run) throw new Error("run_not_found");
+    for (const pick of output.picks) {
+      if (!this.themes.has(pick.themeId)) throw new Error("invalid_theme");
+      const row: AiJuryVote = {
+        id: randomUUID(),
+        juryRunId: runId,
+        themeId: pick.themeId,
+        rank: pick.rank,
+        rationale: pick.rationale,
+      };
+      this.juryVotes.set(row.id, row);
+    }
+    run.status = "succeeded";
+    run.provider = meta.provider;
+    run.model = meta.model;
+    run.finishedAt = nowIso();
+  }
+
+  async failJuryRun(runId: string, code: string, message: string) {
+    const run = this.juryRuns.get(runId);
+    if (!run) return;
+    run.status = "failed";
+    run.errorCode = code;
+    run.errorMessage = message;
+    run.finishedAt = nowIso();
+  }
+
+  async listThemes() {
+    return [...this.themes.values()].sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  async listThemeIdeaLinks(themeId: string) {
+    return [...(this.themeLinks.get(themeId) ?? [])];
+  }
+
+  async listIdeasAdmin() {
+    return [...this.ideas.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async listParticipantsAdmin() {
+    return [...this.participants.values()].map((p) => ({
+      ...p,
+      ideaCount: [...this.ideas.values()].filter((i) => i.participantId === p.id).length,
+      followupCount: [...this.followups.values()].filter((f) => f.participantId === p.id).length,
+    }));
+  }
+
+  async listVotesAdmin() {
+    return [...this.votes.values()];
+  }
+
+  async listFollowupsAdmin() {
+    return [...this.followups.values()];
+  }
+
+  async listJuryResults() {
+    return [...this.juryRuns.values()].map((run) => ({
+      ...run,
+      picks: [...this.juryVotes.values()].filter((v) => v.juryRunId === run.id),
+    }));
+  }
+
+  async listAnalysisRunsAdmin() {
+    return [...this.analysisRuns.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async exportCsv() {
+    const lines = ["type,id,createdAt,detail"];
+    for (const p of this.participants.values()) {
+      lines.push(`participant,${p.id},${p.createdAt},"${p.firstName} ${p.lastName}"`);
+    }
+    for (const i of this.ideas.values()) {
+      lines.push(`idea,${i.id},${i.createdAt},"${i.body.replace(/"/g, '""')}"`);
+    }
+    return lines.join("\n");
+  }
+
+  async seedDemo(options: { participants: number; ideas: number }) {
+    await this.ensureCampaign();
+    this.campaign!.isDemo = true;
+    this.campaign!.phase = "COLLECTING";
+    const orgs = ["ВиК София", "Aquanet Plovdiv", "HydroService", "InfraPro", "PipeTech"];
+    for (let i = 0; i < options.participants; i++) {
+      const token = `demo-${i}`;
+      await this.registerParticipant(
+        {
+          firstName: `Участник${i}`,
+          lastName: "Демо",
+          organization: orgs[i % orgs.length]!,
+          role: "Инженер",
+          email: `demo${i}@example.test`,
+          phone: "",
+          marketingConsent: false,
+        },
+        token,
+        true,
+      );
+    }
+    let created = 0;
+    while (created < options.ideas) {
+      await this.submitIdea(`demo-${created % options.participants}`, `Демо проблем ${created + 1}: ръчно събиране на данни от Excel.`, "Всяка седмица");
+      created++;
+    }
+  }
+
+  async resetDemoOnly() {
+    if (!this.campaign?.isDemo) throw new Error("not_demo");
+    this.participants.clear();
+    this.sessions.clear();
+    this.ideas.clear();
+    this.themes.clear();
+    this.themeLinks.clear();
+    this.votes.clear();
+    this.interests.clear();
+    this.followups.clear();
+    this.analysisRuns.clear();
+    this.juryRuns.clear();
+    this.juryVotes.clear();
+    this.campaign.phase = "DRAFT";
+    this.campaign.isDemo = false;
+  }
+}
+
+let singleton: MemoryMahniStore | null = null;
+
+export function getMemoryStore(): MemoryMahniStore {
+  if (!singleton) singleton = new MemoryMahniStore();
+  return singleton;
+}
+
+export function resetMemoryStoreForTests() {
+  singleton = new MemoryMahniStore();
+  return singleton;
+}

@@ -1,0 +1,182 @@
+.md-root {
+  --md-accent: #0f4c5c;
+  --md-accent-soft: #e8f1f3;
+  --md-ink: #102a33;
+  --md-muted: #5a6b72;
+  background: linear-gradient(180deg, #f7fafb 0%, #eef3f5 100%);
+  min-height: 100vh;
+}
+
+.md-app {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+  color: var(--md-ink);
+}
+
+.md-hero h1 {
+  font-size: clamp(2rem, 8vw, 2.75rem);
+  line-height: 1.05;
+  margin: 0.35rem 0;
+}
+
+.md-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: var(--md-muted);
+}
+
+.md-lead {
+  font-size: 1.05rem;
+  color: var(--md-muted);
+}
+
+.md-panel {
+  background: #fff;
+  border: 1px solid #d7e2e6;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  margin-top: 1rem;
+  box-shadow: 0 12px 40px rgba(16, 42, 51, 0.06);
+}
+
+.md-form label {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.md-form input,
+.md-form select,
+.md-textarea {
+  width: 100%;
+  border: 1px solid #c9d8dd;
+  border-radius: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  font: inherit;
+}
+
+.md-textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+.md-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.65rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  background: var(--md-accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.md-btn.secondary {
+  background: #fff;
+  color: var(--md-accent);
+  border: 1px solid var(--md-accent);
+}
+
+.md-btn:disabled {
+  opacity: 0.45;
+}
+
+.md-check {
+  display: flex !important;
+  gap: 0.65rem;
+  align-items: flex-start;
+  font-size: 0.92rem;
+}
+
+.md-msg {
+  margin-top: 0.75rem;
+  color: var(--md-accent);
+  font-weight: 600;
+}
+
+.md-muted {
+  color: var(--md-muted);
+  font-size: 0.9rem;
+}
+
+.md-votes-left {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.md-theme-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.md-theme-card {
+  border: 1px solid #dbe6ea;
+  border-radius: 0.85rem;
+  padding: 0.85rem;
+}
+
+.md-theme-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.md-live {
+  min-height: 100vh;
+  background: #0b1f26;
+  color: #f4f7f8;
+  padding: 3rem clamp(1.5rem, 4vw, 4rem);
+}
+
+.md-live h1 {
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  margin: 0.5rem 0 1.5rem;
+}
+
+.md-live-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.md-live-stats strong {
+  display: block;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+.md-live-ideas {
+  display: grid;
+  gap: 0.75rem;
+  font-size: 1.15rem;
+  opacity: 0.92;
+}
+
+.md-live-stage h2 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+
+.md-live-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.md-live-rank {
+  font-size: 1.4rem;
+  line-height: 1.6;
+}
+
+.md-live-note {
+  margin-top: 2rem;
+  opacity: 0.85;
+}
