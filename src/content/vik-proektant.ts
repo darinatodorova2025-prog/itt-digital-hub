@@ -95,6 +95,30 @@ export const vikProektant = {
     bg: "Работи в познатата среда на ChatGPT. Тук може да се види разликата върху един и същ въпрос.",
     en: "It works in the familiar ChatGPT environment. Here you can see the difference on one and the same question.",
   },
+  scopeTitle: { bg: "Какво покрива", en: "What it covers" },
+  scopePoints: [
+    {
+      title: { bg: "Работа", en: "Work" },
+      text: {
+        bg: "Помага при проектиране на водоснабдяване, канализация и тръбни системи. Върви по професионалния ход: първо изходните данни, после проверка спрямо правилата и едва след това избор на размер.",
+        en: "It helps with the design of water supply, sewerage and pipe systems. It follows the professional sequence: the starting data first, then a check against the rules, and only then a choice of size.",
+      },
+    },
+    {
+      title: { bg: "Източници и смятане", en: "Sources and calculation" },
+      text: {
+        bg: "Когато отговорът опира до наредба, търси в подбраната база и запазва акта и члена. Когато трябва число, смята само с подадените данни и показва допусканията. Липсващ текст или коефициент не се допълва.",
+        en: "When an answer depends on an ordinance, it searches the curated collection and keeps the act and the article. When a number is needed, it calculates only from the given data and shows the assumptions. Missing text or a missing coefficient is not filled in.",
+      },
+    },
+    {
+      title: { bg: "Граници", en: "Limits" },
+      text: {
+        bg: "Не замества проектантската проверка и не е официално тълкуване на нормативен акт. Част от формулите в изходните документи не са напълно извлечени. Пълните текстове на БДС и EN не са в базата.",
+        en: "It does not replace a designer's check and it is not an official reading of a legal act. Some formulas in the source documents were not fully extracted. The full texts of BDS and EN standards are not in the collection.",
+      },
+    },
+  ],
   doesTitle: { bg: "Какво прави", en: "What it does" },
   does: {
     bg: "Помага при въпроси за водоснабдяване, канализация, тръбни системи и свързаните с тях технически изисквания. Когато отговорът опира до наредба, търси в подбраната база. Когато трябва число от формула, смята с подадените данни и показва допусканията.",
@@ -136,8 +160,8 @@ export const vikProektant = {
   },
   limitsTitle: { bg: "Граници", en: "Limits" },
   limits: {
-    bg: "Това не замества проектантската проверка и не е официално тълкуване на нормативен акт. Част от формулите в изходните документи не са напълно извлечени. Пълните текстове на БДС и EN не са в базата. Съществуващата нормативна справка остава на отделна страница.",
-    en: "This does not replace a designer's check and it is not an official reading of a legal act. Some formulas in the source documents were not fully extracted. The full texts of BDS and EN standards are not in the collection. The site's existing normative lookup remains separately in the catalogue.",
+    bg: "Това не замества проектантската проверка и не е официално тълкуване на нормативен акт. Част от формулите в изходните документи не са напълно извлечени. Пълните текстове на БДС и EN не са в базата.",
+    en: "This does not replace a designer's check and it is not an official reading of a legal act. Some formulas in the source documents were not fully extracted. The full texts of BDS and EN standards are not in the collection.",
   },
   compareCta: { bg: "Сравни отговорите", en: "Compare the answers" },
   compareHint: {
@@ -149,9 +173,8 @@ export const vikProektant = {
     bg: "Връзката към ChatGPT се поставя след публикуване на плъгина. Дотогава сравнението на сайта показва същия специализиран ход.",
     en: "The ChatGPT link is added after the plugin is published. Until then, the on-site comparison shows the same specialized workflow.",
   },
-  legacyLink: { bg: "Съществуваща нормативна справка", en: "Existing normative lookup" },
   compare: {
-    back: { bg: "ВиК Проектант", en: "ViK Projektant" },
+    back: { bg: "Инструменти", en: "Tools" },
     heading: { bg: "Един въпрос.\nДва начина на работа.", en: "One question.\nTwo ways of working." },
     lead: {
       bg: "И двата отговора се генерират от GPT‑6 Sol по един и същ въпрос.",

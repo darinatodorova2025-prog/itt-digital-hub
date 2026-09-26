@@ -6,6 +6,8 @@ import { vikProektant } from "@/content/vik-proektant";
 import { Container } from "@/components/layout/Container";
 import { BackLink } from "@/components/ui/BackLink";
 import { CompareLab } from "@/components/vik-proektant/CompareLab";
+import { AssistantScope } from "@/components/vik-proektant/AssistantScope";
+import { chatGptDestination } from "@/vik-proektant/publication";
 
 type Params = { params: Promise<{ locale: string }> };
 
@@ -35,12 +37,13 @@ export default async function VikComparePage({ params }: Params) {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : "bg";
   const text = vikProektant.compare;
+  const destination = chatGptDestination();
   return (
     <div>
       <section className="hero-atmosphere -mt-[5.5rem] text-on-dark" data-surface="dark">
         <Container className="pt-24 pb-12 md:pt-28 md:pb-14">
           <BackLink
-            href={href(locale, "vik-proektant")}
+            href={href(locale, "tools")}
             className="text-on-dark decoration-on-dark/35 hover:text-on-dark"
           >
             {text.back[locale]}
@@ -51,13 +54,14 @@ export default async function VikComparePage({ params }: Params) {
             <strong className="font-medium text-on-dark">GPT‑6 Sol</strong>
             {text.lead[locale].split("GPT‑6 Sol")[1]}
           </p>
-          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-small text-on-dark-muted">
+          <ul className="mt-3 grid list-disc gap-x-10 gap-y-1.5 pl-5 text-small text-on-dark-muted md:grid-cols-2">
             {text.leadPoints.map((point) => (
-              <li key={point.label.en} className="lg:whitespace-nowrap">
+              <li key={point.label.en} className="text-pretty">
                 <strong className="font-medium text-on-dark">{point.label[locale]}</strong> {point.text[locale]}
               </li>
             ))}
           </ul>
+          <AssistantScope locale={locale} chatGptUrl={destination.state === "published" ? destination.url : null} />
         </Container>
       </section>
       <div className="bg-paper">
