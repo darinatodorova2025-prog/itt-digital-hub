@@ -8,7 +8,7 @@ import type { Locale } from '@/lib/i18n'
 import { sa } from '../copy'
 import { APP_CONFIG } from '../config'
 import { tagsOf } from '../lib/classification'
-import { clipCollectionToBoundary } from '../lib/geometry'
+import { clipCollectionToBoundary, sampleFeaturesForDisplay } from '../lib/geometry'
 import type { AnalysisResult, PolygonFeature, SettlementResult } from '../types'
 import type { LayerVisibility } from './layer-visibility'
 import type { FeatureCollection } from 'geojson'
@@ -100,12 +100,14 @@ export function MapView({ locale, selected, result, visible, editing, cadastre, 
     if (!result || !visible.buildings) return null
     const max = APP_CONFIG.analysis.maxMapBuildings
     if (result.buildings.features.length <= max) return result.buildings
-    const step = result.buildings.features.length / max
     return {
       ...result.buildings,
-      features: Array.from({ length: max }, (_, index) => (
-        result.buildings.features[Math.min(result.buildings.features.length - 1, Math.floor(index * step))]
-      )),
+      features: sampleFeaturesForDisplay(result.buildings.features, max, (feature) => {
+        const coords = feature.geometry.type === 'Polygon'
+          ? feature.geometry.coordinates[0]?.[0]
+          : feature.geometry.coordinates[0]?.[0]?.[0]
+        return Array.isArray(coords) && coords.length >= 2 ? [coords[0], coords[1]] as [number, number] : null
+      }),
     }
   }, [result, visible.buildings])
   const cadastreLayer = useMemo(() => {
@@ -114,7 +116,8 @@ export function MapView({ locale, selected, result, visible, editing, cadastre, 
   }, [cadastre, result, visible.cadastre])
   const mapKey = result?.createdAt ?? (selected ? `sel-${selected.placeId}` : 'bg')
   return (
-    <MapContainer key={mapKey} className="map" center={[42.72, 25.48]} zoom={7} zoomControl={false} preferCanvas>
+    <>
+      <MapContainer key={mapKey} className="map" center={[42.72, 25.48]} zoom={7} zoomControl={false} preferCanvas>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -154,6 +157,14 @@ export function MapView({ locale, selected, result, visible, editing, cadastre, 
         </CircleMarker>
       )}
       {result && editing && <BoundaryEditor boundary={result.boundary} onChange={onBoundaryEdited} />}
-    </MapContainer>
+      </MapContainer>
+      {buildingLayer && result && result.buildings.features.length > buildingLayer.features.length ? (
+        <p className="map-sample-note">
+          {copy.mapBuildingsSampled
+            .replace('{shown}', String(buildingLayer.features.length))
+            .replace('{total}', String(result.buildings.features.length))}
+        </p>
+      ) : null}
+    </>
   )
 }

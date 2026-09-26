@@ -234,12 +234,10 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
     setLastFailure(null)
     setResult(null)
     setCadastreParcels(null)
-    setStage('landuse')
+    setStage('boundary')
     try {
-      const polygonWait = new Promise<GeoJSON.Geometry | undefined>((resolve) => {
-        window.setTimeout(() => resolve(undefined), 1800)
-      })
-      const geojson = await Promise.race([requestOpenPolygon(selected), polygonWait])
+      setStage('boundary')
+      const geojson = await requestOpenPolygon(selected)
       const settlementForAnalysis = geojson ? { ...selected, geojson } : selected
       if (geojson) setSelected(settlementForAnalysis)
       const analysisRadiusM = analysisRadiusForSettlement(settlementForAnalysis)
@@ -254,13 +252,28 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
         },
         settlementForAnalysis.ekatte,
       )
+      let currentRaw = raw
+      let currentRadius: number = analysisRadiusM
+      let analysis = analyzeSettlement(settlementForAnalysis, currentRaw)
+      if (analysis.warnings.includes('dataExtentReached') && currentRadius < APP_CONFIG.overpass.cityRadiusM) {
+        const widerRadius = Math.min(APP_CONFIG.overpass.cityRadiusM, Math.round(currentRadius * 1.8 / 100) * 100)
+        if (widerRadius > currentRadius) {
+          setStage('buildings')
+          currentRaw = await fetchSettlementGeodata(
+            settlementForAnalysis.lat,
+            settlementForAnalysis.lon,
+            controller.signal,
+            widerRadius,
+            undefined,
+            settlementForAnalysis.ekatte,
+          )
+          currentRadius = widerRadius
+          analysis = analyzeSettlement(settlementForAnalysis, currentRaw)
+        }
+      }
       if (analysisAbort.current !== controller) return
-      setRawData(raw)
-      setRawDataRadiusM(analysisRadiusM)
-      setStage('geometry')
-      await new Promise((resolve) => window.setTimeout(resolve, 40))
-      if (analysisAbort.current !== controller) return
-      const analysis = analyzeSettlement(settlementForAnalysis, raw)
+      setRawData(currentRaw)
+      setRawDataRadiusM(currentRadius)
       setStage('metrics')
       setResult(analysis)
       onAnalysisCompleted?.(analysis)
@@ -285,7 +298,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       const aborted = controller.signal.aborted
       const detail = aborted || error instanceof GeodataUnavailableError
         ? (ownerMode && error instanceof GeodataUnavailableError ? `${copy.geodataUnavailable} ${error.sources}` : copy.geodataUnavailable)
-        : error instanceof Error ? error.message : copy.analysisUnexpected
+        : copy.analysisUnexpected
       setAnalysisError(detail)
       setStage('idle')
       setLastFailure('analysis')
@@ -446,7 +459,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
         <section className="map-region" aria-label={copy.mapRegion}>
           <ClientMap locale={locale} selected={selected} result={result} visible={visible} editing={editing} cadastre={cadastreParcels} onBoundaryEdited={handleBoundaryEdited} />
           <LayerPanel locale={locale} visible={visible} onChange={setVisible} collapsed={layersCollapsed} onToggleCollapsed={() => setLayersCollapsed((value) => !value)} />
-          {analyzing && <div className="analysis-overlay"><span className="analysis-loader" /><strong>{copy.stages[stage] ?? ''}</strong></div>}
+          {analyzing && <div className="analysis-overlay" role="status" aria-live="polite"><span className="analysis-loader" /><strong>{copy.stages[stage] ?? ''}</strong></div>}
           {downloading && downloadProgress ? (
             <div className="analysis-overlay" role="status" aria-live="polite">
               <span className="analysis-loader" />

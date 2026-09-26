@@ -47,6 +47,10 @@ export const settlementAnalyzer = {
       retry: "Retrying",
     },
   } satisfies L<Record<string, string>>,
+  mapBuildingsSampled: {
+    bg: "Картата показва {shown} от {total} сгради, разпределени по територията. Показателите броят всички.",
+    en: "The map shows {shown} of {total} buildings, spread across the area. The figures count all of them.",
+  } satisfies L,
   mapDisclaimer: {
     bg: "Ориентировъчни отворени данни · Не е официално измерване",
     en: "Indicative open data · Not an official survey",
@@ -230,7 +234,7 @@ export const settlementAnalyzer = {
   layerCategories: {
     bg: {
       residential: "Жилищни",
-      industrial: "Индустрия",
+      industrial: "Индустрия / търговия",
       roads: "Улици",
       green: "Зелени",
       water: "Води",
@@ -239,7 +243,7 @@ export const settlementAnalyzer = {
     },
     en: {
       residential: "Residential",
-      industrial: "Industry",
+      industrial: "Industry / commerce",
       roads: "Streets",
       green: "Green",
       water: "Water",
@@ -286,13 +290,19 @@ export const settlementAnalyzer = {
       noBuildings: "В зоната не са намерени картографирани сгради.",
       noRoads: "В зоната не е намерена картографирана улична мрежа.",
       incompleteData: "Отворените данни за това населено място са непълни; резултатите са силно ориентировъчни.",
-      dataExtentReached: "Застройката опира края на свалените данни. Градът може да е по-голям от показаната граница.",
+      dataExtentReached: "Застройката опира края на свалените данни. Населеното място може да е по-голямо от показаната граница.",
+      plotBuffersOmitted: "Жилищната и индустриалната площ идват от картографираното предназначение. Сградите не са разширявани в парцели, защото са твърде много, за да се включат всички квартали.",
+      roadAreaEstimated: "Площта на улиците е оценена по дължина и типична ширина. Отделните улични площи не са начертани, защото мрежата е твърде гъста.",
+      areasCapped: "Част от картографираните площи са опростени, защото обектите са твърде много. Процентите са ориентировъчни.",
     },
     en: {
       noBuildings: "No mapped buildings were found in the area.",
       noRoads: "No mapped street network was found in the area.",
       incompleteData: "Open data for this settlement are incomplete; results are highly indicative.",
-      dataExtentReached: "Built-up area reaches the edge of the downloaded data. The city may be larger than this boundary.",
+      dataExtentReached: "Built-up area reaches the edge of the downloaded data. The settlement may be larger than the boundary shown.",
+      plotBuffersOmitted: "Residential and industrial area come from mapped land use. Buildings were not expanded into plots, because there are too many to include every neighbourhood.",
+      roadAreaEstimated: "Street area is estimated from length and a typical width. Individual street areas are not drawn, because the network is too dense.",
+      areasCapped: "Some mapped areas were simplified because there are too many objects. The percentages are indicative.",
     },
   } satisfies L<Record<AnalysisWarningCode, string>>,
   confidenceReasons: {

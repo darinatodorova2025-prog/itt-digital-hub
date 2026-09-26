@@ -9,8 +9,9 @@ function tagged(tags: Record<string, string>): Feature<Polygon, OsmFeatureProper
 }
 
 describe('класификация на сгради', () => {
-  it('не приема building=yes за жилищна сграда', () => {
+  it('не приема building=yes за жилищна сграда без жилищен контекст', () => {
     expect(classifyBuilding(tagged({ building: 'yes' }))).toBe('unknown')
+    expect(classifyBuilding(tagged({ building: 'yes' }), { insideResidentialLanduse: true })).toBe('residential')
   })
 
   it('разделя жилищни, индустриални и други известни сгради', () => {

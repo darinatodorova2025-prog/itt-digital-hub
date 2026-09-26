@@ -69,6 +69,30 @@ describe('автоматична граница', () => {
     expect(booleanPointInPolygon(point([25.09, 42.04]), boundary!)).toBe(false)
   })
 
+  it('не слива село в празния ъгъл само защото bounding box-овете се застъпват', () => {
+    const south = Array.from({ length: 10 }, (_, index) => building(25 + index * 0.002, 42))
+    const west = Array.from({ length: 10 }, (_, index) => building(25, 42 + index * 0.002))
+    const village = Array.from({ length: 8 }, (_, index) => building(25.016 + (index % 3) * 0.0004, 42.016 + Math.floor(index / 3) * 0.0004))
+    const cluster = clusterBuildings(featureCollection([...south, ...west, ...village]), point([25.001, 42.001]), Number.POSITIVE_INFINITY, {
+      bridgeM: 1100,
+      seed: 'nearest',
+      minSecondary: 6,
+    })
+    expect(cluster.some(({ feature }) => feature === village[0])).toBe(false)
+    expect(cluster).toHaveLength(south.length + west.length)
+  })
+
+  it('включва отдалечен квартал вътре в границата на селището и оставя съседното село навън', () => {
+    const main = Array.from({ length: 8 }, (_, index) => building(25 + (index % 3) * 0.0004, 42 + Math.floor(index / 3) * 0.0004))
+    const detached = Array.from({ length: 8 }, (_, index) => building(25.02 + (index % 3) * 0.0004, 42.02 + Math.floor(index / 3) * 0.0004))
+    const neighbour = Array.from({ length: 8 }, (_, index) => building(25.05 + (index % 3) * 0.0004, 42.05 + Math.floor(index / 3) * 0.0004))
+    const mask = polygon([[[24.99, 41.99], [25.04, 41.99], [25.04, 42.04], [24.99, 42.04], [24.99, 41.99]]])
+    const boundary = boundaryFromConnectedBuildings(featureCollection([...main, ...detached, ...neighbour]), 42.0004, 25.0004, 480, mask)
+    expect(boundary).not.toBeNull()
+    expect(booleanPointInPolygon(point([25.02, 42.02]), boundary!)).toBe(true)
+    expect(booleanPointInPolygon(point([25.05, 42.05]), boundary!)).toBe(false)
+  })
+
   it('изрязва кадастъра по границата на анализа', () => {
     const boundary = polygon([[[25, 42], [25.01, 42], [25.01, 42.01], [25, 42.01], [25, 42]]]) as Feature<Polygon, Record<string, unknown>>
     const inside = polygon([[[25.002, 42.002], [25.004, 42.002], [25.004, 42.004], [25.002, 42.004], [25.002, 42.002]]])

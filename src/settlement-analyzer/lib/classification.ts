@@ -12,10 +12,14 @@ export function tagsOf(feature: Feature<GeoJSON.Geometry, OsmFeatureProperties |
   return (properties.tags as Record<string, string> | undefined) ?? properties as Record<string, string>
 }
 
-export function classifyBuilding(feature: Feature<Polygon | MultiPolygon, OsmFeatureProperties>): BuildingClass {
+export function classifyBuilding(
+  feature: Feature<Polygon | MultiPolygon, OsmFeatureProperties>,
+  context?: { insideResidentialLanduse?: boolean },
+): BuildingClass {
   const tags = tagsOf(feature)
   const building = tags.building || tags['building:use'] || ''
   if (residentialBuildings.has(building)) return 'residential'
+  if (building === 'yes' && context?.insideResidentialLanduse) return 'residential'
   if (industrialBuildings.has(building) || ['industrial', 'commercial', 'retail'].includes(tags.landuse ?? '')) return 'industrial'
   if (otherBuildings.has(building) || Boolean(tags.amenity)) return 'other'
   return 'unknown'

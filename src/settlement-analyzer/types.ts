@@ -90,7 +90,7 @@ export type BoundaryReasonCode =
   | 'buildingCluster'
   | 'centerBuffer'
 
-export type AnalysisWarningCode = 'noBuildings' | 'noRoads' | 'incompleteData' | 'dataExtentReached'
+export type AnalysisWarningCode = 'noBuildings' | 'noRoads' | 'incompleteData' | 'dataExtentReached' | 'plotBuffersOmitted' | 'roadAreaEstimated' | 'areasCapped'
 
 export type ConfidenceReasonCode =
   | 'classifiedBuildings'

@@ -14,6 +14,7 @@ import {
   safeArea,
   safeBuffer,
   safeDifference,
+  safeIntersect,
   safeLength,
   safeUnion,
   validateSettlementPolygon,
@@ -50,41 +51,12 @@ function insideBoundary<T extends Polygon | MultiPolygon>(feature: Feature<T>, b
   try { return booleanPointInPolygon(center, boundary) } catch { return false }
 }
 
-function takeEvenly<T>(items: T[], max: number) {
-  if (items.length <= max) return items
-  const step = items.length / max
-  return Array.from({ length: max }, (_, index) => items[Math.min(items.length - 1, Math.floor(index * step))])
-}
-
 function bufferedBuildings(
   features: Feature<Polygon | MultiPolygon, OsmFeatureProperties>[],
   radiusM: number,
 ) {
-  const selected = takeEvenly(features, APP_CONFIG.analysis.maxBufferedBuildings)
-  return safeUnion(selected.map((feature) => safeBuffer(feature, radiusM)))
-}
-
-function combinedBbox(features: Feature<Polygon | MultiPolygon>[]) {
-  let box: [number, number, number, number] | null = null
-  for (const feature of features) {
-    try {
-      const next = bbox(feature) as [number, number, number, number]
-      box = box
-        ? [Math.min(box[0], next[0]), Math.min(box[1], next[1]), Math.max(box[2], next[2]), Math.max(box[3], next[3])]
-        : next
-    } catch { /* ignore invalid source geometry */ }
-  }
-  return box
-}
-
-function expandBbox(box: [number, number, number, number], meters: number, lat: number): [number, number, number, number] {
-  const dLat = meters / 111_320
-  const dLon = meters / (111_320 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)))
-  return [box[0] - dLon, box[1] - dLat, box[2] + dLon, box[3] + dLat]
-}
-
-function bboxesOverlap(a: [number, number, number, number], b: [number, number, number, number]) {
-  return a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1]
+  if (features.length > APP_CONFIG.analysis.maxBufferedBuildings) return null
+  return safeUnion(features.map((feature) => safeBuffer(feature, radiusM)))
 }
 
 export function analysisRadiusForSettlement(settlement: Pick<SettlementResult, 'type'>) {
@@ -107,16 +79,20 @@ function polygonValidationLimits(settlement: SettlementResult) {
   }
 }
 
-function boundaryFromResidentialLanduse(settlement: SettlementResult, raw: RawGeodata) {
+function boundaryFromResidentialLanduse(settlement: SettlementResult, raw: RawGeodata, mask?: PolygonFeature | null) {
+  const urbanLanduse = settlement.type === 'city' || settlement.type === 'town'
+  const centerPreferenceM = urbanLanduse ? APP_CONFIG.boundary.landuseCenterPreferenceM : 600
+  const bridgeDistanceM = urbanLanduse ? APP_CONFIG.boundary.landuseBridgeDistanceM : 280
   const settlementCenter = point([settlement.lon, settlement.lat])
   const residential = raw.landuse.features.filter((feature) => classifyLanduse(feature) === 'residential')
   const selected: typeof residential = []
   const remaining: typeof residential = []
   for (const feature of residential) {
+    if (mask && !featureIntersectsMask(feature, mask)) continue
     const center = featureCenterPoint(feature)
     try {
       if (booleanPointInPolygon(settlementCenter, feature)
-        || (center && distance(center, settlementCenter, { units: 'meters' }) <= APP_CONFIG.boundary.landuseCenterPreferenceM)) {
+        || (center && distance(center, settlementCenter, { units: 'meters' }) <= centerPreferenceM)) {
         selected.push(feature)
       } else {
         remaining.push(feature)
@@ -127,30 +103,42 @@ function boundaryFromResidentialLanduse(settlement: SettlementResult, raw: RawGe
   }
 
   // Grow from the central residential areas across short gaps caused by roads,
-  // rivers or unmapped strips. This keeps connected city districts while
-  // excluding detached villages that merely fall inside the data radius.
+  // rivers or unmapped strips. Distance is measured on the polygons themselves,
+  // so a nearby village is not joined just because bounding boxes overlap.
   let expanded = true
   let guard = 0
   while (expanded && remaining.length && guard < 40) {
     expanded = false
     guard += 1
-    const envelope = combinedBbox(selected)
-    if (!envelope) break
-    const bridge = expandBbox(envelope, APP_CONFIG.boundary.landuseBridgeDistanceM, settlement.lat)
+    const envelope = safeUnion(selected)
+    const bridge = envelope ? safeBuffer(envelope, bridgeDistanceM) : null
+    if (!bridge) break
     for (let index = remaining.length - 1; index >= 0; index -= 1) {
-      try {
-        if (bboxesOverlap(bbox(remaining[index]) as [number, number, number, number], bridge)) {
-          selected.push(remaining[index])
-          remaining.splice(index, 1)
-          expanded = true
-        }
-      } catch { /* ignore invalid source geometry */ }
+      if (safeIntersect(bridge, remaining[index])) {
+        selected.push(remaining[index])
+        remaining.splice(index, 1)
+        expanded = true
+      }
     }
   }
 
   const envelope = safeUnion(selected)
   const buffered = envelope ? safeBuffer(envelope, APP_CONFIG.boundary.landuseBufferM) : null
-  return validateSettlementPolygon(buffered?.geometry, settlement.lat, settlement.lon, polygonValidationLimits(settlement))
+  const clipped = buffered && mask ? safeIntersect(buffered, mask) ?? buffered : buffered
+  return validateSettlementPolygon(clipped?.geometry, settlement.lat, settlement.lon, polygonValidationLimits(settlement))
+}
+
+function featureIntersectsMask(feature: Feature<Polygon | MultiPolygon>, mask: PolygonFeature) {
+  const center = featureCenterPoint(feature)
+  if (!center) return false
+  try { return booleanPointInPolygon(center, mask) } catch { return false }
+}
+
+function placeMask(settlement: SettlementResult) {
+  return validateSettlementPolygon(settlement.geojson, settlement.lat, settlement.lon, {
+    ...(polygonValidationLimits(settlement) ?? {}),
+    containsCenter: true,
+  })
 }
 
 function inclusionRadiusM(settlement: SettlementResult) {
@@ -179,8 +167,9 @@ function buildingsReachDataEdge(
 
 function chooseBoundary(settlement: SettlementResult, raw: RawGeodata, manual?: PolygonFeature) {
   if (manual) return { boundary: manual, method: 'open-polygon' as const, reason: 'manual' satisfies BoundaryReasonCode }
+  const mask = placeMask(settlement)
   const openPolygon = validateSettlementPolygon(settlement.geojson, settlement.lat, settlement.lon, polygonValidationLimits(settlement))
-  const landusePolygon = boundaryFromResidentialLanduse(settlement, raw)
+  const landusePolygon = boundaryFromResidentialLanduse(settlement, raw, mask)
   const buildingCount = raw.buildings.features.length
   const isUrban = settlement.type === 'city' || settlement.type === 'town'
   const minimumPlausibleAreaM2 = settlement.type === 'hamlet' || settlement.type === 'isolated_dwelling' ? 40_000 : 200_000
@@ -195,9 +184,10 @@ function chooseBoundary(settlement: SettlementResult, raw: RawGeodata, manual?: 
         settlement.lat,
         settlement.lon,
         APP_CONFIG.boundary.cityClusterBridgeDistanceM,
+        mask,
       )
     } else {
-      clusteredCache = boundaryFromBuildingCluster(raw.buildings, settlement.lat, settlement.lon, maxDistanceM)
+      clusteredCache = boundaryFromBuildingCluster(raw.buildings, settlement.lat, settlement.lon, maxDistanceM, mask)
     }
     return clusteredCache
   }
@@ -225,6 +215,16 @@ function chooseBoundary(settlement: SettlementResult, raw: RawGeodata, manual?: 
   if (clustered) {
     return { boundary: clustered, method: 'dominant-building-cluster' as const, reason: 'buildingCluster' satisfies BoundaryReasonCode }
   }
+  if (!isUrban) {
+    const villageClustered = clusteredOk()
+    const landArea = safeArea(landusePolygon)
+    const clusterArea = safeArea(villageClustered)
+    // A residential-landuse polygon that is much larger than the built cluster
+    // has usually bridged into the next settlement or into unbuilt land.
+    if (villageClustered && buildingCount >= 80 && landArea > clusterArea * 1.6) {
+      return { boundary: villageClustered, method: 'dominant-building-cluster' as const, reason: 'buildingCluster' satisfies BoundaryReasonCode }
+    }
+  }
   if (landusePolygon && safeArea(landusePolygon) >= minimumPlausibleAreaM2) {
     return { boundary: landusePolygon, method: 'open-polygon' as const, reason: 'residentialLanduse' satisfies BoundaryReasonCode }
   }
@@ -245,11 +245,16 @@ function chooseBoundary(settlement: SettlementResult, raw: RawGeodata, manual?: 
 function buildingMetrics(
   buildings: Feature<Polygon | MultiPolygon, OsmFeatureProperties>[],
   analysisAreaM2: number,
+  residentialLand?: PolygonFeature | null,
 ): BuildingMetrics {
   const counts = { residential: 0, industrial: 0, other: 0, unknown: 0 }
   let footprintM2 = 0
   buildings.forEach((building) => {
-    counts[classifyBuilding(building)] += 1
+    const center = featureCenterPoint(building)
+    const insideResidential = Boolean(residentialLand && center && (() => {
+      try { return booleanPointInPolygon(center, residentialLand) } catch { return false }
+    })())
+    counts[classifyBuilding(building, { insideResidentialLanduse: insideResidential })] += 1
     footprintM2 += safeArea(building)
   })
   const total = buildings.length
@@ -328,12 +333,25 @@ export function analyzeSettlement(
 
   const rawByCategory: Partial<Record<Exclude<CategoryKey, 'roads' | 'other'>, PolygonFeature | null>> = {}
   const explicitLanduse = raw.landuse.features.filter((feature) => insideBoundary(feature, boundary) || clipPolygon(feature, boundary))
+  let unionCapped = false
   for (const key of ['water', 'industrial', 'residential', 'agricultural', 'green'] as const) {
-    rawByCategory[key] = safeUnion(explicitLanduse.filter((feature) => classifyLanduse(feature) === key))
+    const matched = explicitLanduse.filter((feature) => classifyLanduse(feature) === key)
+    if (matched.length > APP_CONFIG.analysis.maxUnionFeatures) unionCapped = true
+    rawByCategory[key] = safeUnion(matched)
   }
 
-  const residentialBuildings = buildings.filter((feature) => classifyBuilding(feature) === 'residential')
+  const explicitResidential = rawByCategory.residential ?? null
+  const residentialBuildings = buildings.filter((feature) => {
+    const center = featureCenterPoint(feature)
+    const insideResidential = Boolean(explicitResidential && center && (() => {
+      try { return booleanPointInPolygon(center, explicitResidential) } catch { return false }
+    })())
+    return classifyBuilding(feature, { insideResidentialLanduse: insideResidential }) === 'residential'
+  })
   const industrialBuildings = buildings.filter((feature) => classifyBuilding(feature) === 'industrial')
+  if (residentialBuildings.length > APP_CONFIG.analysis.maxBufferedBuildings || industrialBuildings.length > APP_CONFIG.analysis.maxBufferedBuildings) {
+    warnings.push('plotBuffersOmitted')
+  }
   rawByCategory.residential = safeUnion([
     rawByCategory.residential,
     bufferedBuildings(residentialBuildings, APP_CONFIG.residential.buildingBufferM),
@@ -344,6 +362,8 @@ export function analyzeSettlement(
   ])
   const roadsGeometry = roadArea(clippedRoads)
   const estimatedRoadsM2 = estimatedRoadAreaM2(clippedRoads)
+  if (!roadsGeometry && estimatedRoadsM2 > 0) warnings.push('roadAreaEstimated')
+  if (unionCapped) warnings.push('areasCapped')
 
   const geometries: Partial<Record<CategoryKey, PolygonFeature | null>> = { roads: roadsGeometry }
   let occupied: PolygonFeature | null = null
@@ -386,7 +406,7 @@ export function analyzeSettlement(
     }
   })
 
-  const metrics = buildingMetrics(buildings, analysisAreaM2)
+  const metrics = buildingMetrics(buildings, analysisAreaM2, explicitResidential)
   const roadLengthM = clippedRoads.features.reduce((total, road) => total + safeLength(road), 0)
   const roadMetrics = {
     lengthM: roadLengthM,
@@ -396,6 +416,10 @@ export function analyzeSettlement(
   }
   const explicitUnion = safeUnion(explicitLanduse.map((feature) => clipPolygon(feature, boundary)))
   const confidenceResult = confidence(metrics, categories, safeArea(explicitUnion), analysisAreaM2, boundaryChoice.method)
+  if (confidenceResult.level === 'high' && warnings.some((warning) => warning === 'roadAreaEstimated' || warning === 'areasCapped' || warning === 'dataExtentReached')) {
+    confidenceResult.level = 'medium'
+    confidenceResult.score = Math.min(confidenceResult.score, APP_CONFIG.confidence.highScoreMin - 1)
+  }
 
   if (confidenceResult.level === 'low') warnings.push('incompleteData')
 

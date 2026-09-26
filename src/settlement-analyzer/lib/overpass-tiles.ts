@@ -30,7 +30,7 @@ export function coveringTiles(
   lat: number,
   lon: number,
   radiusM: number,
-  tileM = APP_CONFIG.overpass.tileSizeM,
+  tileM: number = APP_CONFIG.overpass.tileSizeM,
 ): LonLatBbox[] {
   const half = Math.max(0, Math.ceil(radiusM / tileM))
   const dLat = metersToLat(tileM)

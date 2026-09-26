@@ -183,8 +183,9 @@ async function fetchPartInTiles(
   endpoint: string | undefined,
   options: OverpassClientOptions,
   tilePauseMs = 0,
+  tileM: number = APP_CONFIG.overpass.tileSizeM,
 ): Promise<{ json: OsmJson; endpoint: string }> {
-  const tiles = coveringTiles(lat, lon, radius, APP_CONFIG.overpass.tileSizeM)
+  const tiles = coveringTiles(lat, lon, radius, tileM)
   const parts: OsmJson[] = []
   let used = endpoint
   for (const tile of tiles) {
@@ -210,8 +211,13 @@ async function fetchPartJson(
     const part = await postOverpassQuery(item.query, signal, endpoint, options)
     return { json: capElements(part.json), endpoint: part.endpoint }
   } catch (error) {
-    if (!(error instanceof GeodataTooLargeError)) throw error
-    return fetchPartInTiles(item, lat, lon, radius, signal, endpoint, options, tilePauseMs)
+    if (signal?.aborted) throw error
+    // A single oversized query often times out. Split it instead of repeating the same request.
+    if (error instanceof GeodataTooLargeError || error instanceof GeodataUnavailableError) {
+      const tileM = radius >= APP_CONFIG.overpass.cityRadiusM ? 4_000 : APP_CONFIG.overpass.tileSizeM
+      return fetchPartInTiles(item, lat, lon, radius, signal, endpoint, { ...options, maxPrimaryAttempts: 1 }, tilePauseMs, tileM)
+    }
+    throw error
   }
 }
 
@@ -306,7 +312,7 @@ async function postOverpassQuery(
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
             Accept: '*/*',
-            'User-Agent': 'ITT-Digital-Hub-Settlement-Analyzer/1.0 (https://ittdigitalhub.uk; settlement-analyzer)',
+            'User-Agent': 'ITT-Digital-Hub-Settlement-Analyzer/1.0 (https://ittdigitalhub.org; settlement-analyzer)',
           },
           body: new URLSearchParams({ data: query }),
         })
@@ -342,7 +348,7 @@ async function postOverpassQuery(
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
           Accept: '*/*',
-          'User-Agent': 'ITT-Digital-Hub-Settlement-Analyzer/1.0 (https://ittdigitalhub.uk; settlement-analyzer)',
+          'User-Agent': 'ITT-Digital-Hub-Settlement-Analyzer/1.0 (https://ittdigitalhub.org; settlement-analyzer)',
         },
         body: new URLSearchParams({ data: query }),
       })
@@ -436,7 +442,10 @@ export async function fetchSettlementGeodata(
     onPart?.(item.part)
     try {
       if (parts.length > 0) await new Promise((resolve) => setTimeout(resolve, 350))
-      const part = await fetchPartJson(item, lat, lon, radius, combined, endpoint)
+      const liveOptions: OverpassClientOptions = radius >= APP_CONFIG.overpass.townRadiusM
+        ? { maxPrimaryAttempts: 1, primaryTimeoutMs: 36_000 }
+        : {}
+      const part = await fetchPartJson(item, lat, lon, radius, combined, endpoint, liveOptions)
       endpoint = part.endpoint
       parts.push(part.json)
     } catch (error) {

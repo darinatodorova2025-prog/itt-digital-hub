@@ -49,7 +49,8 @@ describe('анализ на населено място', () => {
     expect(result.categories.reduce((sum, category) => sum + category.percent, 0)).toBeCloseTo(100, 5)
     expect(result.categories.find((category) => category.key === 'water')!.areaM2).toBeGreaterThan(0)
     expect(result.buildingMetrics.total).toBe(3)
-    expect(result.buildingMetrics.unknown).toBe(1)
+    expect(result.buildingMetrics.residential).toBe(2)
+    expect(result.buildingMetrics.unknown).toBe(0)
     expect(result.roadMetrics.lengthKm).toBeGreaterThan(0)
     expect(result.poiCount).toBe(1)
   })
@@ -134,14 +135,11 @@ describe('анализ на населено място', () => {
   it('предупреждава, когато застройката опира края на свалените данни', () => {
     const city = { ...settlement, type: 'city' as const }
     const buildings = []
-    for (let step = 0; step < 10; step += 1) {
-      const lon = 25.006 + step * 0.008
-      buildings.push(land({ building: 'house' }, [[lon, 42.006], [lon + 0.0004, 42.006], [lon + 0.0004, 42.0064], [lon, 42.0064]]))
-      buildings.push(land({ building: 'house' }, [[lon + 0.0005, 42.006], [lon + 0.0009, 42.006], [lon + 0.0009, 42.0064], [lon + 0.0005, 42.0064]]))
-      buildings.push(land({ building: 'house' }, [[lon, 42.0065], [lon + 0.0004, 42.0065], [lon + 0.0004, 42.0069], [lon, 42.0069]]))
-      buildings.push(land({ building: 'house' }, [[lon + 0.0005, 42.0065], [lon + 0.0009, 42.0065], [lon + 0.0009, 42.0069], [lon + 0.0005, 42.0069]]))
-      buildings.push(land({ building: 'house' }, [[lon + 0.001, 42.006], [lon + 0.0014, 42.006], [lon + 0.0014, 42.0064], [lon + 0.001, 42.0064]]))
-      buildings.push(land({ building: 'house' }, [[lon + 0.001, 42.0065], [lon + 0.0014, 42.0065], [lon + 0.0014, 42.0069], [lon + 0.001, 42.0069]]))
+    for (let step = 0; step < 55; step += 1) {
+      const lon = 25.006 + step * 0.0015
+      buildings.push(land({ building: 'house' }, [[lon, 42.006], [lon + 0.0002, 42.006], [lon + 0.0002, 42.0062], [lon, 42.0062]]))
+      buildings.push(land({ building: 'house' }, [[lon, 42.0064], [lon + 0.0002, 42.0064], [lon + 0.0002, 42.0066], [lon, 42.0066]]))
+      buildings.push(land({ building: 'house' }, [[lon + 0.0003, 42.006], [lon + 0.0005, 42.006], [lon + 0.0005, 42.0062], [lon + 0.0003, 42.0062]]))
     }
     const raw = fixture(false)
     raw.buildings = featureCollection(buildings)
