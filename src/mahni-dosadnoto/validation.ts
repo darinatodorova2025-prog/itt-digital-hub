@@ -35,18 +35,38 @@ export const followupSchema = z.object({
   themeId: z.string().uuid(),
 });
 
-export const clusteringThemeSchema = z.object({
-  title: z.string().min(3).max(200),
-  description: z.string().min(10).max(1200),
-  ideaIds: z.array(z.string().uuid()).min(1),
-});
+function clusteringDescription(value: unknown, title: string): string {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length >= 10) return trimmed.slice(0, 1200);
+  }
+  const base = title.trim() || "Тема";
+  return `${base}. Обобщение от AI кластеризация на подадените идеи.`.slice(0, 1200);
+}
+
+export const clusteringThemeSchema = z
+  .object({
+    title: z.string().min(3).max(200),
+    description: z.union([z.string(), z.null(), z.undefined()]).optional(),
+    ideaIds: z.array(z.string().uuid()).min(1),
+  })
+  .transform(({ title, description, ideaIds }) => ({
+    title,
+    description: clusteringDescription(description, title),
+    ideaIds,
+  }));
 
 export const clusteringOutputSchema = z.object({
   themes: z.array(clusteringThemeSchema).min(8).max(14),
-  wildcard: z.object({
-    title: z.string().min(3).max(200),
-    description: z.string().min(10).max(1200),
-  }),
+  wildcard: z
+    .object({
+      title: z.string().min(3).max(200),
+      description: z.union([z.string(), z.null(), z.undefined()]).optional(),
+    })
+    .transform(({ title, description }) => ({
+      title,
+      description: clusteringDescription(description, title),
+    })),
 });
 
 export type ClusteringOutput = z.infer<typeof clusteringOutputSchema>;

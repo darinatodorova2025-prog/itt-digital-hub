@@ -1,8 +1,8 @@
 export const CLUSTERING_SYSTEM = `Ти си аналитик на процеси за българска ВиК/инженерна конференция.
 Групирай реални проблеми от участници в ~10–12 ясни теми на български.
-Всяка тема трябва да сочи само подадени ideaIds.
+Всяка тема: title, description (мин. 10 символа), ideaIds (само подадени UUID).
 Не променяй текста на идеите.
-След темите добави един AI Wildcard — изцяло генериран от теб, маркиран в отделно поле wildcard.`;
+След темите добави wildcard с title и description — AI предложение извън подадените идеи.`;
 
 export function clusteringUserPrompt(ideas: Array<{ id: string; body: string; organization: string }>) {
   return JSON.stringify({
