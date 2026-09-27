@@ -10,6 +10,7 @@ import { APP_CONFIG } from '../config'
 import { tagsOf } from '../lib/classification'
 import { clipCollectionToBoundary, sampleFeaturesForDisplay } from '../lib/geometry'
 import type { AnalysisResult, PolygonFeature, SettlementResult } from '../types'
+import type { TerrainSummary } from '../water/metrics'
 import type { LayerVisibility } from './layer-visibility'
 import type { FeatureCollection } from 'geojson'
 
@@ -22,6 +23,8 @@ interface Props {
   visible: LayerVisibility
   editing: boolean
   cadastre: FeatureCollection | null
+  terrain: TerrainSummary | null
+  terrainStyleMode: 'elevation' | 'slope'
   onBoundaryEdited: (boundary: PolygonFeature) => void
 }
 
@@ -93,7 +96,7 @@ function poiLabel(tags: Record<string, string>, labels: Record<string, string>) 
   return labels[tags.amenity ?? ''] || (tags.sport ? labels.sport : labels.other)
 }
 
-export function MapView({ locale, selected, result, visible, editing, cadastre, onBoundaryEdited }: Props) {
+export function MapView({ locale, selected, result, visible, editing, cadastre, terrain, terrainStyleMode, onBoundaryEdited }: Props) {
   const copy = sa(locale)
   const layers = useMemo(() => result?.categories.filter((category) => visible[category.key]) ?? [], [result, visible])
   const buildingLayer = useMemo(() => {
@@ -125,6 +128,20 @@ export function MapView({ locale, selected, result, visible, editing, cadastre, 
       />
       <ZoomControl position="topright" zoomInTitle={copy.zoomIn} zoomOutTitle={copy.zoomOut} />
       <FitMap locale={locale} selected={selected} result={result} />
+      {terrain && visible.terrain && terrain.cells.length > 0 && (
+        <GeoJSON
+          key={`terrain-${result?.createdAt}-${terrainStyleMode}`}
+          data={{ type: 'FeatureCollection', features: terrain.cells } as FeatureCollection}
+          style={(feature) => {
+            const props = feature?.properties as { zone?: string; slopePercent?: number | null } | undefined
+            const slope = props?.slopePercent ?? 0
+            const color = terrainStyleMode === 'slope'
+              ? (slope < 2 ? '#d7e4ea' : slope < 6 ? '#7aa0b8' : '#8d4a4a')
+              : props?.zone === 'high' ? '#d07a45' : props?.zone === 'low' ? '#d5e0c4' : '#e6c36a'
+            return { color, fillColor: color, fillOpacity: 0.45, weight: 0.4 }
+          }}
+        />
+      )}
       {layers.map((category) => category.geometry && (
         <GeoJSON
           key={`${result?.createdAt}-${category.key}`}
@@ -158,13 +175,12 @@ export function MapView({ locale, selected, result, visible, editing, cadastre, 
       )}
       {result && editing && <BoundaryEditor boundary={result.boundary} onChange={onBoundaryEdited} />}
       </MapContainer>
-      {buildingLayer && result && result.buildings.features.length > buildingLayer.features.length ? (
-        <p className="map-sample-note">
-          {copy.mapBuildingsSampled
-            .replace('{shown}', String(buildingLayer.features.length))
-            .replace('{total}', String(result.buildings.features.length))}
-        </p>
-      ) : null}
+      <div className="map-notes">
+        {buildingLayer && result && result.buildings.features.length > buildingLayer.features.length ? (
+          <p className="map-note">{copy.mapBuildingsSampled.replace('{shown}', String(buildingLayer.features.length)).replace('{total}', String(result.buildings.features.length))}</p>
+        ) : null}
+        <p className="map-note">{copy.mapDisclaimer}</p>
+      </div>
     </>
   )
 }

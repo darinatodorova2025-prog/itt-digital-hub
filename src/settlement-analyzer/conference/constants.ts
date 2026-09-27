@@ -139,6 +139,9 @@ export const TRACKED_EVENT_NAMES = [
   'return_visit',
   'contact_requested',
   'feature_used',
+  'network_upload_modal_open',
+  'network_upload_interest_yes',
+  'network_upload_interest_no',
 ] as const
 
 export type TrackedEventName = typeof TRACKED_EVENT_NAMES[number]

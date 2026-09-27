@@ -8,8 +8,8 @@ import type {
 } from "./types";
 
 export const settlementAnalyzer = {
-  name: { bg: "Анализатор на населени места", en: "Settlement Analyzer" } satisfies L,
-  tagline: { bg: "Ориентировъчен пространствен анализ", en: "Indicative spatial analysis" } satisfies L,
+  name: { bg: "Предпроектен ВиК анализ", en: "Preliminary Water Infrastructure Analysis" } satisfies L,
+  tagline: { bg: "Начална пространствена подготовка", en: "Initial spatial preparation" } satisfies L,
   metaDescription: {
     bg: "Автоматичен предварителен анализ на български населени места с отворени географски данни.",
     en: "Automatic preliminary analysis of Bulgarian settlements using open geographic data.",

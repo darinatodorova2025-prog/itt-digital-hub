@@ -15,7 +15,13 @@ import { ResultsPanel } from './components/ResultsPanel'
 import { SearchPanel } from './components/SearchPanel'
 import { analysisToCsv, analysisToGeoJson, downloadText, safeFilename } from './lib/export'
 import { dataRadiusForBoundary } from './lib/geometry'
+import { bbox } from '@turf/turf'
 import { analysisRadiusForSettlement, analyzeSettlement } from './services/analysis'
+import { trackEvent } from './conference/tracking'
+import { NetworkInterestModal } from './water/NetworkInterestModal'
+import { samplesInsideBoundary, summarizeTerrain, type ElevationSample, type TerrainSummary } from './water/metrics'
+import { layersForMode, terrainStyle, WATER_CONTEXTS, type WaterContext } from './water/modes'
+import { waterText } from './water/copy'
 import { fetchUrbanizedParcels } from './services/cadastre'
 import { fetchSettlementGeodata, GeodataTooLargeError, GeodataUnavailableError } from './services/overpass'
 import { catalogHas, loadPackCatalog, loadShippedPackCatalog } from './services/pack-catalog'
@@ -29,6 +35,8 @@ type MapViewProps = {
   visible: LayerVisibility
   editing: boolean
   cadastre: FeatureCollection | null
+  terrain: TerrainSummary | null
+  terrainStyleMode: 'elevation' | 'slope'
   onBoundaryEdited: (boundary: PolygonFeature) => void
 }
 
@@ -79,6 +87,10 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   const [packCatalog, setPackCatalog] = useState<PackCatalogItem[]>([])
   const [downloadProgress, setDownloadProgress] = useState<PackDownloadProgress | null>(null)
   const [lastFailure, setLastFailure] = useState<'analysis' | 'pack' | null>(null)
+  const [mode, setMode] = useState<WaterContext>('supply')
+  const [terrain, setTerrain] = useState<TerrainSummary | null>(null)
+  const [terrainState, setTerrainState] = useState<'idle' | 'loading' | 'active' | 'unavailable'>('idle')
+  const [networkOpen, setNetworkOpen] = useState(false)
   const analysisAbort = useRef<AbortController | null>(null)
   const downloadAbort = useRef<AbortController | null>(null)
   const polygonRequest = useRef<{ key: string; promise: Promise<GeoJSON.Geometry | undefined> } | null>(null)
@@ -103,6 +115,35 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   useEffect(() => {
     refreshPackCatalog()
   }, [refreshPackCatalog])
+
+  useEffect(() => {
+    if (!result) {
+      setTerrain(null)
+      setTerrainState('idle')
+      return
+    }
+    const [west, south, east, north] = bbox(result.boundary)
+    const controller = new AbortController()
+    setTerrainState('loading')
+    void fetch('/api/settlement-analyzer/terrain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ west, south, east, north }),
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) throw new Error('terrain')
+      const payload = await response.json() as { fetchedAt?: string; samples?: ElevationSample[] }
+      const inside = samplesInsideBoundary(payload.samples ?? [], result.boundary)
+      const summary = summarizeTerrain(inside, payload.fetchedAt ?? null)
+      setTerrain(summary)
+      setTerrainState(summary.status)
+    }).catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      setTerrain(null)
+      setTerrainState('unavailable')
+    })
+    return () => controller.abort()
+  }, [result])
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 820px)')
@@ -453,12 +494,19 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
             <button type="button" className="retry-button" onClick={lastFailure === 'pack' ? runPackDownload : runAnalysis}><RotateCcw size={16} /> {copy.retry}</button>
           </div>
         ) : null}
+        <div className="mode-bar" role="tablist" aria-label={waterText(locale).modesLabel}>
+          {WATER_CONTEXTS.map((item) => (
+            <button key={item} type="button" role="tab" aria-selected={mode === item} className={mode === item ? 'mode-bar__item mode-bar__item--active' : 'mode-bar__item'} onClick={() => { setMode(item); setVisible(layersForMode(item)) }}>
+              {waterText(locale).modes[item]}
+            </button>
+          ))}
+        </div>
       </section>
 
       <main className={`workspace ${result ? 'workspace--with-results' : ''}`}>
         <section className="map-region" aria-label={copy.mapRegion}>
-          <ClientMap locale={locale} selected={selected} result={result} visible={visible} editing={editing} cadastre={cadastreParcels} onBoundaryEdited={handleBoundaryEdited} />
-          <LayerPanel locale={locale} visible={visible} onChange={setVisible} collapsed={layersCollapsed} onToggleCollapsed={() => setLayersCollapsed((value) => !value)} />
+          <ClientMap locale={locale} selected={selected} result={result} visible={visible} editing={editing} cadastre={cadastreParcels} terrain={terrain} terrainStyleMode={terrainStyle(mode)} onBoundaryEdited={handleBoundaryEdited} />
+          <LayerPanel locale={locale} terrainLabel={waterText(locale).terrainLayer} visible={visible} onChange={setVisible} collapsed={layersCollapsed} onToggleCollapsed={() => setLayersCollapsed((value) => !value)} />
           {analyzing && <div className="analysis-overlay" role="status" aria-live="polite"><span className="analysis-loader" /><strong>{copy.stages[stage] ?? ''}</strong></div>}
           {downloading && downloadProgress ? (
             <div className="analysis-overlay" role="status" aria-live="polite">
@@ -471,15 +519,18 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
               <button type="button" className="button" onClick={cancelPackDownload}>{copy.cancelDownload}</button>
             </div>
           ) : null}
-          <p className="map-caption">{copy.mapDisclaimer}</p>
         </section>
 
         {result ? (
           <ResultsPanel
             locale={locale}
+            mode={mode}
             result={result}
+            terrain={terrain}
+            terrainState={terrainState}
             editing={editing}
             cadastreLoaded={Boolean(cadastreParcels && cadastreParcels.features.length > 0)}
+            onOpenNetwork={() => { setNetworkOpen(true); void trackEvent('network_upload_modal_open') }}
             onStartEditing={startEditing}
             onCancelEditing={cancelEditing}
             onRecalculate={recalculate}
@@ -488,6 +539,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
           />
         ) : null}
       </main>
+      <NetworkInterestModal locale={locale} open={networkOpen} onClose={() => setNetworkOpen(false)} />
     </div>
   )
 }

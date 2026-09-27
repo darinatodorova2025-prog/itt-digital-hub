@@ -17,13 +17,22 @@ import type { AnalysisResult } from '../types'
 import { DonutChart } from './DonutChart'
 import type { Locale } from '@/lib/i18n'
 import { sa } from '../copy'
-import { presentBoundaryReason, presentConfidenceLevel, presentConfidenceReason, presentProfile, presentWarning } from '../present'
+import { presentBoundaryReason, presentConfidenceLevel, presentConfidenceReason, presentWarning } from '../present'
+import { EngineeringSummary } from '../water/EngineeringSummary'
+import type { TerrainSummary } from '../water/metrics'
+import type { WaterContext } from '../water/modes'
+import { sourceCatalog } from '../water/sources'
+import { waterText } from '../water/copy'
 
 interface Props {
   locale: Locale
+  mode: WaterContext
   result: AnalysisResult
+  terrain: TerrainSummary | null
+  terrainState: 'idle' | 'loading' | 'active' | 'unavailable'
   editing: boolean
   cadastreLoaded?: boolean
+  onOpenNetwork: () => void
   onStartEditing: () => void
   onCancelEditing: () => void
   onRecalculate: () => void
@@ -31,31 +40,34 @@ interface Props {
   onExportGeoJson: () => void
 }
 
-export function ResultsPanel({ locale, result, editing, cadastreLoaded = false, onStartEditing, onCancelEditing, onRecalculate, onExportCsv, onExportGeoJson }: Props) {
+export function ResultsPanel({ locale, mode, result, terrain, terrainState, editing, cadastreLoaded = false, onOpenNetwork, onStartEditing, onCancelEditing, onRecalculate, onExportCsv, onExportGeoJson }: Props) {
   const copy = sa(locale)
+  const water = waterText(locale)
   const totalPercent = result.categories.reduce((total, category) => total + category.percent, 0)
   const confidenceClass = result.confidence.level
   const dataSourceLine = (result.dataSource === 'pack' ? copy.sourcePack : copy.sourceOverpass).replace('{date}', formatDate(result.dataFetchedAt, locale))
   const boundaryLine = copy.sourceBoundary.replace('{method}', presentBoundaryReason(locale, result.boundaryReason))
+  const sources = sourceCatalog(terrain?.status === 'active', cadastreLoaded, result.dataSource)
+  const availabilityLabel = { active: water.active, unavailable: water.unavailable, 'not-available': water.planned }
   return (
     <aside className="results-panel" aria-label={copy.results}>
       <div className="results-scroll">
         <header className="results-header">
           <h2>{result.settlement.name.trim()}{result.settlement.region ? `, ${result.settlement.region.trim()}` : ''}</h2>
-          <p className="boundary-caption">{copy.boundaryCaption}</p>
-          <span className="profile-label">{copy.profileLabel}</span>
-          <strong className="profile-value">{presentProfile(locale, result.profile)}</strong>
+          <EngineeringSummary locale={locale} mode={mode} result={result} terrain={terrain} terrainState={terrainState} />
           <details className="confidence-details">
             <summary>{copy.confidenceLabel}: <strong className={`confidence confidence--${confidenceClass}`}>{presentConfidenceLevel(locale, result.confidence.level)}</strong></summary>
             <ul>{result.confidence.reasons.map((reason) => <li key={reason.code}>{presentConfidenceReason(locale, reason)}</li>)}</ul>
             <p><strong>{copy.boundaryMethod}:</strong> {presentBoundaryReason(locale, result.boundaryReason)}</p>
           </details>
+          <button type="button" className="button network-interest" onClick={onOpenNetwork}>{water.uploadAction}</button>
         </header>
 
         {result.warnings.length > 0 && <div className="warning-box">{result.warnings.map((warning) => <p key={warning}>{presentWarning(locale, warning)}</p>)}</div>}
 
         <section className="result-section">
-          <h3>{copy.distribution}</h3>
+          <details>
+            <summary>{water.landCover}</summary>
           <div className="distribution-grid">
             <div className="table-wrap">
               <table>
@@ -75,6 +87,7 @@ export function ResultsPanel({ locale, result, editing, cadastreLoaded = false, 
             </div>
             <DonutChart locale={locale} categories={result.categories} />
           </div>
+          </details>
         </section>
 
         <section className="result-section">
@@ -105,12 +118,18 @@ export function ResultsPanel({ locale, result, editing, cadastreLoaded = false, 
 
         <section className="result-section compact-details">
           <details>
-            <summary>{copy.sourcesTitle}</summary>
-            <ul>
+            <summary>{water.sources}</summary>
+            <ul className="source-list">
+              {sources.map((source) => (
+                <li key={source.id}>
+                  <strong>{water.sourceNames[source.id as keyof typeof water.sourceNames]}</strong>
+                  <span className={`source-state source-state--${source.availability}`}>{availabilityLabel[source.availability]}</span>
+                  <small>{water.sourceRoles[source.id as keyof typeof water.sourceRoles]} {water.kinds[source.kind]}</small>
+                  {source.id === 'osm' ? <small>{dataSourceLine}. {boundaryLine}</small> : null}
+                  {source.id === 'terrain' && terrain?.status === 'active' ? <small>{terrain.resolutionM} m · {terrain.fetchedAt ? formatDate(terrain.fetchedAt, locale) : ''}</small> : null}
+                </li>
+              ))}
               <li>{copy.sourceRegistry}</li>
-              <li>{dataSourceLine}</li>
-              <li>{boundaryLine}</li>
-              {cadastreLoaded ? <li>{copy.sourceCadastre}</li> : null}
             </ul>
           </details>
         </section>
