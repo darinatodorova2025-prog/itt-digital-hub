@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { AnalysisRun, EventCampaign, EventPhase, JudgeType, Participant, Theme } from "@/mahni-dosadnoto/types";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { AnalysisRun, EventCampaign, EventPhase, Participant, Theme } from "@/mahni-dosadnoto/types";
 import type { WinningThemeContacts } from "@/mahni-dosadnoto/admin/winners";
 import type { PublicLiveSnapshot } from "@/mahni-dosadnoto/store/types";
 import type { JuryProgress } from "@/mahni-dosadnoto/jury-status";
+import { LENS_COPY, operatorPhaseNote, operatorPhaseTitle, storyForPhase } from "@/mahni-dosadnoto/presentation";
+import { CheckIcon, OrgIcon, PeopleIcon, StageGlyph } from "@/mahni-dosadnoto/icons";
+import { AdminRail } from "@/mahni-dosadnoto/journey";
 import {
   mdCloseCollection,
   mdCloseEvent,
@@ -48,23 +51,6 @@ type ActionId =
   | "results"
   | "closed";
 
-const PHASE_BG: Record<EventPhase, string> = {
-  DRAFT: "Подготовка",
-  COLLECTING: "Събиране на идеи",
-  ANALYZING: "Анализ на идеите",
-  VOTING: "Гласуване",
-  FINALIZING: "Финално отброяване",
-  AI_JURY: "Независимо мнение на ИИ",
-  RESULTS: "Резултатът е показан",
-  CLOSED: "Събитието е приключено",
-};
-
-const JUDGE_BG: Record<JudgeType, string> = {
-  business_value: "Бизнес стойност",
-  feasibility: "Реализируемост",
-  innovation: "Иновация",
-};
-
 export function MahniAdminDashboard({ initial }: Props) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -88,6 +74,13 @@ export function MahniAdminDashboard({ initial }: Props) {
   }, [busy, confirm, campaign.phase]);
 
   const primary = recommendedAction(campaign.phase, analysisReady, analysisRunning, jury);
+  const active = campaign.phase !== "DRAFT" && campaign.phase !== "CLOSED";
+  const stage = storyForPhase(campaign.phase);
+  const voteById = new Map(initial.live.themes.map((theme) => [theme.id, theme.voteCount]));
+  const themesSorted = [...initial.themes].sort(
+    (a, b) => (voteById.get(b.id) ?? 0) - (voteById.get(a.id) ?? 0) || a.sortOrder - b.sortOrder,
+  );
+  const liveRank = [...initial.live.themes].sort((a, b) => b.voteCount - a.voteCount || a.title.localeCompare(b.title, "bg"));
 
   async function execute(id: ActionId | "seed" | "reset") {
     setBusy(id);
@@ -115,45 +108,54 @@ export function MahniAdminDashboard({ initial }: Props) {
   const failedAnalysis = initial.analysisRuns.filter((run) => run.status === "failed");
 
   return (
-    <div className="md-ops">
+    <div className="md-ops" lang="bg">
       <header className="md-ops-head">
-        <p>Контролна зала</p>
-        <h1>Махни досадното</h1>
+        <div>
+          <p className="md-ops-kicker">Контролна зала</p>
+          <h1>Махни досадното</h1>
+        </div>
+        <p className={active ? "md-ops-live is-on" : "md-ops-live"}>
+          <i />
+          {campaign.phase === "CLOSED" ? "Събитието е приключено" : campaign.phase === "DRAFT" ? "Очаква старт" : "Събитието е активно"}
+        </p>
       </header>
 
       <section className="md-ops-phase">
         <div>
           <p className="md-ops-kicker">Текуща фаза</p>
-          <h2>{campaign.phase}</h2>
-          <p className="md-ops-phase-bg">{PHASE_BG[campaign.phase]}</p>
+          <h2>{operatorPhaseTitle(campaign.phase)}</h2>
+          <p>{operatorPhaseNote(campaign.phase)}</p>
           {campaign.phase === "FINALIZING" && initial.live.countdownSeconds !== null ? (
-            <p className="md-ops-phase-bg">Остават около {initial.live.countdownSeconds} секунди</p>
-          ) : null}
-          {advancedActions(campaign.phase, primary?.id ?? null, jury).length > 0 ? (
-          <details className="md-ops-advanced">
-            <summary>Други действия</summary>
-            <div className="md-ops-advanced-row">
-              {advancedActions(campaign.phase, primary?.id ?? null, jury).map((id) => (
-                <button key={id} type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask(id)}>
-                  {ACTION_LABEL[id]}
-                </button>
-              ))}
-            </div>
-          </details>
+            <p className="md-ops-note">Остават около {initial.live.countdownSeconds} секунди</p>
           ) : null}
         </div>
         <div className="md-ops-next">
-          <p className="md-ops-kicker">Следваща стъпка</p>
+          <p className="md-ops-kicker">Следващо действие</p>
           {primary ? (
             <button type="button" className="md-ops-primary" disabled={!!busy || primary.disabled} onClick={() => ask(primary.id)}>
               {busy === primary.id ? "Изпълнява се…" : primary.label}
             </button>
           ) : (
-            <p className="md-ops-phase-bg">Няма следваща стъпка.</p>
+            <p className="md-ops-note">Няма следваща стъпка.</p>
           )}
-          {analysisRunning && campaign.phase === "ANALYZING" ? <p className="md-ops-phase-bg">Анализът тече.</p> : null}
+          {analysisRunning && campaign.phase === "ANALYZING" ? <p className="md-ops-note">Подреждането тече.</p> : null}
         </div>
       </section>
+
+      <AdminRail stage={stage} />
+
+      {advancedActions(campaign.phase, primary?.id ?? null, jury).length > 0 ? (
+        <details className="md-ops-advanced">
+          <summary>Други действия</summary>
+          <div className="md-ops-advanced-row">
+            {advancedActions(campaign.phase, primary?.id ?? null, jury).map((id) => (
+              <button key={id} type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask(id)}>
+                {ACTION_LABEL[id]}
+              </button>
+            ))}
+          </div>
+        </details>
+      ) : null}
 
       {confirm ? (
         <div className="md-ops-confirm" role="alertdialog" aria-label="Потвърждение">
@@ -170,34 +172,19 @@ export function MahniAdminDashboard({ initial }: Props) {
       ) : null}
       {error ? <p className="md-ops-error">{error}</p> : null}
 
-      <section className="md-ops-stats" aria-label="Обобщение">
-        <div>
-          <strong>{initial.counts.participants}</strong>
-          <span>Участници</span>
-        </div>
-        <div>
-          <strong>{organizations}</strong>
-          <span>Организации</span>
-        </div>
-        <div>
-          <strong>{initial.counts.ideas}</strong>
-          <span>Идеи</span>
-        </div>
-        <div>
-          <strong>{initial.counts.votes}</strong>
-          <span>Гласове</span>
-        </div>
-        <div>
-          <strong>{initial.counts.followups}</strong>
-          <span>Заявки за разговор</span>
-        </div>
+      <section className="md-ops-metrics" aria-label="Обобщение">
+        <Metric icon={<PeopleIcon size={18} />} value={initial.counts.participants} label="Участници" />
+        <Metric icon={<OrgIcon size={18} />} value={organizations} label="Организации" />
+        <Metric icon={<StageGlyph stage={1} size={18} />} value={initial.counts.ideas} label="Идеи" />
+        <Metric icon={<StageGlyph stage={3} size={18} />} value={initial.counts.votes} label="Гласове" />
+        <Metric icon={<StageGlyph stage={5} size={18} />} value={initial.counts.followups} label="Заявки за разговор" />
       </section>
 
       <section className="md-ops-screen">
         <button type="button" className="md-ops-btn" onClick={() => void mdToggleRecentIdeas(!campaign.showRecentIdeas).then(() => window.location.reload())}>
           Последни идеи на екрана: {campaign.showRecentIdeas ? "включени" : "изключени"}
         </button>
-        <a href="/bg/mahni-dosadnoto/live" target="_blank" rel="noreferrer">
+        <a className="md-ops-link" href="/bg/mahni-dosadnoto/live" target="_blank" rel="noreferrer">
           Отвори екрана
         </a>
       </section>
@@ -207,8 +194,15 @@ export function MahniAdminDashboard({ initial }: Props) {
         <div className="md-ops-ai">
           <article>
             <h3>Анализ</h3>
-            <p>
-              {analysisReady ? `Завършен · ${initial.themes.filter((theme) => !theme.isAiWildcard).length} теми` : analysisRunning ? "Тече" : latestAnalysis?.status === "failed" ? "Необходимо е повторение" : "Още не е пускан"}
+            <p className="md-ops-ai-line">
+              <StatusMark ok={analysisReady} busy={analysisRunning} />
+              {analysisReady
+                ? `Завършен · ${initial.themes.filter((theme) => !theme.isAiWildcard).length} теми`
+                : analysisRunning
+                  ? "Тече"
+                  : latestAnalysis?.status === "failed"
+                    ? "Необходимо е повторение"
+                    : "Още не е пускан"}
             </p>
             {failedAnalysis.length > 0 ? (
               <details>
@@ -223,15 +217,16 @@ export function MahniAdminDashboard({ initial }: Props) {
             ) : null}
           </article>
           <article>
-            <h3>Жури</h3>
-            <p>
+            <h3>ИИ жури</h3>
+            <p className="md-ops-note">
               {jury.succeeded} / {jury.total} готови
             </p>
             <ul className="md-ops-judges">
               {jury.judges.map((judge) => (
                 <li key={judge.judge}>
-                  <span>{JUDGE_BG[judge.judge]}</span>
-                  <span>{judgeStatus(judge.status)}</span>
+                  <StatusMark ok={judge.status === "succeeded"} busy={judge.status === "running" || judge.status === "pending"} />
+                  <span>{LENS_COPY[judge.judge].title}</span>
+                  <em>{judgeStatus(judge.status)}</em>
                 </li>
               ))}
             </ul>
@@ -253,6 +248,47 @@ export function MahniAdminDashboard({ initial }: Props) {
           </article>
         </div>
       </section>
+
+      {initial.live.humanTop3.length > 0 ? (
+        <section className="md-ops-section md-ops-split">
+          <article>
+            <h2>Изборът на участниците</h2>
+            <ol className="md-ops-rank">
+              {initial.live.humanTop3.map((row) => (
+                <li key={row.id}>
+                  <b>{String(row.rank).padStart(2, "0")}</b>
+                  <span>{row.title}</span>
+                </li>
+              ))}
+            </ol>
+          </article>
+          <article>
+            <h2>Независим поглед от ИИ</h2>
+            <ol className="md-ops-rank is-quiet">
+              {initial.live.aiTop3.map((row) => (
+                <li key={row.id}>
+                  <b>{String(row.rank).padStart(2, "0")}</b>
+                  <span>{row.title}</span>
+                </li>
+              ))}
+            </ol>
+          </article>
+        </section>
+      ) : liveRank.some((theme) => theme.voteCount > 0) ? (
+        <section className="md-ops-section">
+          <h2>Текущо класиране</h2>
+          <p className="md-ops-note">Официалният топ 3 се заключва след гласуването.</p>
+          <ol className="md-ops-rank">
+            {liveRank.slice(0, 5).map((theme, index) => (
+              <li key={theme.id}>
+                <b>{String(index + 1).padStart(2, "0")}</b>
+                <span>{theme.title}</span>
+                <em>{theme.voteCount}</em>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       <section className="md-ops-section">
         <h2>Участници</h2>
@@ -301,14 +337,14 @@ export function MahniAdminDashboard({ initial }: Props) {
       <section className="md-ops-section">
         <h2>Организации за контакт</h2>
         {initial.winningOrganizations.length === 0 ? (
-          <p className="md-ops-phase-bg">Ще се появи, когато има теми и класиране.</p>
+          <p className="md-ops-note">Ще се появи, когато има теми и класиране.</p>
         ) : (
-          <div className="md-ops-winners">
-            {initial.winningOrganizations.map((row) => (
-              <article key={row.themeId} className="md-ops-winner">
-                <p className="md-ops-kicker">Топ {row.rank}</p>
-                <h3>{row.themeTitle}</h3>
-                <table>
+          initial.winningOrganizations.map((row) => (
+            <article key={row.themeId} className="md-ops-winner">
+              <p className="md-ops-kicker">Топ {row.rank}</p>
+              <h3>{row.themeTitle}</h3>
+              <div className="md-ops-table-wrap">
+                <table className="md-ops-table">
                   <thead>
                     <tr>
                       <th>Организация</th>
@@ -339,27 +375,39 @@ export function MahniAdminDashboard({ initial }: Props) {
                     )}
                   </tbody>
                 </table>
-              </article>
-            ))}
-          </div>
+              </div>
+            </article>
+          ))
         )}
       </section>
 
       <section className="md-ops-section">
         <h2>Теми ({initial.themes.length})</h2>
-        <ul className="md-ops-themes">
-          {initial.themes.map((theme) => (
-            <li key={theme.id}>
-              <span>
-                {theme.isAiWildcard ? "Допълнителна · " : ""}
-                {theme.title}
-              </span>
-              <span>
-                {theme.ideaCount} идеи · {theme.organizationCount} орг.
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="md-ops-table-wrap">
+          <table className="md-ops-table">
+            <thead>
+              <tr>
+                <th>Ранг</th>
+                <th>Тема</th>
+                <th>Идеи</th>
+                <th>Организации</th>
+              </tr>
+            </thead>
+            <tbody>
+              {themesSorted.map((theme, index) => (
+                <tr key={theme.id}>
+                  <td>{String(index + 1).padStart(2, "0")}</td>
+                  <td>
+                    {theme.title}
+                    {theme.isAiWildcard ? <span className="md-ops-tag">Допълнителна идея от ИИ</span> : null}
+                  </td>
+                  <td>{theme.ideaCount}</td>
+                  <td>{theme.organizationCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="md-ops-demo">
@@ -375,28 +423,42 @@ export function MahniAdminDashboard({ initial }: Props) {
         </div>
       </section>
 
-      <section className="md-ops-section md-ops-export">
+      <section className="md-ops-section">
         <h2>Експорт</h2>
         <button type="button" className="md-ops-btn" onClick={() => void mdExportCsv().then(setCsv)}>
           Генерирай CSV
         </button>
-        {csv ? <textarea readOnly value={csv} /> : null}
+        {csv ? <textarea className="md-ops-csv" readOnly value={csv} /> : null}
       </section>
     </div>
   );
 }
 
+function Metric({ icon, value, label }: { icon: ReactNode; value: number; label: string }) {
+  return (
+    <div>
+      <span className="md-ops-metric-icon">{icon}</span>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function StatusMark({ ok, busy }: { ok: boolean; busy?: boolean }) {
+  return <span className={ok ? "md-ops-mark is-ok" : busy ? "md-ops-mark is-busy" : "md-ops-mark"}>{ok ? <CheckIcon size={14} /> : null}</span>;
+}
+
 const ACTION_LABEL: Record<ActionId, string> = {
-  collect: "Старт на събирането",
-  "close-collect": "Затвори събирането",
-  analysis: "Стартирай анализа",
-  vote: "Отвори гласуването",
-  final: "Финално отброяване",
+  collect: "Отвори споделянето",
+  "close-collect": "Приключи споделянето",
+  analysis: "Подреждане на идеите",
+  vote: "Отвори избора",
+  final: "Последни секунди",
   "close-vote": "Затвори гласуването",
-  jury: "Стартирай журито",
+  jury: "Стартирай втория поглед",
   "retry-jury": "Повтори неуспешните",
   results: "Покажи резултата",
-  closed: "Затвори събитието",
+  closed: "Приключи събитието",
 };
 
 const actionRunners: Record<ActionId | "seed" | "reset", () => Promise<void>> = {
@@ -421,15 +483,15 @@ function needsConfirm(id: ActionId | "seed" | "reset"): boolean {
 function confirmCopy(id: ActionId | "seed" | "reset"): string {
   switch (id) {
     case "seed":
-      return "Ще бъдат добавени демо участници и идеи, а фазата ще стане „Събиране“.";
+      return "Ще бъдат добавени демо участници и идеи, а фазата ще стане „Споделяме“.";
     case "reset":
       return "Ще бъдат изтрити само демо записите. Кампанията трябва да е маркирана като демо.";
     case "close-collect":
-      return "Събирането на идеи ще спре. Участниците няма да могат да добавят нови.";
+      return "Споделянето на идеи ще спре. Участниците няма да могат да добавят нови.";
     case "final":
       return "Това пуска финалното отброяване и след него гласуването се заключва.";
     case "close-vote":
-      return "Гласуването ще бъде затворено и изборът на хората ще бъде запазен.";
+      return "Гласуването ще бъде затворено и изборът на участниците ще бъде запазен.";
     case "closed":
       return "Събитието ще бъде затворено. Резултатът остава видим.";
     default:
@@ -450,7 +512,7 @@ function recommendedAction(
       return { id: "close-collect", label: ACTION_LABEL["close-collect"] };
     case "ANALYZING":
       if (analysisReady) return { id: "vote", label: ACTION_LABEL.vote };
-      if (analysisRunning) return { id: "analysis", label: "Анализът тече", disabled: true };
+      if (analysisRunning) return { id: "analysis", label: "Подреждането тече", disabled: true };
       return { id: "analysis", label: ACTION_LABEL.analysis };
     case "VOTING":
       return { id: "final", label: ACTION_LABEL.final };

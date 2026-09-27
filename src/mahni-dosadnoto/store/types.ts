@@ -27,6 +27,10 @@ export type PublicLiveSnapshot = {
   wildcardCount: number;
   juryReady: number | null;
   juryTotal: number | null;
+  juryLenses: Array<{
+    judge: JudgeType;
+    status: "pending" | "running" | "succeeded" | "failed" | "missing";
+  }> | null;
 };
 
 export type ParticipantContext = {

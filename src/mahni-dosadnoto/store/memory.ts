@@ -23,7 +23,7 @@ import {
   interestAllowed,
   votingAllowed,
 } from "../state-machine";
-import { assertJuryCompleteForResults, summarizeJuryProgress } from "../jury-status";
+import { assertJuryCompleteForResults, publicJuryLenses, summarizeJuryProgress } from "../jury-status";
 import { hashSessionToken } from "../session-crypto";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validation";
 import { validateClusteringAgainstIdeas } from "../validation";
@@ -373,6 +373,7 @@ export class MemoryMahniStore implements MahniStore {
       wildcardCount: storedThemes.filter((theme) => theme.isAiWildcard).length,
       juryReady: campaign.phase === "AI_JURY" ? juryProgress.succeeded : null,
       juryTotal: campaign.phase === "AI_JURY" ? juryProgress.total : null,
+      juryLenses: publicJuryLenses(campaign.phase, juryProgress),
     };
   }
 

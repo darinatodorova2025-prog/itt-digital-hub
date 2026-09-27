@@ -20,7 +20,7 @@ import {
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../../validation";
 import { validateClusteringAgainstIdeas } from "../../validation";
 import { aggregateAiJury, overlapCount, rankHumanThemes } from "../../tie-break";
-import { assertJuryCompleteForResults, summarizeJuryProgress } from "../../jury-status";
+import { assertJuryCompleteForResults, publicJuryLenses, summarizeJuryProgress } from "../../jury-status";
 import { sanitizePlainText } from "../../sanitize";
 import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "../types";
 import {
@@ -398,6 +398,7 @@ export class SupabaseMahniStore implements MahniStore {
       wildcardCount: themes.filter((theme) => theme.isAiWildcard).length,
       juryReady: campaign.phase === "AI_JURY" ? juryProgress.succeeded : null,
       juryTotal: campaign.phase === "AI_JURY" ? juryProgress.total : null,
+      juryLenses: publicJuryLenses(campaign.phase, juryProgress),
     };
   }
 

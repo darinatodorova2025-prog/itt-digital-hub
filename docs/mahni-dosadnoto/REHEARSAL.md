@@ -18,7 +18,7 @@
 8. **Final countdown** — „Финален отброяване“ (~45s). Live shows countdown.
 9. **Close human voting** — Wait for auto-advance after countdown or press „Затвори гласуване“ → locks human result → `AI_JURY`.
 10. **Run AI Jury** — „AI Jury“ (3 independent judges). Admin shows `2/3 AI judges complete` until all succeed. Use **Retry failed AI judges** after rate limits; „Покажи резултат“ stays disabled until 3/3.
-11. **Reveal** — „Покажи резултат“ → `RESULTS` (only when jury complete). Live shows HORATA vs AI.
+11. **Reveal** — „Покажи резултата“ → `RESULTS`. Live shows „Какво излезе напред“: participant priorities first, independent AI perspective second.
 12. **Reset demo** — „Reset demo only“ (never deletes non-demo production data).
 
 ## QR code for production cards

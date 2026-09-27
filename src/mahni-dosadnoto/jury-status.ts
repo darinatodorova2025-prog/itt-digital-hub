@@ -1,4 +1,4 @@
-import { JUDGE_TYPES, type AiJuryRun, type JudgeType } from "./types";
+import { JUDGE_TYPES, type AiJuryRun, type EventPhase, type JudgeType } from "./types";
 
 export type JuryJudgeStatus = {
   judge: JudgeType;
@@ -44,6 +44,14 @@ export function assertJuryCompleteForResults(progress: JuryProgress): void {
     .map((j) => `${j.judge}:${j.status}`)
     .join(", ");
   throw new Error(`jury_incomplete (${progress.succeeded}/${progress.total} succeeded; pending: ${pending})`);
+}
+
+export function publicJuryLenses(phase: EventPhase, progress: JuryProgress) {
+  if (phase !== "AI_JURY") return null;
+  return progress.judges.map((judge) => ({
+    judge: judge.judge,
+    status: judge.status,
+  }));
 }
 
 export function judgeLabel(judge: JudgeType): string {
