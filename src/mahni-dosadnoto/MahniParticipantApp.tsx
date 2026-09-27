@@ -15,7 +15,7 @@ import { useCountdown } from "@/mahni-dosadnoto/use-countdown";
 import type { PublicLiveSnapshot } from "@/mahni-dosadnoto/store/types";
 import type { ParticipantInitialContext } from "@/mahni-dosadnoto/server/initial-state";
 import { EventLockup } from "@/mahni-dosadnoto/brand";
-import { CheckIcon, ConvergeIcon, PlaneIcon, StageGlyph } from "@/mahni-dosadnoto/icons";
+import { CheckIcon, ConvergeIcon, PlaneIcon } from "@/mahni-dosadnoto/icons";
 import { ParticipantStage, StageProgress } from "@/mahni-dosadnoto/journey";
 import { GroupingDiagram, ThemeEquation } from "@/mahni-dosadnoto/grouping";
 import { LensBoard } from "@/mahni-dosadnoto/lenses";
@@ -25,6 +25,9 @@ type Context = ParticipantInitialContext;
 type View = "register" | "ideas" | "analyzing" | "vote" | "finalizing" | "jury" | "results" | "waiting";
 
 const THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-river.webp", "/event/mahni/thumb-aerial.webp"];
+
+/** Matches the participant idea-body limit in validation.ts. */
+const IDEA_MAX = 500;
 
 async function fetchContext(): Promise<Context> {
   const res = await fetch("/api/mahni-dosadnoto/context", { cache: "no-store" });
@@ -272,7 +275,7 @@ export function MahniParticipantApp({
 
   return (
     <div className={view === "results" ? "md-app is-results" : "md-app"}>
-      <EventHeader stage={ctx.participant ? stage : null} showTitle={Boolean(ctx.participant)} />
+      <EventHeader stage={ctx.participant ? stage : null} showTitle />
       {error ? (
         <p className="md-status is-error" role="status">
           {error}
@@ -294,11 +297,11 @@ export function MahniParticipantApp({
 
       {ctx && view === "ideas" && justSent ? (
         <section className="md-reveal md-confirm">
-          <span className="md-confirm-mark" aria-hidden="true">
-            <PlaneIcon />
-          </span>
+          <div className="md-confirm-art" aria-hidden="true">
+            <PlaneIcon size={72} />
+          </div>
           <h1 className="md-display">Идеята е добавена</h1>
-          <p className="md-support">Благодарим. Помагате да открием реалните възможности за подобрение.</p>
+          <p className="md-support">Благодарим! Помагате да открием реалните възможности за подобрение.</p>
           <p className="md-muted">Идеи от вас: {ctx.ideaCount}</p>
           <button
             type="button"
@@ -310,7 +313,7 @@ export function MahniParticipantApp({
           >
             + Имам още една
           </button>
-          <p className="md-next">Когато споделянето приключи, идеите се събират в общи теми.</p>
+          <p className="md-next">Към следващата стъпка — когато споделянето приключи, идеите се събират в общи теми.</p>
         </section>
       ) : null}
 
@@ -318,7 +321,7 @@ export function MahniParticipantApp({
         <section className="md-reveal">
           <h1 className="md-question md-display">Какво ви губи време?</h1>
           <p className="md-support">
-            Опишете повтаряща се задача, досаден процес или нещо от работата, което може да се прави по-лесно.
+            Опишете задача, процес или действие, което ви дразни, повтаря се или може да се прави по-лесно.
           </p>
           <form
             className="md-form"
@@ -329,15 +332,20 @@ export function MahniParticipantApp({
           >
             <label className="md-field">
               <span className="sr-only">Вашата идея</span>
-              <textarea
-                id={formId}
-                className="md-textarea is-hero"
-                value={ideaBody}
-                maxLength={4000}
-                rows={7}
-                placeholder="Опишете го с няколко изречения"
-                onChange={(event) => setIdeaBody(event.target.value)}
-              />
+              <span className="md-textarea-wrap">
+                <textarea
+                  id={formId}
+                  className="md-textarea is-hero"
+                  value={ideaBody}
+                  maxLength={IDEA_MAX}
+                  rows={7}
+                  placeholder="Опишете го с няколко изречения…"
+                  onChange={(event) => setIdeaBody(event.target.value)}
+                />
+                <span className="md-char-count" aria-hidden="true">
+                  {ideaBody.length}/{IDEA_MAX}
+                </span>
+              </span>
             </label>
             {!ideaBody ? (
               <p className="md-hint">Например: често ръчно събираме данни от ведомости в различни формати.</p>
@@ -377,7 +385,7 @@ export function MahniParticipantApp({
             extra={snapshot?.wildcardCount ?? 0}
             ready={(snapshot?.groupedThemeCount ?? 0) > 0}
           />
-          <p className="md-next">След това ще изберете кои теми са най-важни.</p>
+          <p className="md-next">Това може да отнеме няколко минути. След това ще изберете кои теми са най-важни.</p>
         </section>
       ) : null}
 
@@ -423,7 +431,7 @@ export function MahniParticipantApp({
                       disabled={voted || ctx.votesRemaining <= 0 || pending === theme.id}
                       onClick={() => void vote(theme.id)}
                     >
-                      {voted ? <CheckIcon size={18} /> : null}
+                      {voted ? <CheckIcon size={18} /> : <span className="md-pick-plus" aria-hidden="true">+</span>}
                     </button>
                   </div>
                   {theme.description ? (
@@ -466,7 +474,9 @@ export function MahniParticipantApp({
               : "Хората вече избраха важните теми."}
           </h1>
           <p className="md-support">ИИ разглежда същите теми независимо.</p>
-          <LensBoard lenses={snapshot?.juryLenses ?? null} />
+          <div className="md-lenses-row">
+            <LensBoard lenses={snapshot?.juryLenses ?? null} />
+          </div>
           <p className="md-next">След това показваме какво излезе напред.</p>
         </section>
       ) : null}
@@ -489,8 +499,9 @@ function EventHeader({ stage, showTitle }: { stage: StoryStage | null; showTitle
     <header className="md-bar">
       <div className="md-bar-brand">
         <EventLockup height={28} />
-        {showTitle ? <p className="md-bar-event">Махни досадното</p> : null}
       </div>
+      {showTitle && !stage ? <p className="md-bar-event md-bar-event-right">Махни досадното</p> : null}
+      {showTitle && stage ? <p className="md-bar-event">Махни досадното</p> : null}
       {stage ? <ParticipantStage stage={stage} /> : null}
       {stage ? <StageProgress stage={stage} /> : null}
     </header>
@@ -499,8 +510,8 @@ function EventHeader({ stage, showTitle }: { stage: StoryStage | null; showTitle
 
 function Welcome({ onStart }: { onStart: () => void }) {
   return (
-    <section className="md-reveal">
-      <h1 className="md-display md-welcome-title">Махни досадното</h1>
+    <section className="md-reveal md-welcome">
+      <h1 className="md-display md-welcome-event">Махни досадното</h1>
       <div className="md-photo">
         <Image
           src="/event/mahni/welcome.webp"
@@ -508,26 +519,36 @@ function Welcome({ onStart }: { onStart: () => void }) {
           fill
           sizes="(max-width: 840px) 100vw, 430px"
           className="md-photo-img"
+          priority
         />
       </div>
       <h2 className="md-question md-display">Какво ви губи време?</h2>
       <p className="md-support">Споделете реални проблеми и повтарящо се търкане от работата ви.</p>
-      <ol className="md-beats">
+      <ol className="md-facts">
         <li>
-          <StageGlyph stage={1} size={18} />
-          <span>Споделяте идея.</span>
+          <b>01</b>
+          <span>
+            <strong>Споделяте идея.</strong> Описвате какво ви губи време или може да се прави по-добре.
+          </span>
         </li>
         <li>
-          <StageGlyph stage={3} size={18} />
-          <span>Заедно избираме важните теми.</span>
+          <b>02</b>
+          <span>
+            <strong>Заедно избираме важните теми.</strong> Гласувате за проблемите, които си струва да се решат.
+          </span>
         </li>
         <li>
-          <StageGlyph stage={5} size={18} />
-          <span>Резултатите водят до реален разговор.</span>
+          <b>03</b>
+          <span>
+            <strong>Резултатите водят до реален разговор.</strong> От резултат към действие.
+          </span>
         </li>
       </ol>
       <button type="button" className="md-btn" onClick={onStart}>
         Започваме
+      </button>
+      <button type="button" className="md-text-btn md-welcome-login" onClick={onStart}>
+        Вече участвате? Вход
       </button>
     </section>
   );
@@ -690,6 +711,9 @@ function ResultsView({
     <section className="md-reveal md-result">
       <header className="md-result-hero">
         <h1 className="md-display">Какво излезе напред</h1>
+        <p className="md-result-intro">
+          Участниците определиха най-важните теми. ИИ дава независим втори поглед върху същите теми.
+        </p>
         <div className="md-result-hero-photo" aria-hidden="true">
           <Image src="/event/mahni/aerial.webp" alt="" fill sizes="(max-width: 840px) 100vw, 1088px" className="md-result-hero-img" />
         </div>

@@ -17,7 +17,7 @@ export const registrationSchema = z.object({
 export type RegistrationInput = z.infer<typeof registrationSchema>;
 
 export const ideaSubmitSchema = z.object({
-  body: text(4000),
+  body: text(500),
   frequency: z.enum(IDEA_FREQUENCIES).optional(),
   idempotencyKey: z.string().trim().min(8).max(64).optional(),
 });
