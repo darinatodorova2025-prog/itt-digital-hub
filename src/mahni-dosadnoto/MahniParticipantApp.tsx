@@ -698,9 +698,16 @@ function ResultsView({
         <section className="md-result-primary">
           <h2 className="md-result-primary-title">Изборът на участниците</h2>
           <ol className="md-rank">
-            {snapshot.humanTop3.map((row) => (
+            {snapshot.humanTop3.map((row, index) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
                 <b>{String(row.rank).padStart(2, "0")}</b>
+                <Image
+                  src={THUMBS[index % THUMBS.length]!}
+                  alt=""
+                  width={72}
+                  height={72}
+                  className="md-rank-photo"
+                />
                 <span>
                   {row.title}
                   {aiIds.has(row.id) ? <em>Общ приоритет</em> : null}
