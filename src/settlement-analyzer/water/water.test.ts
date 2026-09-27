@@ -52,7 +52,7 @@ describe('предпроектен ВиК анализ', () => {
     expect(summary.differenceM).toBe(60)
     expect(summary.minM).toBe(180)
     expect(summary.maxM).toBe(240)
-    expect(summary.resolutionM).toBe(90)
+    expect(summary.resolutionM).toBe(25)
     expect(summarizeTerrain([{ lat: 42, lon: 25, elevationM: 10 }], null).status).toBe('unavailable')
   })
 

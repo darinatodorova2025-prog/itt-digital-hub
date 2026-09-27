@@ -1,7 +1,9 @@
-import { mkdir, readFile, readdir, writeFile, access } from 'node:fs/promises'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { bbox } from '@turf/turf'
 import { PACK_EKATTE } from './settlement-pack-list'
 import registryJson from '../src/settlement-analyzer/data/settlements.json'
+import type { RawGeodata } from '../src/settlement-analyzer/types'
 
 interface RegistryRow {
   ekatte: string
@@ -27,6 +29,39 @@ const registry = registryJson as RegistryRow[]
 
 function roundNumbers(_key: string, value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 1_000_000) / 1_000_000 : value
+}
+
+async function attachTerrain(row: RegistryRow, raw: RawGeodata) {
+  if (raw.terrainSamples && raw.terrainSamples.length >= 4 && raw.terrainSourceName) return raw
+  const { analyzeSettlement } = await import('../src/settlement-analyzer/services/analysis')
+  const { readElevationGrid } = await import('../src/settlement-analyzer/water/elevation-source')
+  const settlement = {
+    placeId: Number(row.ekatte),
+    osmType: 'node' as const,
+    osmId: 0,
+    lat: row.lat,
+    lon: row.lon,
+    displayName: row.name,
+    name: row.name,
+    municipality: row.municipality,
+    region: row.region,
+    country: 'България',
+    category: 'place',
+    type: row.type,
+    boundingBox: [row.lat - 0.05, row.lat + 0.05, row.lon - 0.05, row.lon + 0.05] as [number, number, number, number],
+    ekatte: row.ekatte,
+  }
+  const analysis = analyzeSettlement(settlement, raw)
+  const [west, south, east, north] = bbox(analysis.boundary)
+  const read = await readElevationGrid(west, south, east, north)
+  if (!read) {
+    console.warn(`Terrain unavailable for ${row.name}`)
+    return raw
+  }
+  raw.terrainSamples = read.samples
+  raw.terrainSourceName = read.sourceName
+  raw.terrainResolutionM = read.resolutionM
+  return raw
 }
 
 async function writeManifest() {
@@ -59,8 +94,6 @@ async function writeManifest() {
 }
 
 async function main() {
-      const { packRadiusForSettlement } = await import('../src/settlement-analyzer/services/analysis')
-  const { downloadPackGeodata } = await import('../src/settlement-analyzer/services/overpass')
   await mkdir(OUT_DIR, { recursive: true })
   const failed: string[] = []
 
@@ -72,17 +105,34 @@ async function main() {
       continue
     }
     const file = path.join(OUT_DIR, `${ekatte}.json`)
+    let existing: { raw: RawGeodata; radiusM: number; fetchedAt: string; sourceEndpoint?: string } | null = null
     try {
-      await access(file)
-      console.log(`Skip existing pack ${row.name} (${ekatte})`)
-      continue
+      existing = JSON.parse(await readFile(file, 'utf8')) as { raw: RawGeodata; radiusM: number; fetchedAt: string; sourceEndpoint?: string }
     } catch {
-      // File is missing; download it.
+      existing = null
+    }
+    if (existing?.raw) {
+      if (existing.raw.terrainSamples && existing.raw.terrainSamples.length >= 4) {
+        console.log(`Skip complete pack ${row.name} (${ekatte})`)
+        continue
+      }
+      console.log(`Adding terrain to ${row.name}`)
+      existing.raw = await attachTerrain(row, existing.raw)
+      const body = JSON.stringify({ ...existing, ekatte, name: row.name }, roundNumbers)
+      await writeFile(file, body)
+      console.log(`${row.name} terrain updated`)
+      continue
     }
     try {
-      const radiusM = packRadiusForSettlement({ type: row.type })
-      const raw = await downloadPackGeodata(row.lat, row.lon, radiusM, () => {})
+      const { analysisRadiusForSettlement } = await import('../src/settlement-analyzer/services/analysis')
+      const { downloadPackGeodata } = await import('../src/settlement-analyzer/services/overpass')
+      const radiusM = analysisRadiusForSettlement({ type: row.type })
+      console.log(`Downloading ${row.name} (${ekatte}) radius ${radiusM}`)
+      const raw = await downloadPackGeodata(row.lat, row.lon, radiusM, (progress) => {
+        if (progress.status === 'start') console.log(`  ${row.name}: ${progress.part}`)
+      })
       raw.source = 'pack'
+      await attachTerrain(row, raw)
       const payload = {
         ekatte,
         name: row.name,

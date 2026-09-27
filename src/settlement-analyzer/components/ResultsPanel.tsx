@@ -12,7 +12,7 @@ import {
   Warehouse,
   X,
 } from 'lucide-react'
-import { formatAreaHa, formatAreaM2, formatDate, formatDistanceKm, formatNumber, formatPercent } from '../lib/format'
+import { formatAreaHa, formatAreaM2, formatDate, formatNumber, formatPercent } from '../lib/format'
 import type { AnalysisResult } from '../types'
 import { DonutChart } from './DonutChart'
 import type { Locale } from '@/lib/i18n'
@@ -77,11 +77,11 @@ export function ResultsPanel({ locale, mode, result, terrain, terrainState, edit
                     <tr key={category.key}>
                       <td><span className="table-swatch" style={{ background: category.color }} />{copy.categories[category.key]}</td>
                       <td>{formatNumber(category.areaM2, 0, locale)}</td>
-                      <td>{formatNumber(category.areaHa, 2, locale)}</td>
+                      <td>{formatNumber(category.areaHa, 1, locale)}</td>
                       <td>{formatNumber(category.percent, 1, locale)}%</td>
                     </tr>
                   ))}
-                  <tr className="total-row"><td>{copy.total}</td><td>{formatNumber(result.analysisAreaM2, 0, locale)}</td><td>{formatNumber(result.analysisAreaHa, 2, locale)}</td><td>{formatNumber(totalPercent, 1, locale)}%</td></tr>
+                  <tr className="total-row"><td>{copy.total}</td><td>{formatNumber(result.analysisAreaM2, 0, locale)}</td><td>{formatNumber(result.analysisAreaHa, 1, locale)}</td><td>{formatNumber(totalPercent, 1, locale)}%</td></tr>
                 </tbody>
               </table>
             </div>
@@ -90,16 +90,18 @@ export function ResultsPanel({ locale, mode, result, terrain, terrainState, edit
           </details>
         </section>
 
-        <section className="result-section">
-          <h3>{copy.kpis}</h3>
-          <div className="kpi-grid">
-            <Kpi icon={<SquareDashed />} label={copy.analysedArea} value={formatAreaHa(result.analysisAreaHa, locale)} secondary={`${formatNumber(result.analysisAreaKm2, 3, locale)} ${copy.km2}`} />
-            <Kpi icon={<Route />} label={copy.roadNetwork} value={formatDistanceKm(result.roadMetrics.lengthKm, locale)} secondary={`${formatNumber(result.roadMetrics.densityKmPerKm2, 2, locale)} ${copy.kmPerKm2}`} />
-            <Kpi icon={<Building2 />} label={copy.buildings} value={formatNumber(result.buildingMetrics.total, 0, locale)} secondary={`${formatNumber(result.buildingMetrics.perHa, 2, locale)} ${copy.perHa}`} />
-            <Kpi icon={<Warehouse />} label={copy.buildingFootprint} value={formatAreaM2(result.buildingMetrics.footprintM2, locale)} secondary={`${copy.builtUp} ${formatPercent(result.buildingMetrics.builtUpPercent, locale)}`} />
-            <Kpi icon={<Gauge />} label={copy.averageBuilding} value={formatAreaM2(result.buildingMetrics.averageFootprintM2, locale)} secondary={`${formatNumber(result.buildingMetrics.residential, 0, locale)} ${copy.likelyResidential}`} />
-            <Kpi icon={<MapPinned />} label={copy.pois} value={formatNumber(result.poiCount, 0, locale)} secondary={`${formatNumber(result.buildingMetrics.unknown, 0, locale)} ${copy.unknownBuildings}`} />
-          </div>
+        <section className="result-section compact-details">
+          <details>
+            <summary>{copy.kpis}</summary>
+            <div className="kpi-grid">
+              <Kpi icon={<SquareDashed />} label={copy.analysedArea} value={formatAreaHa(result.analysisAreaHa, locale)} secondary={`${formatNumber(result.analysisAreaKm2, 1, locale)} ${copy.km2}`} />
+              <Kpi icon={<Route />} label={copy.roadNetwork} value={`${formatNumber(result.roadMetrics.lengthKm, result.roadMetrics.lengthKm >= 10 ? 0 : 1, locale)} ${copy.km}`} secondary={`${formatNumber(result.roadMetrics.densityKmPerKm2, 1, locale)} ${copy.kmPerKm2}`} />
+              <Kpi icon={<Building2 />} label={copy.buildings} value={formatNumber(result.buildingMetrics.total, 0, locale)} secondary={`${formatNumber(result.buildingMetrics.perHa, 1, locale)} ${copy.perHa}`} />
+              <Kpi icon={<Warehouse />} label={copy.buildingFootprint} value={formatAreaM2(result.buildingMetrics.footprintM2, locale)} secondary={`${copy.builtUp} ${formatPercent(result.buildingMetrics.builtUpPercent, locale)}`} />
+              <Kpi icon={<Gauge />} label={copy.averageBuilding} value={formatAreaM2(result.buildingMetrics.averageFootprintM2, locale)} secondary={`${formatNumber(result.buildingMetrics.residential, 0, locale)} ${copy.likelyResidential}`} />
+              <Kpi icon={<MapPinned />} label={copy.pois} value={formatNumber(result.poiCount, 0, locale)} secondary={`${formatNumber(result.buildingMetrics.unknown, 0, locale)} ${copy.unknownBuildings}`} />
+            </div>
+          </details>
         </section>
 
         <section className="result-section compact-details">

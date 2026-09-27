@@ -1,6 +1,28 @@
 {
-  "generatedAt": "2026-09-20T13:10:24.356Z",
+  "generatedAt": "2026-09-27T06:00:27.087Z",
   "packs": [
+    {
+      "ekatte": "04964",
+      "name": "Боженците",
+      "municipality": "Габрово",
+      "region": "Габрово",
+      "type": "village",
+      "lat": 42.872655,
+      "lon": 25.424608,
+      "radiusM": 2800,
+      "fetchedAt": "2026-09-27T05:51:02.690Z"
+    },
+    {
+      "ekatte": "35167",
+      "name": "Казанлък",
+      "municipality": "Казанлък",
+      "region": "Стара Загора",
+      "type": "city",
+      "lat": 42.618344,
+      "lon": 25.400625,
+      "radiusM": 6000,
+      "fetchedAt": "2026-09-27T05:48:43.517Z"
+    },
     {
       "ekatte": "43952",
       "name": "Ловеч",
@@ -11,6 +33,50 @@
       "lon": 24.714191,
       "radiusM": 6000,
       "fetchedAt": "2026-09-20T13:10:24.356Z"
+    },
+    {
+      "ekatte": "49014",
+      "name": "Момчиловци",
+      "municipality": "Смолян",
+      "region": "Смолян",
+      "type": "village",
+      "lat": 41.657378,
+      "lon": 24.77163,
+      "radiusM": 2800,
+      "fetchedAt": "2026-09-27T06:00:16.029Z"
+    },
+    {
+      "ekatte": "56784",
+      "name": "Пловдив",
+      "municipality": "Пловдив",
+      "region": "Пловдив",
+      "type": "city",
+      "lat": 42.135408,
+      "lon": 24.74529,
+      "radiusM": 6000,
+      "fetchedAt": "2026-09-27T05:47:23.081Z"
+    },
+    {
+      "ekatte": "65927",
+      "name": "Севлиево",
+      "municipality": "Севлиево",
+      "region": "Габрово",
+      "type": "town",
+      "lat": 43.02669,
+      "lon": 25.103401,
+      "radiusM": 4400,
+      "fetchedAt": "2026-09-27T05:49:50.507Z"
+    },
+    {
+      "ekatte": "68850",
+      "name": "Стара Загора",
+      "municipality": "Стара Загора",
+      "region": "Стара Загора",
+      "type": "city",
+      "lat": 42.425777,
+      "lon": 25.634464,
+      "radiusM": 6000,
+      "fetchedAt": "2026-09-27T05:40:49.168Z"
     }
   ]
 }

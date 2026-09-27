@@ -190,7 +190,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .map-note { margin: 0; padding: 6px 8px; background: rgb(255 255 255 / .94); border: 1px solid var(--sa-line); border-radius: 8px; color: var(--sa-ink); font-size: 12px; line-height: 1.35; }
 .mode-bar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
 .mode-bar__item { min-height: 36px; padding: 0 10px; border: 1px solid var(--sa-line); border-radius: 999px; background: #fff; color: var(--sa-ink); font: inherit; font-size: 13px; cursor: pointer; }
-.mode-bar__item--active { background: var(--sa-marine, #040e31); color: #fff; border-color: transparent; }
+/* Beat `.sa-root button { color: inherit }`, otherwise the selected mode label matches its dark fill. */
+.sa-root .mode-bar__item--active { background: var(--sa-marine, #040e31); color: #fff; border-color: transparent; }
 .engineering { margin: 8px 0 12px; }
 .engineering__lead { margin: 0 0 10px; color: var(--sa-ink-2); line-height: 1.45; }
 .engineering__kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

@@ -41,7 +41,7 @@ export interface TerrainSummary {
   cells: TerrainCell[]
 }
 
-export const TERRAIN_SOURCE = { sourceName: 'Copernicus DEM GLO-90', resolutionM: 90 } as const
+export const TERRAIN_SOURCE = { sourceName: 'EU-DEM 25 m', resolutionM: 25 } as const
 
 export function elevationGrid(west: number, south: number, east: number, north: number, maxPoints = 64) {
   const latSpan = Math.max(north - south, 0.001)

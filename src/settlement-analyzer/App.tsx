@@ -122,6 +122,18 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       setTerrainState('idle')
       return
     }
+    const embedded = rawData?.terrainSamples
+    if (embedded && embedded.length >= 4) {
+      const inside = samplesInsideBoundary(embedded, result.boundary)
+      const summary = summarizeTerrain(inside, rawData?.fetchedAt ?? null)
+      if (inside.length >= 4) {
+        if (rawData?.terrainSourceName) summary.sourceName = rawData.terrainSourceName
+        if (rawData?.terrainResolutionM) summary.resolutionM = rawData.terrainResolutionM
+        setTerrain(summary)
+        setTerrainState(summary.status)
+        return
+      }
+    }
     const [west, south, east, north] = bbox(result.boundary)
     const controller = new AbortController()
     setTerrainState('loading')
@@ -132,9 +144,11 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       signal: controller.signal,
     }).then(async (response) => {
       if (!response.ok) throw new Error('terrain')
-      const payload = await response.json() as { fetchedAt?: string; samples?: ElevationSample[] }
+      const payload = await response.json() as { fetchedAt?: string; sourceName?: string; resolutionM?: number; samples?: ElevationSample[] }
       const inside = samplesInsideBoundary(payload.samples ?? [], result.boundary)
       const summary = summarizeTerrain(inside, payload.fetchedAt ?? null)
+      if (payload.sourceName) summary.sourceName = payload.sourceName
+      if (payload.resolutionM) summary.resolutionM = payload.resolutionM
       setTerrain(summary)
       setTerrainState(summary.status)
     }).catch((error: unknown) => {
@@ -143,7 +157,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       setTerrainState('unavailable')
     })
     return () => controller.abort()
-  }, [result])
+  }, [rawData, result])
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 820px)')

@@ -40,6 +40,9 @@ export interface RawGeodata {
   fetchedAt?: string
   source?: 'overpass' | 'pack'
   queryRadiusM?: number
+  terrainSamples?: Array<{ lat: number; lon: number; elevationM: number; dLat?: number; dLon?: number }>
+  terrainSourceName?: string
+  terrainResolutionM?: number
 }
 
 export interface CategoryResult {
