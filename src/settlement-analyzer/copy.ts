@@ -11,8 +11,8 @@ export const settlementAnalyzer = {
   name: { bg: "Предпроектен ВиК анализ", en: "Preliminary Water Infrastructure Analysis" } satisfies L,
   tagline: { bg: "Начална пространствена подготовка", en: "Initial spatial preparation" } satisfies L,
   metaDescription: {
-    bg: "Автоматичен предварителен анализ на български населени места с отворени географски данни.",
-    en: "Automatic preliminary analysis of Bulgarian settlements using open geographic data.",
+    bg: "Предварителна пространствена картина на населено място преди подробен ВиК проект.",
+    en: "A preliminary spatial picture of a settlement before detailed water-infrastructure design.",
   } satisfies L,
   tools: { bg: "Инструменти", en: "Tools" } satisfies L,
   newAnalysis: { bg: "Нов анализ", en: "New analysis" } satisfies L,
