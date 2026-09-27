@@ -251,12 +251,17 @@ export class MemoryMahniStore implements MahniStore {
 
   async getParticipantContext(sessionToken: string | null): Promise<ParticipantContext> {
     const participant = sessionToken ? this.resolveSession(sessionToken) : null;
-    if (!participant) return { participant: null, ideaCount: 0, votesUsed: 0, interestThemeIds: [] };
+    if (!participant) {
+      return { participant: null, ideaCount: 0, votesUsed: 0, votedThemeIds: [], interestThemeIds: [], followupThemeIds: [] };
+    }
+    const votes = this.votesForParticipant(participant.id);
     return {
       participant,
       ideaCount: [...this.ideas.values()].filter((i) => i.participantId === participant.id).length,
-      votesUsed: this.votesForParticipant(participant.id).length,
+      votesUsed: votes.length,
+      votedThemeIds: votes.map((vote) => vote.themeId),
       interestThemeIds: [...this.interests.values()].filter((i) => i.participantId === participant.id).map((i) => i.themeId),
+      followupThemeIds: [...this.followups.values()].filter((f) => f.participantId === participant.id).map((f) => f.themeId),
     };
   }
 
@@ -319,6 +324,7 @@ export class MemoryMahniStore implements MahniStore {
     const ranked = rankHumanThemes(this.buildThemeScores());
     const humanTop3 = ranked.slice(0, 3).map((r, idx) => ({
       rank: idx + 1,
+      id: r.theme.id,
       title: r.theme.title,
       isAiWildcard: r.theme.isAiWildcard,
     }));
@@ -329,6 +335,7 @@ export class MemoryMahniStore implements MahniStore {
     );
     const aiTop3 = aiAgg.slice(0, 3).map((r, idx) => ({
       rank: idx + 1,
+      id: r.theme.id,
       title: r.theme.title,
       isAiWildcard: r.theme.isAiWildcard,
     }));
@@ -336,6 +343,9 @@ export class MemoryMahniStore implements MahniStore {
     if (campaign.phase === "FINALIZING" && campaign.votingEndsAt) {
       countdownSeconds = Math.max(0, Math.ceil((Date.parse(campaign.votingEndsAt) - Date.now()) / 1000));
     }
+    const storedThemes = [...this.themes.values()];
+    const juryProgress = summarizeJuryProgress(await this.listJuryResults());
+    const showResults = campaign.phase === "RESULTS" || campaign.phase === "CLOSED";
     return {
       phase: campaign.phase,
       title: campaign.title,
@@ -351,15 +361,18 @@ export class MemoryMahniStore implements MahniStore {
       themes: campaign.phase === "VOTING" || campaign.phase === "FINALIZING" || campaign.phase === "RESULTS" || campaign.phase === "CLOSED" ? themes : [],
       votingEndsAt: campaign.votingEndsAt,
       countdownSeconds,
-      humanTop3: campaign.phase === "RESULTS" || campaign.phase === "CLOSED" ? humanTop3 : [],
-      aiTop3: campaign.phase === "RESULTS" || campaign.phase === "CLOSED" ? aiTop3 : [],
-      overlap:
-        campaign.phase === "RESULTS" || campaign.phase === "CLOSED"
-          ? overlapCount(
-              ranked.slice(0, 3).map((r) => r.theme.id),
-              aiAgg.slice(0, 3).map((r) => r.themeId),
-            )
-          : null,
+      humanTop3: showResults ? humanTop3 : [],
+      aiTop3: showResults ? aiTop3 : [],
+      overlap: showResults
+        ? overlapCount(
+            ranked.slice(0, 3).map((r) => r.theme.id),
+            aiAgg.slice(0, 3).map((r) => r.themeId),
+          )
+        : null,
+      groupedThemeCount: storedThemes.filter((theme) => !theme.isAiWildcard).length,
+      wildcardCount: storedThemes.filter((theme) => theme.isAiWildcard).length,
+      juryReady: campaign.phase === "AI_JURY" ? juryProgress.succeeded : null,
+      juryTotal: campaign.phase === "AI_JURY" ? juryProgress.total : null,
     };
   }
 

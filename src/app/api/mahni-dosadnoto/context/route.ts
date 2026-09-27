@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
     ideaCount: ctx.ideaCount,
     votesUsed: ctx.votesUsed,
     votesRemaining: Math.max(0, 3 - ctx.votesUsed),
+    votedThemeIds: ctx.votedThemeIds,
     interestThemeIds: ctx.interestThemeIds,
+    followupThemeIds: ctx.followupThemeIds,
     });
   } catch (error) {
     return handleStoreError(error);

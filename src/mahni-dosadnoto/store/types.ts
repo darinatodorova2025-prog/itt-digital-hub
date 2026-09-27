@@ -20,16 +20,22 @@ export type PublicLiveSnapshot = {
   }>;
   votingEndsAt: string | null;
   countdownSeconds: number | null;
-  humanTop3: Array<{ rank: number; title: string; isAiWildcard: boolean }>;
-  aiTop3: Array<{ rank: number; title: string; isAiWildcard: boolean }>;
+  humanTop3: Array<{ rank: number; id: string; title: string; isAiWildcard: boolean }>;
+  aiTop3: Array<{ rank: number; id: string; title: string; isAiWildcard: boolean }>;
   overlap: number | null;
+  groupedThemeCount: number;
+  wildcardCount: number;
+  juryReady: number | null;
+  juryTotal: number | null;
 };
 
 export type ParticipantContext = {
   participant: Participant | null;
   ideaCount: number;
   votesUsed: number;
+  votedThemeIds: string[];
   interestThemeIds: string[];
+  followupThemeIds: string[];
 };
 
 export interface MahniStore {

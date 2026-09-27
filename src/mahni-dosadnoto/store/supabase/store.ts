@@ -267,20 +267,28 @@ export class SupabaseMahniStore implements MahniStore {
   }
 
   async getParticipantContext(sessionToken: string | null): Promise<ParticipantContext> {
-    if (!sessionToken) return { participant: null, ideaCount: 0, votesUsed: 0, interestThemeIds: [] };
+    if (!sessionToken) {
+      return { participant: null, ideaCount: 0, votesUsed: 0, votedThemeIds: [], interestThemeIds: [], followupThemeIds: [] };
+    }
     const participant = await this.resolveParticipant(sessionToken);
-    if (!participant) return { participant: null, ideaCount: 0, votesUsed: 0, interestThemeIds: [] };
+    if (!participant) {
+      return { participant: null, ideaCount: 0, votesUsed: 0, votedThemeIds: [], interestThemeIds: [], followupThemeIds: [] };
+    }
     const sb = client();
-    const [{ count: ideaCount }, { count: votesUsed }, { data: interests }] = await Promise.all([
+    const [{ count: ideaCount }, { data: voteRows }, { data: interests }, { data: followups }] = await Promise.all([
       sb.from("md_ideas").select("*", { count: "exact", head: true }).eq("participant_id", participant.id),
-      sb.from("md_votes").select("*", { count: "exact", head: true }).eq("participant_id", participant.id),
+      sb.from("md_votes").select("theme_id").eq("participant_id", participant.id),
       sb.from("md_interest_signals").select("theme_id").eq("participant_id", participant.id),
+      sb.from("md_followup_requests").select("theme_id").eq("participant_id", participant.id),
     ]);
+    const votedThemeIds = (voteRows ?? []).map((row) => String(row.theme_id));
     return {
       participant,
       ideaCount: ideaCount ?? 0,
-      votesUsed: votesUsed ?? 0,
-      interestThemeIds: (interests ?? []).map((r) => String(r.theme_id)),
+      votesUsed: votedThemeIds.length,
+      votedThemeIds,
+      interestThemeIds: (interests ?? []).map((row) => String(row.theme_id)),
+      followupThemeIds: (followups ?? []).map((row) => String(row.theme_id)),
     };
   }
 
@@ -326,6 +334,7 @@ export class SupabaseMahniStore implements MahniStore {
     );
 
     const juryRuns = await this.listJuryResults();
+    const juryProgress = summarizeJuryProgress(juryRuns);
     const juryPicks = juryRuns.flatMap((run) => run.picks.map((p) => ({ themeId: p.themeId, rank: p.rank })));
     const aiAgg = aggregateAiJury(juryPicks, themes);
 
@@ -374,10 +383,10 @@ export class SupabaseMahniStore implements MahniStore {
       votingEndsAt: campaign.votingEndsAt,
       countdownSeconds,
       humanTop3: showResults
-        ? ranked.slice(0, 3).map((r, idx) => ({ rank: idx + 1, title: r.theme.title, isAiWildcard: r.theme.isAiWildcard }))
+        ? ranked.slice(0, 3).map((r, idx) => ({ rank: idx + 1, id: r.theme.id, title: r.theme.title, isAiWildcard: r.theme.isAiWildcard }))
         : [],
       aiTop3: showResults
-        ? aiAgg.slice(0, 3).map((r, idx) => ({ rank: idx + 1, title: r.theme.title, isAiWildcard: r.theme.isAiWildcard }))
+        ? aiAgg.slice(0, 3).map((r, idx) => ({ rank: idx + 1, id: r.theme.id, title: r.theme.title, isAiWildcard: r.theme.isAiWildcard }))
         : [],
       overlap: showResults
         ? overlapCount(
@@ -385,6 +394,10 @@ export class SupabaseMahniStore implements MahniStore {
             aiAgg.slice(0, 3).map((r) => r.themeId),
           )
         : null,
+      groupedThemeCount: themes.filter((theme) => !theme.isAiWildcard).length,
+      wildcardCount: themes.filter((theme) => theme.isAiWildcard).length,
+      juryReady: campaign.phase === "AI_JURY" ? juryProgress.succeeded : null,
+      juryTotal: campaign.phase === "AI_JURY" ? juryProgress.total : null,
     };
   }
 
