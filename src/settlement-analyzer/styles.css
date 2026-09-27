@@ -1,6 +1,7 @@
 /* ITT Digital Hub product tokens for Settlement Analyzer */
 :root {
   --sa-signal: #002cff;
+  --sa-signal-2: #1b3dff;
   --sa-marine: #040e31;
   --sa-tint: #e8edff;
   --sa-line: #dce2ee;
@@ -68,11 +69,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 .app-shell { height: calc(100svh - 5.5rem); min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr); background: var(--sa-paper); }
 
-.button { border: 1px solid var(--sa-line); background: #fff; min-height: 40px; border-radius: var(--sa-radius); display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 14px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 150ms ease; white-space: nowrap; }
-.button:hover:not(:disabled) { border-color: var(--sa-signal); color: var(--sa-signal); background: var(--sa-tint); }
-.button:disabled { opacity: .45; cursor: not-allowed; }
-.button--primary { background: var(--sa-signal); border-color: var(--sa-signal); color: #fff; }
-.sa-root .button--primary:hover:not(:disabled) { background: var(--sa-marine); color: #fff; }
+.sa-root .button { border: 1.5px solid var(--sa-ink); background: #fff; color: var(--sa-ink); min-height: 40px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 14px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 150ms ease; white-space: nowrap; }
+.sa-root .button:hover:not(:disabled) { border-color: var(--sa-signal); color: var(--sa-signal); background: #fff; }
+.sa-root .button:disabled { opacity: .45; cursor: not-allowed; }
+.sa-root .button--primary { background: var(--sa-signal); border-color: var(--sa-signal); color: #fff; }
+.sa-root .button--primary:hover:not(:disabled) { background: var(--sa-signal-2); border-color: var(--sa-signal-2); color: #fff; }
 .new-analysis { min-width: 124px; }
 .info-button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; background: transparent; cursor: pointer; padding: 8px; color: var(--sa-ink-2); }
 .info-button svg { width: 22px; height: 22px; }
@@ -139,8 +140,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   height: 48px;
   min-width: 148px;
   padding: 0 18px;
-  border: 0;
-  border-radius: var(--sa-radius);
+  border: 1.5px solid var(--sa-signal);
+  border-radius: 999px;
   color: #fff;
   background: var(--sa-signal);
   display: flex;
@@ -152,7 +153,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   cursor: pointer;
 }
 .sa-root .analyze-button:hover:not(:disabled) {
-  background: var(--sa-marine);
+  background: var(--sa-signal-2);
+  border-color: var(--sa-signal-2);
   color: #fff;
 }
 .sa-root .analyze-button:disabled {
@@ -189,13 +191,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .map-notes { position: absolute; z-index: 450; left: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; width: min(340px, calc(100% - 96px)); pointer-events: none; }
 .map-note { margin: 0; padding: 6px 8px; background: rgb(255 255 255 / .94); border: 1px solid var(--sa-line); border-radius: 8px; color: var(--sa-ink); font-size: 12px; line-height: 1.35; }
 .mode-bar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
-.mode-bar__item { min-height: 36px; padding: 0 10px; border: 1px solid var(--sa-line); border-radius: 999px; background: #fff; color: var(--sa-ink); font: inherit; font-size: 13px; cursor: pointer; }
-/* Beat `.sa-root button { color: inherit }`, otherwise the selected mode label matches its dark fill. */
-.sa-root .mode-bar__item--active { background: var(--sa-marine, #040e31); color: #fff; border-color: transparent; }
+.sa-root .mode-bar__item { min-height: 36px; padding: 0 14px; border: 1.5px solid var(--sa-line); border-radius: 999px; background: #fff; color: var(--sa-ink); font: inherit; font-size: 13px; cursor: pointer; }
+.sa-root .mode-bar__item:hover { border-color: var(--sa-ink); }
+.sa-root .mode-bar__item--active { background: var(--sa-paper); color: var(--sa-ink); border: 1.5px dashed var(--sa-signal); font-weight: 600; }
 .engineering { margin: 8px 0 12px; }
 .engineering__lead { margin: 0 0 10px; color: var(--sa-ink-2); line-height: 1.45; }
 .engineering__kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.engineering__kpi { padding: 8px 10px; border: 1px solid var(--sa-line); border-radius: 8px; background: #f7f8f4; }
+.engineering__kpi { padding: 8px 10px; border: 1px solid var(--sa-line); border-radius: 8px; background: var(--sa-paper); }
 .engineering__kpi small { display: block; color: var(--sa-ink-3); font-size: 12px; }
 .engineering__kpi strong { display: block; margin-top: 2px; font-size: 16px; }
 .engineering__terrain { margin: 10px 0 0; color: var(--sa-ink-2); font-size: 13px; line-height: 1.45; }
@@ -295,7 +297,7 @@ td:first-child { min-width: 125px; }
 .registration-submit {
   min-height: 48px;
   border: 0;
-  border-radius: var(--sa-radius);
+  border-radius: 999px;
   color: #fff;
   background: var(--sa-signal);
   display: flex;
@@ -307,7 +309,7 @@ td:first-child { min-width: 125px; }
   cursor: pointer;
 }
 .sa-root .registration-submit:hover:not(:disabled) {
-  background: var(--sa-marine);
+  background: var(--sa-signal-2);
   color: #fff;
 }
 .registration-submit:disabled { opacity: .65; cursor: wait; }
