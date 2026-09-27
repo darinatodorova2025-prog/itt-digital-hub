@@ -20,6 +20,7 @@ import {
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../../validation";
 import { validateClusteringAgainstIdeas } from "../../validation";
 import { aggregateAiJury, overlapCount, rankHumanThemes } from "../../tie-break";
+import { assertJuryCompleteForResults, summarizeJuryProgress } from "../../jury-status";
 import { sanitizePlainText } from "../../sanitize";
 import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "../types";
 import {
@@ -62,14 +63,16 @@ function throwMapped(error: { message?: string; code?: string }): never {
 export class SupabaseMahniStore implements MahniStore {
   private campaignCache: EventCampaign | null = null;
 
+  constructor(private readonly campaignSlug: string = CAMPAIGN_SLUG) {}
+
   private async loadCampaignRow(): Promise<EventCampaign> {
     const sb = client();
-    const { data, error } = await sb.from("md_event_campaigns").select("*").eq("slug", CAMPAIGN_SLUG).maybeSingle();
+    const { data, error } = await sb.from("md_event_campaigns").select("*").eq("slug", this.campaignSlug).maybeSingle();
     if (error) throw new MahniStoreUnavailableError();
     if (!data) {
       const { data: inserted, error: insertError } = await sb
         .from("md_event_campaigns")
-        .insert({ slug: CAMPAIGN_SLUG, title: "Махни досадното", phase: "DRAFT" })
+        .insert({ slug: this.campaignSlug, title: "Махни досадното", phase: "DRAFT" })
         .select("*")
         .single();
       if (insertError || !inserted) throw new MahniStoreUnavailableError();
@@ -388,6 +391,10 @@ export class SupabaseMahniStore implements MahniStore {
   async transitionPhase(to: EventPhase, options?: { votingEndsAt?: string | null }) {
     const campaign = await this.ensureCampaign();
     assertTransition(campaign.phase, to);
+    if (to === "RESULTS") {
+      const runs = await this.listJuryResults();
+      assertJuryCompleteForResults(summarizeJuryProgress(runs));
+    }
     if (campaign.phase === to && !options) return campaign;
 
     const sb = client();
@@ -397,7 +404,7 @@ export class SupabaseMahniStore implements MahniStore {
     }
 
     const { data, error } = await sb.rpc("md_transition_phase", {
-      p_slug: CAMPAIGN_SLUG,
+      p_slug: this.campaignSlug,
       p_to: to,
       p_voting_ends_at: votingEnds ?? null,
     });

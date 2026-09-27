@@ -4,6 +4,8 @@ import { useState } from 'react';
 import type { AnalysisRun, EventCampaign, Theme, Participant } from '@/mahni-dosadnoto/types';
 import type { WinningThemeContacts } from '@/mahni-dosadnoto/admin/winners';
 import type { PublicLiveSnapshot } from '@/mahni-dosadnoto/store/types';
+import type { JuryProgress } from '@/mahni-dosadnoto/jury-status';
+import { judgeLabel } from '@/mahni-dosadnoto/jury-status';
 import {
   mdCloseCollection,
   mdCloseEvent,
@@ -11,6 +13,7 @@ import {
   mdExportCsv,
   mdOpenVoting,
   mdResetDemo,
+  mdRetryJury,
   mdRevealResults,
   mdRunAnalysis,
   mdRunJury,
@@ -27,6 +30,7 @@ type Props = {
     participants: Array<Participant & { ideaCount: number; followupCount: number }>;
     themes: Theme[];
     jury: unknown[];
+    juryProgress: JuryProgress;
     analysisRuns: AnalysisRun[];
     winningOrganizations: WinningThemeContacts[];
     live: PublicLiveSnapshot;
@@ -37,6 +41,9 @@ export function MahniAdminDashboard({ initial }: Props) {
   const [busy, setBusy] = useState('');
   const [csv, setCsv] = useState('');
   const campaign = initial.campaign;
+  const juryProgress = initial.juryProgress;
+  const canRevealResults = juryProgress.complete;
+  const juryNeedsRetry = campaign.phase === 'AI_JURY' && !juryProgress.complete;
 
   async function run(label: string, fn: () => Promise<void>) {
     setBusy(label);
@@ -75,7 +82,18 @@ export function MahniAdminDashboard({ initial }: Props) {
           <button type="button" className="admin-btn" disabled={!!busy} onClick={() => void run('final', mdStartFinalCountdown)}>Финален отброяване</button>
           <button type="button" className="admin-btn" disabled={!!busy} onClick={() => void run('closevote', mdCloseVoting)}>Затвори гласуване</button>
           <button type="button" className="admin-btn" disabled={!!busy} onClick={() => void run('jury', mdRunJury)}>AI Jury</button>
-          <button type="button" className="admin-btn" disabled={!!busy} onClick={() => void run('results', mdRevealResults)}>Покажи резултат</button>
+          {juryNeedsRetry ? (
+            <button type="button" className="admin-btn" disabled={!!busy} onClick={() => void run('retry-jury', mdRetryJury)}>Retry failed AI judges</button>
+          ) : null}
+          <button
+            type="button"
+            className="admin-btn"
+            disabled={!!busy || !canRevealResults}
+            title={canRevealResults ? undefined : `${juryProgress.succeeded}/${juryProgress.total} AI judges complete`}
+            onClick={() => void run('results', mdRevealResults)}
+          >
+            Покажи резултат
+          </button>
           <button type="button" className="admin-btn secondary" disabled={!!busy} onClick={() => void run('closed', mdCloseEvent)}>Затвори събитие</button>
         </div>
       </section>
@@ -130,11 +148,15 @@ export function MahniAdminDashboard({ initial }: Props) {
           ))}
         </ul>
         <h3>Jury</h3>
+        <p>
+          <strong>{juryProgress.succeeded}/{juryProgress.total}</strong> AI judges complete
+          {campaign.phase === 'AI_JURY' && !juryProgress.complete ? ' — finish all three before results' : ''}
+        </p>
         <ul>
-          {(initial.jury as Array<{ judgeType: string; status: string; errorCode?: string | null; errorMessage?: string | null }>).map((run, idx) => (
-            <li key={idx}>
-              {run.judgeType} · {run.status}
-              {run.errorCode ? ` · ${run.errorCode}: ${run.errorMessage}` : ''}
+          {juryProgress.judges.map((j) => (
+            <li key={j.judge}>
+              {judgeLabel(j.judge)} · {j.status === 'missing' ? 'not started' : j.status}
+              {j.errorCode ? ` · ${j.errorCode}${j.errorMessage ? `: ${j.errorMessage}` : ''}` : ''}
             </li>
           ))}
         </ul>

@@ -23,6 +23,7 @@ import {
   interestAllowed,
   votingAllowed,
 } from "../state-machine";
+import { assertJuryCompleteForResults, summarizeJuryProgress } from "../jury-status";
 import { hashSessionToken } from "../session-crypto";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validation";
 import { validateClusteringAgainstIdeas } from "../validation";
@@ -365,6 +366,10 @@ export class MemoryMahniStore implements MahniStore {
   async transitionPhase(to: EventPhase, options?: { votingEndsAt?: string | null }) {
     const campaign = this.campaignOrThrow();
     assertTransition(campaign.phase, to);
+    if (to === "RESULTS") {
+      const runs = await this.listJuryResults();
+      assertJuryCompleteForResults(summarizeJuryProgress(runs));
+    }
     if (campaign.phase === to) return campaign;
     campaign.phase = to;
     campaign.updatedAt = nowIso();

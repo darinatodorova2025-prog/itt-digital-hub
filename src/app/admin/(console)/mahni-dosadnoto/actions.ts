@@ -5,7 +5,18 @@ import { getAdminSession, requireRole } from "@/lib/auth/session";
 import { getMahniStore } from "@/mahni-dosadnoto/store";
 import type { EventPhase } from "@/mahni-dosadnoto/types";
 import { runClusteringAnalysis, runFullJury } from "@/mahni-dosadnoto/ai/runner";
+import { runJuryWithResilience } from "@/mahni-dosadnoto/ai/jury-execution";
 import { computeWinningOrganizations } from "@/mahni-dosadnoto/admin/winners";
+import { summarizeJuryProgress, type JuryProgress } from "@/mahni-dosadnoto/jury-status";
+import type { JudgeType } from "@/mahni-dosadnoto/types";
+
+function mahniDemoSeedAllowed(): boolean {
+  if (process.env.VERCEL_ENV === "production") return false;
+  if (process.env.NODE_ENV === "production") {
+    return process.env.MAHNI_ALLOW_DEMO_SEED === "true";
+  }
+  return true;
+}
 
 async function assertAdmin() {
   const session = await getAdminSession();
@@ -16,6 +27,12 @@ async function assertAdmin() {
 export async function mdTransitionPhase(to: EventPhase) {
   await assertAdmin();
   const store = getMahniStore();
+  if (to === "RESULTS") {
+    const progress = summarizeJuryProgress(await store.listJuryResults());
+    if (!progress.complete) {
+      throw new Error(`jury_incomplete (${progress.succeeded}/${progress.total} AI judges complete)`);
+    }
+  }
   await store.transitionPhase(to);
   revalidatePath("/admin/mahni-dosadnoto");
   revalidatePath("/bg/mahni-dosadnoto");
@@ -64,8 +81,27 @@ export async function mdRunJury() {
   revalidatePath("/admin/mahni-dosadnoto");
 }
 
+export async function mdRetryJury(judges?: JudgeType[]) {
+  await assertAdmin();
+  const store = getMahniStore();
+  const progress = summarizeJuryProgress(await store.listJuryResults());
+  const target = judges ?? progress.judges.filter((j) => j.status !== "succeeded").map((j) => j.judge);
+  if (target.length === 0) return;
+  await runJuryWithResilience(store, { judges: target });
+  revalidatePath("/admin/mahni-dosadnoto");
+}
+
 export async function mdRevealResults() {
-  await mdTransitionPhase("RESULTS");
+  await assertAdmin();
+  const store = getMahniStore();
+  const progress = summarizeJuryProgress(await store.listJuryResults());
+  if (!progress.complete) {
+    throw new Error(`jury_incomplete (${progress.succeeded}/${progress.total} AI judges complete)`);
+  }
+  await store.transitionPhase("RESULTS");
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
 }
 
 export async function mdCloseEvent() {
@@ -87,7 +123,7 @@ export async function mdExportCsv() {
 
 export async function mdSeedDemo() {
   await assertAdmin();
-  if (process.env.NODE_ENV === "production" && process.env.MAHNI_ALLOW_DEMO_SEED !== "true") {
+  if (!mahniDemoSeedAllowed()) {
     throw new Error("demo_seed_blocked");
   }
   const store = getMahniStore();
@@ -97,7 +133,7 @@ export async function mdSeedDemo() {
 
 export async function mdResetDemo() {
   await assertAdmin();
-  if (process.env.NODE_ENV === "production" && process.env.MAHNI_ALLOW_DEMO_SEED !== "true") {
+  if (!mahniDemoSeedAllowed()) {
     throw new Error("demo_reset_blocked");
   }
   const store = getMahniStore();
@@ -115,6 +151,7 @@ export async function mdAdminSnapshot() {
   const themes = await store.listThemes();
   const followups = await store.listFollowupsAdmin();
   const jury = await store.listJuryResults();
+  const juryProgress: JuryProgress = summarizeJuryProgress(jury);
   const analysisRuns = await store.listAnalysisRunsAdmin();
   const winningOrganizations = await computeWinningOrganizations(store);
   const live = await store.getPublicLiveSnapshot();
@@ -124,6 +161,7 @@ export async function mdAdminSnapshot() {
     participants,
     themes,
     jury,
+    juryProgress,
     analysisRuns,
     winningOrganizations,
     live,

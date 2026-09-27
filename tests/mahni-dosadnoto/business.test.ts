@@ -91,6 +91,13 @@ describe("mahni-dosadnoto store", () => {
     await expect(store.castVote("tok", themes[3]!.id)).rejects.toThrow("vote_limit");
   });
 
+  it("blocks RESULTS when jury is incomplete", async () => {
+    const store = resetMemoryStoreForTests();
+    await store.ensureCampaign();
+    store.campaign!.phase = "AI_JURY";
+    await expect(store.transitionPhase("RESULTS")).rejects.toThrow("jury_incomplete");
+  });
+
   it("keeps interest unique per theme", async () => {
     const store = resetMemoryStoreForTests();
     await store.ensureCampaign();

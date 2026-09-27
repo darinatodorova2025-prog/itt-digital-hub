@@ -1,11 +1,11 @@
 import "server-only";
 
 import type { Idea } from "../types";
-import type { JudgeType } from "../types";
-import { clusteringOutputSchema, juryOutputSchema, validateClusteringAgainstIdeas } from "../validation";
+import { clusteringOutputSchema, validateClusteringAgainstIdeas } from "../validation";
 import { getMahniStore } from "../store";
 import { completeJson } from "./provider";
-import { CLUSTERING_SYSTEM, clusteringUserPrompt, JUDGE_PROMPTS, juryUserPrompt } from "./prompts";
+import { CLUSTERING_SYSTEM, clusteringUserPrompt } from "./prompts";
+import { runJuryWithResilience, type RunJuryResult } from "./jury-execution";
 
 export async function runClusteringAnalysis(): Promise<void> {
   const store = getMahniStore();
@@ -26,27 +26,7 @@ export async function runClusteringAnalysis(): Promise<void> {
   }
 }
 
-export async function runJuryJudge(judge: JudgeType): Promise<void> {
+export async function runFullJury(): Promise<RunJuryResult> {
   const store = getMahniStore();
-  const themes = await store.listThemes();
-  const run = await store.startJuryRun(judge);
-  try {
-    const { data, provider, model } = await completeJson(
-      juryOutputSchema,
-      JUDGE_PROMPTS[judge],
-      juryUserPrompt(themes.map((t) => ({ id: t.id, title: t.title, description: t.description, isAiWildcard: t.isAiWildcard }))),
-    );
-    await store.completeJuryRun(run.id, data, { provider, model });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown";
-    await store.failJuryRun(run.id, "jury_failed", message);
-    throw error;
-  }
-}
-
-export async function runFullJury(): Promise<void> {
-  const judges: JudgeType[] = ["business_value", "feasibility", "innovation"];
-  for (const judge of judges) {
-    await runJuryJudge(judge);
-  }
+  return runJuryWithResilience(store);
 }
