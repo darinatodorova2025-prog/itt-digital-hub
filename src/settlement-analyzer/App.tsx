@@ -8,7 +8,7 @@ import { ProductHeader } from './ProductHeader'
 import { sa } from './copy'
 import { APP_CONFIG } from './config'
 import { LayerPanel } from './components/LayerPanel'
-import { createDefaultLayerVisibility, type LayerVisibility } from './components/layer-visibility'
+import { type LayerVisibility } from './components/layer-visibility'
 import type { AnalysisResult, AnalysisStage, PackCatalogItem, PackDownloadProgress, PolygonFeature, RawGeodata, SettlementResult } from './types'
 import { PackMenu } from './components/PackMenu'
 import { ResultsPanel } from './components/ResultsPanel'
@@ -78,7 +78,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   const [rawDataRadiusM, setRawDataRadiusM] = useState(0)
   const [stage, setStage] = useState<AnalysisStage>('idle')
   const [analysisError, setAnalysisError] = useState<string | null>(null)
-  const [visible, setVisible] = useState<LayerVisibility>(createDefaultLayerVisibility)
+  const [visible, setVisible] = useState<LayerVisibility>(() => layersForMode('supply'))
   const [layersCollapsed, setLayersCollapsed] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -364,7 +364,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
     setEditing(false)
     setEditedBoundary(null)
     setCadastreParcels(null)
-    setVisible(createDefaultLayerVisibility())
+    setVisible(layersForMode(mode))
     polygonRequest.current = null
     setDownloadProgress(null)
   }
