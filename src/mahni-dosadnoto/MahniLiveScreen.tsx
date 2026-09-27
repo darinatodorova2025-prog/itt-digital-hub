@@ -16,8 +16,8 @@ import { LiveRail } from "@/mahni-dosadnoto/journey";
 import { ThemeEquation } from "@/mahni-dosadnoto/grouping";
 import { LensBoard } from "@/mahni-dosadnoto/lenses";
 
-export function MahniLiveScreen() {
-  const [snapshot, setSnapshot] = useState<PublicLiveSnapshot | null>(null);
+export function MahniLiveScreen({ initialSnapshot }: { initialSnapshot: PublicLiveSnapshot | null }) {
+  const [snapshot, setSnapshot] = useState<PublicLiveSnapshot | null>(initialSnapshot);
   const [compact, setCompact] = useState(false);
 
   useEffect(() => {
@@ -47,10 +47,20 @@ export function MahniLiveScreen() {
     return () => query.removeEventListener("change", apply);
   }, []);
 
+  // State is genuinely unresolved only when the server could not seed it.
+  // Never guess a phase or a photograph: neutral navy branded fallback.
   if (!snapshot) {
     return (
-      <div className="md-live md-scene-night" aria-busy="true">
-        <LiveHeader />
+      <div className="md-live md-scene-plain" aria-busy="true">
+        <div className="md-live-loading">
+          <EventLockup tone="on-dark" height={32} />
+          <p className="md-live-loading-text">Зареждаме събитието…</p>
+          <span className="md-loading-dot is-on-dark" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </div>
       </div>
     );
   }

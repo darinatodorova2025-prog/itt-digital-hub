@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
-import { IDEA_FREQUENCIES, type EventPhase } from "@/mahni-dosadnoto/types";
+import { IDEA_FREQUENCIES } from "@/mahni-dosadnoto/types";
 import {
   formatClock,
   sharedPriorityBody,
@@ -13,23 +13,14 @@ import {
 } from "@/mahni-dosadnoto/presentation";
 import { useCountdown } from "@/mahni-dosadnoto/use-countdown";
 import type { PublicLiveSnapshot } from "@/mahni-dosadnoto/store/types";
+import type { ParticipantInitialContext } from "@/mahni-dosadnoto/server/initial-state";
 import { EventLockup } from "@/mahni-dosadnoto/brand";
 import { CheckIcon, ConvergeIcon, PlaneIcon, StageGlyph } from "@/mahni-dosadnoto/icons";
 import { ParticipantStage, StageProgress } from "@/mahni-dosadnoto/journey";
 import { GroupingDiagram, ThemeEquation } from "@/mahni-dosadnoto/grouping";
 import { LensBoard } from "@/mahni-dosadnoto/lenses";
 
-type Context = {
-  phase: EventPhase;
-  campaignTitle: string;
-  participant: { id: string; firstName: string; lastName: string; organization: string } | null;
-  ideaCount: number;
-  votesUsed: number;
-  votesRemaining: number;
-  votedThemeIds: string[];
-  interestThemeIds: string[];
-  followupThemeIds: string[];
-};
+type Context = ParticipantInitialContext;
 
 type View = "register" | "ideas" | "analyzing" | "vote" | "finalizing" | "jury" | "results" | "waiting";
 
@@ -73,9 +64,15 @@ function viewFor(ctx: Context): View {
   }
 }
 
-export function MahniParticipantApp() {
-  const [ctx, setCtx] = useState<Context | null>(null);
-  const [snapshot, setSnapshot] = useState<PublicLiveSnapshot | null>(null);
+export function MahniParticipantApp({
+  initialContext,
+  initialSnapshot,
+}: {
+  initialContext: Context | null;
+  initialSnapshot: PublicLiveSnapshot | null;
+}) {
+  const [ctx, setCtx] = useState<Context | null>(initialContext);
+  const [snapshot, setSnapshot] = useState<PublicLiveSnapshot | null>(initialSnapshot);
   const [entered, setEntered] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
@@ -246,20 +243,43 @@ export function MahniParticipantApp() {
     form.role.trim() &&
     form.email.trim();
 
-  const showWelcome = !ctx || (view === "register" && !entered);
+  // State is genuinely unresolved only when the server could not seed it.
+  // Never guess a phase: show a neutral branded fallback, never Welcome.
+  if (!ctx) {
+    return (
+      <div className="md-app">
+        <EventHeader stage={null} showTitle={false} />
+        <section className="md-reveal md-loading" aria-busy="true">
+          <EventLockup height={30} />
+          <h1 className="md-display md-loading-title">Махни досадното</h1>
+          <p className="md-support">Зареждаме събитието…</p>
+          <span className="md-loading-dot" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          {error ? (
+            <p className="md-status is-error" role="status">
+              {error}
+            </p>
+          ) : null}
+        </section>
+      </div>
+    );
+  }
+
+  const showWelcome = view === "register" && !entered;
 
   return (
     <div className={view === "results" ? "md-app is-results" : "md-app"}>
-      <EventHeader stage={ctx?.participant ? stage : null} showTitle={Boolean(ctx?.participant)} />
+      <EventHeader stage={ctx.participant ? stage : null} showTitle={Boolean(ctx.participant)} />
       {error ? (
         <p className="md-status is-error" role="status">
           {error}
         </p>
       ) : null}
 
-      {showWelcome ? (
-        <Welcome onStart={() => setEntered(true)} pending={!ctx} />
-      ) : null}
+      {showWelcome ? <Welcome onStart={() => setEntered(true)} /> : null}
 
       {ctx && view === "register" && entered ? (
         <RegisterForm
@@ -477,16 +497,15 @@ function EventHeader({ stage, showTitle }: { stage: StoryStage | null; showTitle
   );
 }
 
-function Welcome({ onStart, pending }: { onStart: () => void; pending: boolean }) {
+function Welcome({ onStart }: { onStart: () => void }) {
   return (
-    <section className="md-reveal" aria-busy={pending}>
+    <section className="md-reveal">
       <h1 className="md-display md-welcome-title">Махни досадното</h1>
       <div className="md-photo">
         <Image
           src="/event/mahni/welcome.webp"
           alt="Пречиствателни басейни, язовир и планина"
           fill
-          priority
           sizes="(max-width: 840px) 100vw, 430px"
           className="md-photo-img"
         />
@@ -507,7 +526,7 @@ function Welcome({ onStart, pending }: { onStart: () => void; pending: boolean }
           <span>Резултатите водят до реален разговор.</span>
         </li>
       </ol>
-      <button type="button" className="md-btn" onClick={onStart} disabled={pending}>
+      <button type="button" className="md-btn" onClick={onStart}>
         Започваме
       </button>
     </section>
@@ -669,10 +688,15 @@ function ResultsView({
 
   return (
     <section className="md-reveal md-result">
-      <h1 className="md-display">Какво излезе напред</h1>
+      <header className="md-result-hero">
+        <h1 className="md-display">Какво излезе напред</h1>
+        <div className="md-result-hero-photo" aria-hidden="true">
+          <Image src="/event/mahni/aerial.webp" alt="" fill sizes="(max-width: 840px) 100vw, 1088px" className="md-result-hero-img" />
+        </div>
+      </header>
       <div className="md-result-grid">
         <section className="md-result-primary">
-          <h2>Изборът на участниците</h2>
+          <h2 className="md-result-primary-title">Изборът на участниците</h2>
           <ol className="md-rank">
             {snapshot.humanTop3.map((row) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
@@ -686,7 +710,7 @@ function ResultsView({
           </ol>
         </section>
         <section className="md-result-secondary">
-          <h2>Независим поглед от ИИ</h2>
+          <h2 className="md-result-secondary-title">Независим поглед от ИИ</h2>
           <ol className="md-rank is-quiet">
             {snapshot.aiTop3.map((row) => (
               <li key={row.id} className={humanIds.has(row.id) ? "is-shared" : undefined}>

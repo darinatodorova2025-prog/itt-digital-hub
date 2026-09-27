@@ -1,25 +1,54 @@
 import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n";
 import { MahniLiveScreen } from "@/mahni-dosadnoto/MahniLiveScreen";
+import { getLiveInitialSnapshot } from "@/mahni-dosadnoto/server/initial-state";
+import type { PublicLiveSnapshot } from "@/mahni-dosadnoto/store/types";
+import type { EventPhase } from "@/mahni-dosadnoto/types";
+
+// Live event data is request-specific; never statically cache this surface.
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ locale: string }> };
 
-const LIVE_IMAGES = [
-  "/event/mahni/night.webp",
-  "/event/mahni/grouping.webp",
-  "/event/mahni/river.webp",
-  "/event/mahni/aerial.webp",
-];
+/** Only the scene image required for the initial phase is preloaded. */
+function sceneImageFor(phase: EventPhase): string | null {
+  switch (phase) {
+    case "ANALYZING":
+      return "/event/mahni/grouping.webp";
+    case "VOTING":
+      return "/event/mahni/river.webp";
+    case "RESULTS":
+    case "CLOSED":
+      return "/event/mahni/aerial.webp";
+    case "COLLECTING":
+    case "FINALIZING":
+    case "AI_JURY":
+      return "/event/mahni/night.webp";
+    default:
+      return null;
+  }
+}
 
 export default async function MahniLivePage({ params }: Params) {
   const { locale: raw } = await params;
   if (!isLocale(raw) || raw !== "bg") notFound();
+
+  // Resolve the initial snapshot first. On a genuine store/error condition,
+  // fall back to null so the client renders a neutral navy state with no
+  // guessed phase or photograph.
+  let snapshot: PublicLiveSnapshot | null = null;
+  try {
+    snapshot = await getLiveInitialSnapshot();
+  } catch {
+    snapshot = null;
+  }
+
+  const preload = snapshot ? sceneImageFor(snapshot.phase) : null;
+
   return (
     <>
-      {LIVE_IMAGES.map((href) => (
-        <link key={href} rel="preload" as="image" href={href} />
-      ))}
-      <MahniLiveScreen />
+      {preload ? <link rel="preload" as="image" href={preload} /> : null}
+      <MahniLiveScreen initialSnapshot={snapshot} />
     </>
   );
 }

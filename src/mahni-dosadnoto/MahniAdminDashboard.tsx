@@ -9,6 +9,7 @@ import { LENS_COPY, operatorPhaseNote, operatorPhaseTitle, storyForPhase } from 
 import { CheckIcon, OrgIcon, PeopleIcon, StageGlyph } from "@/mahni-dosadnoto/icons";
 import { AdminRail } from "@/mahni-dosadnoto/journey";
 import {
+  mdAdminSnapshot,
   mdCloseCollection,
   mdCloseEvent,
   mdCloseVoting,
@@ -52,35 +53,47 @@ type ActionId =
   | "closed";
 
 export function MahniAdminDashboard({ initial }: Props) {
+  const [snapshot, setSnapshot] = useState(initial);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<ActionId | "seed" | "reset" | null>(null);
   const [query, setQuery] = useState("");
   const [csv, setCsv] = useState("");
-  const campaign = initial.campaign;
-  const jury = initial.juryProgress;
-  const latestAnalysis = initial.analysisRuns[0] ?? null;
-  const analysisReady = initial.themes.length > 0;
+  const campaign = snapshot.campaign;
+  const jury = snapshot.juryProgress;
+  const latestAnalysis = snapshot.analysisRuns[0] ?? null;
+  const analysisReady = snapshot.themes.length > 0;
   const analysisRunning = latestAnalysis?.status === "running" || latestAnalysis?.status === "pending";
   const organizations = useMemo(() => {
-    return new Set(initial.participants.map((person) => person.organization.trim().toLocaleLowerCase("bg"))).size;
-  }, [initial.participants]);
+    return new Set(snapshot.participants.map((person) => person.organization.trim().toLocaleLowerCase("bg"))).size;
+  }, [snapshot.participants]);
+
+  // In-place refresh: reuse the admin snapshot server action so operational
+  // data updates without a full document reload and without losing scroll.
+  const refresh = async () => {
+    try {
+      const next = await mdAdminSnapshot();
+      setSnapshot(next);
+    } catch {
+      // Keep the last good snapshot on a transient refresh failure.
+    }
+  };
 
   useEffect(() => {
     if (busy || confirm) return;
     if (!["ANALYZING", "AI_JURY", "FINALIZING"].includes(campaign.phase)) return;
-    const id = window.setInterval(() => window.location.reload(), campaign.phase === "FINALIZING" ? 5000 : 8000);
+    const id = window.setInterval(() => void refresh(), campaign.phase === "FINALIZING" ? 5000 : 8000);
     return () => window.clearInterval(id);
   }, [busy, confirm, campaign.phase]);
 
   const primary = recommendedAction(campaign.phase, analysisReady, analysisRunning, jury);
   const active = campaign.phase !== "DRAFT" && campaign.phase !== "CLOSED";
   const stage = storyForPhase(campaign.phase);
-  const voteById = new Map(initial.live.themes.map((theme) => [theme.id, theme.voteCount]));
-  const themesSorted = [...initial.themes].sort(
+  const voteById = new Map(snapshot.live.themes.map((theme) => [theme.id, theme.voteCount]));
+  const themesSorted = [...snapshot.themes].sort(
     (a, b) => (voteById.get(b.id) ?? 0) - (voteById.get(a.id) ?? 0) || a.sortOrder - b.sortOrder,
   );
-  const liveRank = [...initial.live.themes].sort((a, b) => b.voteCount - a.voteCount || a.title.localeCompare(b.title, "bg"));
+  const liveRank = [...snapshot.live.themes].sort((a, b) => b.voteCount - a.voteCount || a.title.localeCompare(b.title, "bg"));
 
   async function execute(id: ActionId | "seed" | "reset") {
     setBusy(id);
@@ -88,7 +101,8 @@ export function MahniAdminDashboard({ initial }: Props) {
     setConfirm(null);
     try {
       await actionRunners[id]();
-      window.location.reload();
+      await refresh();
+      setBusy("");
     } catch {
       setBusy("");
       setError("Действието не завърши. Обновете страницата и проверете фазата.");
@@ -100,12 +114,12 @@ export function MahniAdminDashboard({ initial }: Props) {
     else void execute(id);
   }
 
-  const filtered = initial.participants.filter((person) => {
+  const filtered = snapshot.participants.filter((person) => {
     const hay = `${person.firstName} ${person.lastName} ${person.organization} ${person.role} ${person.email}`.toLocaleLowerCase("bg");
     return hay.includes(query.trim().toLocaleLowerCase("bg"));
   });
 
-  const failedAnalysis = initial.analysisRuns.filter((run) => run.status === "failed");
+  const failedAnalysis = snapshot.analysisRuns.filter((run) => run.status === "failed");
 
   return (
     <div className="md-ops" lang="bg">
@@ -125,8 +139,8 @@ export function MahniAdminDashboard({ initial }: Props) {
           <p className="md-ops-kicker">Текуща фаза</p>
           <h2>{operatorPhaseTitle(campaign.phase)}</h2>
           <p>{operatorPhaseNote(campaign.phase)}</p>
-          {campaign.phase === "FINALIZING" && initial.live.countdownSeconds !== null ? (
-            <p className="md-ops-note">Остават около {initial.live.countdownSeconds} секунди</p>
+          {campaign.phase === "FINALIZING" && snapshot.live.countdownSeconds !== null ? (
+            <p className="md-ops-note">Остават около {snapshot.live.countdownSeconds} секунди</p>
           ) : null}
         </div>
         <div className="md-ops-next">
@@ -173,15 +187,15 @@ export function MahniAdminDashboard({ initial }: Props) {
       {error ? <p className="md-ops-error">{error}</p> : null}
 
       <section className="md-ops-metrics" aria-label="Обобщение">
-        <Metric icon={<PeopleIcon size={18} />} value={initial.counts.participants} label="Участници" />
+        <Metric icon={<PeopleIcon size={18} />} value={snapshot.counts.participants} label="Участници" />
         <Metric icon={<OrgIcon size={18} />} value={organizations} label="Организации" />
-        <Metric icon={<StageGlyph stage={1} size={18} />} value={initial.counts.ideas} label="Идеи" />
-        <Metric icon={<StageGlyph stage={3} size={18} />} value={initial.counts.votes} label="Гласове" />
-        <Metric icon={<StageGlyph stage={5} size={18} />} value={initial.counts.followups} label="Заявки за разговор" />
+        <Metric icon={<StageGlyph stage={1} size={18} />} value={snapshot.counts.ideas} label="Идеи" />
+        <Metric icon={<StageGlyph stage={3} size={18} />} value={snapshot.counts.votes} label="Гласове" />
+        <Metric icon={<StageGlyph stage={5} size={18} />} value={snapshot.counts.followups} label="Заявки за разговор" />
       </section>
 
       <section className="md-ops-screen">
-        <button type="button" className="md-ops-btn" onClick={() => void mdToggleRecentIdeas(!campaign.showRecentIdeas).then(() => window.location.reload())}>
+        <button type="button" className="md-ops-btn" onClick={() => void mdToggleRecentIdeas(!campaign.showRecentIdeas).then(() => refresh())}>
           Последни идеи на екрана: {campaign.showRecentIdeas ? "включени" : "изключени"}
         </button>
         <a className="md-ops-link" href="/bg/mahni-dosadnoto/live" target="_blank" rel="noreferrer">
@@ -197,7 +211,7 @@ export function MahniAdminDashboard({ initial }: Props) {
             <p className="md-ops-ai-line">
               <StatusMark ok={analysisReady} busy={analysisRunning} />
               {analysisReady
-                ? `Завършен · ${initial.themes.filter((theme) => !theme.isAiWildcard).length} теми`
+                ? `Завършен · ${snapshot.themes.filter((theme) => !theme.isAiWildcard).length} теми`
                 : analysisRunning
                   ? "Тече"
                   : latestAnalysis?.status === "failed"
@@ -249,12 +263,12 @@ export function MahniAdminDashboard({ initial }: Props) {
         </div>
       </section>
 
-      {initial.live.humanTop3.length > 0 ? (
+      {snapshot.live.humanTop3.length > 0 ? (
         <section className="md-ops-section md-ops-split">
           <article>
             <h2>Изборът на участниците</h2>
             <ol className="md-ops-rank">
-              {initial.live.humanTop3.map((row) => (
+              {snapshot.live.humanTop3.map((row) => (
                 <li key={row.id}>
                   <b>{String(row.rank).padStart(2, "0")}</b>
                   <span>{row.title}</span>
@@ -265,7 +279,7 @@ export function MahniAdminDashboard({ initial }: Props) {
           <article>
             <h2>Независим поглед от ИИ</h2>
             <ol className="md-ops-rank is-quiet">
-              {initial.live.aiTop3.map((row) => (
+              {snapshot.live.aiTop3.map((row) => (
                 <li key={row.id}>
                   <b>{String(row.rank).padStart(2, "0")}</b>
                   <span>{row.title}</span>
@@ -293,7 +307,7 @@ export function MahniAdminDashboard({ initial }: Props) {
       <section className="md-ops-section">
         <h2>Участници</h2>
         <p className="md-ops-count">
-          {filtered.length} от {initial.participants.length}
+          {filtered.length} от {snapshot.participants.length}
         </p>
         <input
           className="md-ops-search"
@@ -336,10 +350,10 @@ export function MahniAdminDashboard({ initial }: Props) {
 
       <section className="md-ops-section">
         <h2>Организации за контакт</h2>
-        {initial.winningOrganizations.length === 0 ? (
+        {snapshot.winningOrganizations.length === 0 ? (
           <p className="md-ops-note">Ще се появи, когато има теми и класиране.</p>
         ) : (
-          initial.winningOrganizations.map((row) => (
+          snapshot.winningOrganizations.map((row) => (
             <article key={row.themeId} className="md-ops-winner">
               <p className="md-ops-kicker">Топ {row.rank}</p>
               <h3>{row.themeTitle}</h3>
@@ -382,7 +396,7 @@ export function MahniAdminDashboard({ initial }: Props) {
       </section>
 
       <section className="md-ops-section">
-        <h2>Теми ({initial.themes.length})</h2>
+        <h2>Теми ({snapshot.themes.length})</h2>
         <div className="md-ops-table-wrap">
           <table className="md-ops-table">
             <thead>

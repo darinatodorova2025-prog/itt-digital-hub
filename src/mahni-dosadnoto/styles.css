@@ -45,10 +45,17 @@
   margin: 0 auto;
   padding: 0 1.15rem max(1.75rem, env(safe-area-inset-bottom));
   flex: 1;
+  transition: width 360ms ease;
 }
 
 .md-app.is-results {
   width: min(100%, 68rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-app {
+    transition: none;
+  }
 }
 
 .md-bar {
@@ -152,6 +159,72 @@
 
 .md-reveal {
   animation: md-rise 420ms ease;
+}
+
+/* Neutral branded loading state — never a guessed phase or photograph. */
+.md-loading {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  padding-top: 2.5rem;
+}
+
+.md-loading-title {
+  margin-top: 0.75rem;
+  font-size: clamp(2rem, 7vw, 2.6rem);
+}
+
+.md-loading-dot {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.md-loading-dot i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--md-signal);
+  animation: md-dot 1.2s ease-in-out infinite;
+}
+
+.md-loading-dot i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.md-loading-dot i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.md-loading-dot.is-on-dark i {
+  background: #f7f8fd;
+}
+
+.md-live-loading {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.md-live-loading-text {
+  margin: 0;
+  color: rgba(247, 248, 253, 0.82);
+  font-size: 1.05rem;
+}
+
+@keyframes md-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
 }
 
 .md-welcome-title,
@@ -685,27 +758,48 @@
   opacity: 0.72;
 }
 
+/* Participant result — light/paper, but with intentional image + card richness. */
+.md-result-hero {
+  display: grid;
+  gap: 1rem;
+}
+
+.md-result-hero-photo {
+  position: relative;
+  aspect-ratio: 21 / 9;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #0b1a33;
+  box-shadow: 0 18px 40px rgba(4, 14, 49, 0.16);
+}
+
+.md-result-hero-img {
+  object-fit: cover;
+  object-position: center 42%;
+}
+
 .md-result-grid {
   display: grid;
   gap: 1.25rem;
-  margin-top: 1.2rem;
+  margin-top: 1.4rem;
 }
 
-.md-result-primary h2,
-.md-result-secondary h2 {
-  margin-bottom: 0.7rem;
+.md-result-primary-title {
+  margin: 0 0 0.85rem;
+  font-family: var(--md-serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--md-ink);
+}
+
+.md-result-secondary-title {
+  margin: 0 0 0.7rem;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--md-muted);
-}
-
-.md-result-primary h2 {
-  color: var(--md-ink);
-  font-size: 1.05rem;
-  letter-spacing: 0;
-  text-transform: none;
 }
 
 .md-rank {
@@ -723,6 +817,21 @@
   align-items: start;
 }
 
+/* Participant Top 3 as elevated cards. */
+.md-result-primary .md-rank li {
+  padding: 0.95rem 1.05rem;
+  border: 1px solid var(--md-line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(4, 14, 49, 0.06);
+  align-items: center;
+}
+
+.md-result-primary .md-rank li.is-shared {
+  border-color: rgba(0, 44, 255, 0.4);
+  box-shadow: 0 12px 28px rgba(0, 44, 255, 0.1);
+}
+
 .md-rank b,
 .md-live-choice b {
   font-family: var(--md-serif);
@@ -733,11 +842,21 @@
   line-height: 1;
 }
 
+.md-result-primary .md-rank b {
+  font-size: 2.1rem;
+}
+
 .md-rank span,
 .md-live-choice span {
   padding-top: 0.15rem;
   font-size: 1.02rem;
   line-height: 1.35;
+}
+
+.md-result-primary .md-rank span {
+  font-size: 1.08rem;
+  font-weight: 550;
+  color: var(--md-ink);
 }
 
 .md-rank em,
@@ -762,6 +881,15 @@
   padding-top: 0.2rem;
 }
 
+.md-result-secondary .md-rank li {
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--md-line);
+}
+
+.md-result-secondary .md-rank li:first-child {
+  border-top: 0;
+}
+
 .md-shared,
 .md-live-shared {
   display: grid;
@@ -775,10 +903,21 @@
   color: var(--md-signal);
 }
 
+.md-shared {
+  border: 1px solid rgba(0, 44, 255, 0.22);
+  padding: 1.05rem 1.15rem;
+}
+
 .md-shared h2,
 .md-live-shared strong {
   color: var(--md-ink);
   font-size: 1.15rem;
+}
+
+.md-shared h2 {
+  font-family: var(--md-serif);
+  font-size: 1.3rem;
+  font-weight: 500;
 }
 
 .md-shared p,
@@ -896,27 +1035,30 @@
   background: #07111f;
 }
 
+/* Overlays are tuned per scene: darken behind typography, let the imagery
+   breathe where there is no text. Leading edge stays dark enough for projector
+   contrast; trailing side opens up so the photograph contributes. */
 .md-scene-night {
   background:
-    linear-gradient(100deg, rgba(4, 14, 49, 0.84) 0%, rgba(4, 14, 49, 0.58) 52%, rgba(4, 14, 49, 0.34) 100%),
+    linear-gradient(100deg, rgba(4, 14, 49, 0.78) 0%, rgba(4, 14, 49, 0.5) 48%, rgba(4, 14, 49, 0.16) 100%),
     url("/event/mahni/night.webp") center 42% / cover no-repeat;
 }
 
 .md-scene-vote {
   background:
-    linear-gradient(90deg, rgba(4, 14, 49, 0.92) 0%, rgba(4, 14, 49, 0.78) 46%, rgba(4, 14, 49, 0.22) 100%),
+    linear-gradient(90deg, rgba(4, 14, 49, 0.86) 0%, rgba(4, 14, 49, 0.6) 46%, rgba(4, 14, 49, 0.12) 100%),
     url("/event/mahni/river.webp") right center / cover no-repeat;
 }
 
 .md-scene-result {
   background:
-    linear-gradient(90deg, rgba(4, 14, 49, 0.84) 0%, rgba(4, 14, 49, 0.68) 46%, rgba(4, 14, 49, 0.48) 100%),
+    linear-gradient(90deg, rgba(4, 14, 49, 0.72) 0%, rgba(4, 14, 49, 0.5) 42%, rgba(4, 14, 49, 0.18) 78%, rgba(4, 14, 49, 0.3) 100%),
     url("/event/mahni/aerial.webp") center 40% / cover no-repeat;
 }
 
 .md-scene-jury {
   background:
-    linear-gradient(180deg, #071433 0%, rgba(7, 20, 51, 0.88) 68%, rgba(7, 20, 51, 0.45) 100%),
+    linear-gradient(180deg, rgba(7, 20, 51, 0.92) 0%, rgba(7, 20, 51, 0.7) 55%, rgba(7, 20, 51, 0.28) 100%),
     url("/event/mahni/night.webp") center bottom / cover no-repeat;
 }
 
@@ -1276,11 +1418,16 @@
   gap: 1rem;
 }
 
+.md-live-final > h1 {
+  font-size: clamp(3rem, 5.2vw, 5.2rem);
+}
+
 .md-live-result {
   display: grid;
-  grid-template-columns: minmax(0, 1.75fr) minmax(16rem, 0.85fr);
-  gap: clamp(1.2rem, 3vw, 3rem);
-  margin-top: 1rem;
+  grid-template-columns: minmax(0, 1.9fr) minmax(15rem, 0.75fr);
+  gap: clamp(1.4rem, 3.4vw, 3.4rem);
+  margin-top: 1.1rem;
+  align-items: start;
 }
 
 .md-live-result h2 {
@@ -1294,7 +1441,7 @@
 
 .md-live-result section:first-child h2 {
   color: #fff;
-  font-size: 1.15rem;
+  font-size: 1.3rem;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -1303,26 +1450,44 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.85rem;
+}
+
+.md-live-choice li {
+  align-items: start;
 }
 
 .md-live-choice b {
-  color: #9eb0ff;
-  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+  color: #aebfff;
+  font-size: clamp(2.2rem, 3.2vw, 3.1rem);
+  line-height: 0.95;
 }
 
 .md-live-choice span {
-  font-size: clamp(1.15rem, 1.8vw, 1.6rem);
-  line-height: 1.25;
+  font-size: clamp(1.35rem, 2.1vw, 1.9rem);
+  line-height: 1.18;
+  color: #fff;
+}
+
+.md-live-choice .is-shared span {
+  font-weight: 600;
+}
+
+.md-live-choice.is-quiet {
+  gap: 0.6rem;
+  padding-top: 0.35rem;
 }
 
 .md-live-choice.is-quiet span {
-  font-size: clamp(1rem, 1.4vw, 1.25rem);
-  color: rgba(247, 248, 253, 0.82);
+  font-size: clamp(0.98rem, 1.3vw, 1.2rem);
+  line-height: 1.3;
+  color: rgba(247, 248, 253, 0.78);
+  font-weight: 400;
 }
 
 .md-live-choice.is-quiet b {
-  color: rgba(247, 248, 253, 0.55);
+  color: rgba(247, 248, 253, 0.5);
+  font-size: clamp(1.2rem, 1.6vw, 1.5rem);
 }
 
 .md-rank .is-shared,
@@ -1335,33 +1500,43 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
   gap: 1.5rem;
   align-items: end;
+  margin-top: 1.4rem;
 }
 
 .md-live-shared {
   margin-top: 0;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(77, 116, 255, 0.16);
+  border: 1px solid rgba(174, 191, 255, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
   color: #fff;
 }
 
 .md-live-shared svg {
-  color: #fff;
+  color: #aebfff;
+}
+
+.md-live-shared strong {
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
 }
 
 .md-live-shared p {
-  color: rgba(247, 248, 253, 0.78);
+  color: rgba(247, 248, 253, 0.82);
 }
 
 .md-live-official {
   margin: 0;
-  color: rgba(247, 248, 253, 0.92);
-  font-size: 1rem;
+  color: rgba(247, 248, 253, 0.95);
+  font-size: 1.05rem;
+  font-weight: 600;
   line-height: 1.4;
 }
 
 .md-live-official span {
   display: block;
   margin-top: 0.35rem;
-  color: rgba(247, 248, 253, 0.78);
+  color: rgba(247, 248, 253, 0.72);
+  font-weight: 400;
+  font-size: 0.95rem;
 }
 
 .md-live-story {
@@ -1395,6 +1570,10 @@
     font-size: clamp(2.1rem, 4.2vh, 3rem);
   }
 
+  .md-live-final > h1 {
+    font-size: clamp(2.2rem, 5vh, 3rem);
+  }
+
   .md-live-metrics strong,
   .md-live-vote-total strong,
   .md-live .md-equation strong {
@@ -1416,6 +1595,40 @@
 
   .md-live-bars {
     gap: 0.4rem;
+  }
+
+  /* Keep the restaged result inside 768px-tall projectors. */
+  .md-scene-result .md-live-body {
+    padding-top: 0.5rem;
+  }
+
+  .md-live-result {
+    margin-top: 0.6rem;
+    gap: 1.2rem;
+  }
+
+  .md-live-choice {
+    gap: 0.5rem;
+  }
+
+  .md-live-choice b {
+    font-size: clamp(1.5rem, 3.4vh, 2rem);
+  }
+
+  .md-live-choice span {
+    font-size: clamp(1rem, 2.2vh, 1.3rem);
+  }
+
+  .md-live-choice.is-quiet span {
+    font-size: clamp(0.85rem, 1.8vh, 1rem);
+  }
+
+  .md-live-close {
+    margin-top: 0.7rem;
+  }
+
+  .md-live-shared strong {
+    font-size: clamp(1.05rem, 2.4vh, 1.3rem);
   }
 }
 
