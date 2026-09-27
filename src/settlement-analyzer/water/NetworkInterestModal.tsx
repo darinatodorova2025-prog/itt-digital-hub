@@ -7,18 +7,18 @@ import { waterText } from './copy'
 
 export function NetworkInterestModal({ locale, open, onClose }: { locale: Locale; open: boolean; onClose: () => void }) {
   const copy = waterText(locale)
-  const [thanks, setThanks] = useState(false)
+  const [thanks, setThanks] = useState<'saved' | 'unstored' | null>(null)
   if (!open) return null
-  const choose = (answer: 'yes' | 'no') => {
-    void trackEvent(answer === 'yes' ? 'network_upload_interest_yes' : 'network_upload_interest_no', { context: 'existing-network' })
-    setThanks(true)
+  const choose = async (answer: 'yes' | 'no') => {
+    const saved = await trackEvent(answer === 'yes' ? 'network_upload_interest_yes' : 'network_upload_interest_no', { context: 'existing-network' })
+    setThanks(saved ? 'saved' : 'unstored')
   }
   return (
     <div className="sa-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <div className="sa-modal" role="dialog" aria-modal="true" aria-labelledby="sa-network-title">
         <h2 id="sa-network-title">{copy.modalTitle}</h2>
         <p>{copy.modalBody}</p>
-        {thanks ? <p>{copy.modalThanks}</p> : (
+        {thanks ? <p>{thanks === 'saved' ? copy.modalThanks : copy.modalUnstored}</p> : (
           <>
             <p className="sa-modal__question">{copy.modalQuestion}</p>
             <div className="sa-modal__actions">
