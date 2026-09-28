@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { resetMemoryStoreForTests } from "@/mahni-dosadnoto/store/memory";
-import { validateClusteringAgainstIdeas, clusteringOutputSchema } from "@/mahni-dosadnoto/validation";
+import { validateClusteringAgainstIdeas, clusteringOutputSchema, clusteringOutputSchemaFor, clusteringThemeBounds } from "@/mahni-dosadnoto/validation";
+import { clusteringUserPrompt } from "@/mahni-dosadnoto/ai/prompts";
 import { themesForJury } from "@/mahni-dosadnoto/ai/jury-input";
 import { rankHumanThemes, overlapCount, type ThemeScoreRow } from "@/mahni-dosadnoto/tie-break";
 import { assertTransition, ideasAllowed, votingAllowed } from "@/mahni-dosadnoto/state-machine";
@@ -266,5 +267,34 @@ describe("mahni next campaign", () => {
     expect(store.votes.size).toBe(0);
     expect(store.interests.size).toBe(0);
     expect(store.followups.size).toBe(0);
+  });
+});
+
+describe("mahni clustering size", () => {
+  it("shrinks the theme band to the number of ideas", () => {
+    expect(clusteringThemeBounds(2)).toEqual({ min: 1, max: 2 });
+    expect(clusteringThemeBounds(40)).toEqual({ min: 8, max: 12 });
+    const two = clusteringOutputSchemaFor(2);
+    expect(two.safeParse({
+      themes: [
+        { title: "Една", description: "Достатъчно дълго описание.", ideaIds: ["11111111-1111-4111-8111-111111111111"] },
+        { title: "Две", description: "Достатъчно дълго описание.", ideaIds: ["22222222-2222-4222-8222-222222222222"] },
+      ],
+      wildcard: { title: "Отвъд", description: "Отделно предложение от ИИ." },
+    }).success).toBe(true);
+    expect(two.safeParse({
+      themes: Array.from({ length: 8 }, (_, i) => ({
+        title: `Тема ${i}`,
+        description: "Достатъчно дълго описание.",
+        ideaIds: ["11111111-1111-4111-8111-111111111111"],
+      })),
+      wildcard: { title: "Отвъд", description: "Отделно предложение от ИИ." },
+    }).success).toBe(false);
+    const prompt = clusteringUserPrompt([
+      { id: "11111111-1111-4111-8111-111111111111", body: "а", organization: "А" },
+      { id: "22222222-2222-4222-8222-222222222222", body: "б", organization: "Б" },
+    ]);
+    expect(prompt).toContain("1–2 теми");
+    expect(prompt).not.toContain("10–12");
   });
 });

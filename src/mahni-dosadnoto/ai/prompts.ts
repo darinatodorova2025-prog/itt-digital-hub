@@ -1,12 +1,18 @@
+import { clusteringThemeBounds } from "../validation";
+
 export const CLUSTERING_SYSTEM = `Ти си аналитик на процеси за българска ВиК/инженерна конференция.
-Групирай реални проблеми от участници в ~10–12 ясни теми на български.
+Групирай реални проблеми от участници в ясни теми на български.
+Броят на темите е зададен в заявката. Не създавай повече теми от идеите и не прави тема без реална идея.
 Всяка тема: title, description (мин. 10 символа), ideaIds (само подадени UUID).
+Всяка идея е в точно една тема.
 Не променяй текста на идеите.
 След темите добави wildcard с title и description — AI предложение извън подадените идеи.`;
 
 export function clusteringUserPrompt(ideas: Array<{ id: string; body: string; organization: string }>) {
+  const { min, max } = clusteringThemeBounds(ideas.length);
+  const band = min === max ? String(min) : `${min}–${max}`;
   return JSON.stringify({
-    instruction: "Върни JSON с полета themes[] и wildcard.",
+    instruction: `Върни JSON с полета themes[] и wildcard. Направи ${band} теми. Всяка идея влиза в точно една тема.`,
     ideas,
   });
 }

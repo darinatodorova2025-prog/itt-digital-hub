@@ -90,7 +90,8 @@ export function MahniAdminDashboard({ initial }: Props) {
     return () => window.clearInterval(id);
   }, [busy, confirm, campaign.phase]);
 
-  const primary = recommendedAction(campaign.phase, analysisReady, analysisRunning, jury);
+  const analysisFailed = !analysisReady && !analysisRunning && latestAnalysis?.status === "failed";
+  const primary = recommendedAction(campaign.phase, analysisReady, analysisRunning, analysisFailed, jury);
   const active = campaign.phase !== "DRAFT" && campaign.phase !== "CLOSED";
   const stage = storyForPhase(campaign.phase);
   const voteById = new Map(snapshot.live.themes.map((theme) => [theme.id, theme.voteCount]));
@@ -109,7 +110,12 @@ export function MahniAdminDashboard({ initial }: Props) {
       setBusy("");
     } catch {
       setBusy("");
-      setError("Действието не завърши. Обновете страницата и проверете фазата.");
+      await refresh();
+      setError(
+        id === "analysis"
+          ? "Подреждането не завърши. Фазата остава „Подреждаме“. Натиснете „Повтори подреждането“."
+          : "Действието не завърши. Обновете страницата и проверете фазата.",
+      );
     }
   }
 
@@ -175,6 +181,9 @@ export function MahniAdminDashboard({ initial }: Props) {
             <p className="md-ops-note">Няма следваща стъпка.</p>
           )}
           {analysisRunning && campaign.phase === "ANALYZING" ? <p className="md-ops-note">Подреждането тече.</p> : null}
+          {analysisFailed && campaign.phase === "ANALYZING" ? (
+            <p className="md-ops-note">Подреждането не завърши. Фазата остава същата. Повторете действието.</p>
+          ) : null}
         </div>
       </section>
 
@@ -580,6 +589,7 @@ function recommendedAction(
   phase: EventPhase,
   analysisReady: boolean,
   analysisRunning: boolean,
+  analysisFailed: boolean,
   jury: JuryProgress,
 ): { id: ActionId; label: string; disabled?: boolean } | null {
   switch (phase) {
@@ -590,6 +600,7 @@ function recommendedAction(
     case "ANALYZING":
       if (analysisReady) return { id: "vote", label: ACTION_LABEL.vote };
       if (analysisRunning) return { id: "analysis", label: "Подреждането тече", disabled: true };
+      if (analysisFailed) return { id: "analysis", label: "Повтори подреждането" };
       return { id: "analysis", label: ACTION_LABEL.analysis };
     case "VOTING":
       return { id: "final", label: ACTION_LABEL.final };

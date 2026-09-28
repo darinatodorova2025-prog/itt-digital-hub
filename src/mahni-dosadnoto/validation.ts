@@ -56,18 +56,39 @@ export const clusteringThemeSchema = z
     ideaIds,
   }));
 
-export const clusteringOutputSchema = z.object({
-  themes: z.array(clusteringThemeSchema).min(8).max(14),
-  wildcard: z
-    .object({
-      title: z.string().min(3).max(200),
-      description: z.union([z.string(), z.null(), z.undefined()]).optional(),
-    })
-    .transform(({ title, description }) => ({
-      title,
-      description: clusteringDescription(description, title),
-    })),
-});
+/**
+ * Every theme must cite at least one submitted idea, and each idea belongs to one theme.
+ * The theme count therefore cannot exceed the idea count.
+ * A full room still targets 8–12 themes. A small rehearsal shrinks that band
+ * instead of padding the result with empty groups.
+ */
+export function clusteringThemeBounds(ideaCount: number): { min: number; max: number } {
+  const count = Math.max(0, Math.floor(ideaCount));
+  if (count === 0) return { min: 1, max: 1 };
+  const max = Math.min(12, count);
+  const min = count >= 16 ? Math.min(8, max) : Math.min(max, Math.max(1, Math.ceil(count / 4)));
+  return { min, max };
+}
+
+const clusteringWildcardSchema = z
+  .object({
+    title: z.string().min(3).max(200),
+    description: z.union([z.string(), z.null(), z.undefined()]).optional(),
+  })
+  .transform(({ title, description }) => ({
+    title,
+    description: clusteringDescription(description, title),
+  }));
+
+export function clusteringOutputSchemaFor(ideaCount: number) {
+  const { min, max } = clusteringThemeBounds(ideaCount);
+  return z.object({
+    themes: z.array(clusteringThemeSchema).min(min).max(max),
+    wildcard: clusteringWildcardSchema,
+  });
+}
+
+export const clusteringOutputSchema = clusteringOutputSchemaFor(16);
 
 export type ClusteringOutput = z.infer<typeof clusteringOutputSchema>;
 
