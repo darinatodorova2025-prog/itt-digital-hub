@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AnalysisRun, EventCampaign, EventPhase, Participant, Theme } from "@/mahni-dosadnoto/types";
 import type { WinningThemeContacts } from "@/mahni-dosadnoto/admin/winners";
@@ -71,9 +72,11 @@ export function MahniAdminDashboard({ initial }: Props) {
   // In-place refresh: reuse the admin snapshot server action so operational
   // data updates without a full document reload and without losing scroll.
   const refresh = async () => {
+    const y = window.scrollY;
     try {
       const next = await mdAdminSnapshot();
       setSnapshot(next);
+      requestAnimationFrame(() => window.scrollTo(0, y));
     } catch {
       // Keep the last good snapshot on a transient refresh failure.
     }
@@ -81,7 +84,7 @@ export function MahniAdminDashboard({ initial }: Props) {
 
   useEffect(() => {
     if (busy || confirm) return;
-    if (!["ANALYZING", "AI_JURY", "FINALIZING"].includes(campaign.phase)) return;
+    if (campaign.phase === "DRAFT" || campaign.phase === "CLOSED") return;
     const id = window.setInterval(() => void refresh(), campaign.phase === "FINALIZING" ? 5000 : 8000);
     return () => window.clearInterval(id);
   }, [busy, confirm, campaign.phase]);
@@ -121,9 +124,11 @@ export function MahniAdminDashboard({ initial }: Props) {
 
   const failedAnalysis = snapshot.analysisRuns.filter((run) => run.status === "failed");
 
+  const themeById = new Map(snapshot.themes.map((theme) => [theme.id, theme]));
+
   return (
     <div className="md-ops" lang="bg">
-      <header className="md-ops-head">
+      <header className="md-ops-head" id="ops-room">
         <div>
           <p className="md-ops-kicker">Контролна зала</p>
           <h1>Махни досадното</h1>
@@ -134,14 +139,30 @@ export function MahniAdminDashboard({ initial }: Props) {
         </p>
       </header>
 
+      <nav className="md-ops-jump" aria-label="Секции на контролната зала">
+        <a href="#ops-room">Контролна зала</a>
+        <a href="#ops-people">Участници</a>
+        <a href="#ops-themes">Теми</a>
+        <a href="#ops-orgs">Организации</a>
+        <a href="#ops-export">Експорт</a>
+        <Link href="/bg">Към сайта</Link>
+      </nav>
+
       <section className="md-ops-phase">
-        <div>
-          <p className="md-ops-kicker">Текуща фаза</p>
-          <h2>{operatorPhaseTitle(campaign.phase)}</h2>
-          <p>{operatorPhaseNote(campaign.phase)}</p>
-          {campaign.phase === "FINALIZING" && snapshot.live.countdownSeconds !== null ? (
-            <p className="md-ops-note">Остават около {snapshot.live.countdownSeconds} секунди</p>
+        <div className="md-ops-phase-copy">
+          {stage ? (
+            <span className="md-ops-phase-mark" aria-hidden="true">
+              <StageGlyph stage={stage.n} size={22} />
+            </span>
           ) : null}
+          <div>
+            <p className="md-ops-kicker">Текуща фаза</p>
+            <h2>{operatorPhaseTitle(campaign.phase)}</h2>
+            <p>{operatorPhaseNote(campaign.phase)}</p>
+            {campaign.phase === "FINALIZING" && snapshot.live.countdownSeconds !== null ? (
+              <p className="md-ops-note">Остават около {snapshot.live.countdownSeconds} секунди</p>
+            ) : null}
+          </div>
         </div>
         <div className="md-ops-next">
           <p className="md-ops-kicker">Следващо действие</p>
@@ -203,13 +224,13 @@ export function MahniAdminDashboard({ initial }: Props) {
         </a>
       </section>
 
-      <section className="md-ops-section">
-        <h2>ИИ статус</h2>
-        <div className="md-ops-ai">
-          <article>
-            <h3>Анализ</h3>
-            <p className="md-ops-ai-line">
-              <StatusMark ok={analysisReady} busy={analysisRunning} />
+      <section className="md-ops-section md-ops-split">
+        <article className="md-ops-panel">
+          <h2>ИИ статус</h2>
+          <p className="md-ops-ai-line">
+            <StatusMark ok={analysisReady} busy={analysisRunning} />
+            <span>
+              Анализ ·{" "}
               {analysisReady
                 ? `Завършен · ${snapshot.themes.filter((theme) => !theme.isAiWildcard).length} теми`
                 : analysisRunning
@@ -217,95 +238,98 @@ export function MahniAdminDashboard({ initial }: Props) {
                   : latestAnalysis?.status === "failed"
                     ? "Необходимо е повторение"
                     : "Още не е пускан"}
-            </p>
-            {failedAnalysis.length > 0 ? (
-              <details>
-                <summary>Предишен неуспешен опит · технически детайли</summary>
-                {failedAnalysis.slice(0, 3).map((run) => (
-                  <pre key={run.id}>
-                    {run.errorCode ?? "failed"}
-                    {run.errorMessage ? `\n${run.errorMessage}` : ""}
-                  </pre>
-                ))}
-              </details>
-            ) : null}
-          </article>
-          <article>
-            <h3>ИИ жури</h3>
-            <p className="md-ops-note">
-              {jury.succeeded} / {jury.total} готови
-            </p>
-            <ul className="md-ops-judges">
-              {jury.judges.map((judge) => (
-                <li key={judge.judge}>
-                  <StatusMark ok={judge.status === "succeeded"} busy={judge.status === "running" || judge.status === "pending"} />
-                  <span>{LENS_COPY[judge.judge].title}</span>
-                  <em>{judgeStatus(judge.status)}</em>
-                </li>
-              ))}
-            </ul>
-            {campaign.phase === "AI_JURY" && !jury.complete && primary?.id !== "retry-jury" ? (
-              <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("retry-jury")}>
-                Повтори неуспешните
-              </button>
-            ) : null}
-            <details>
-              <summary>Технически детайли</summary>
-              {jury.judges.map((judge) => (
-                <pre key={judge.judge}>
-                  {judge.judge} · {judge.status}
-                  {judge.errorCode ? `\n${judge.errorCode}` : ""}
-                  {judge.errorMessage ? `\n${judge.errorMessage}` : ""}
-                </pre>
-              ))}
-            </details>
-          </article>
-        </div>
-      </section>
-
-      {snapshot.live.humanTop3.length > 0 ? (
-        <section className="md-ops-section md-ops-split">
-          <article>
-            <h2>Изборът на участниците</h2>
-            <ol className="md-ops-rank">
-              {snapshot.live.humanTop3.map((row) => (
-                <li key={row.id}>
-                  <b>{String(row.rank).padStart(2, "0")}</b>
-                  <span>{row.title}</span>
-                </li>
-              ))}
-            </ol>
-          </article>
-          <article>
-            <h2>Независим поглед от ИИ</h2>
-            <ol className="md-ops-rank is-quiet">
-              {snapshot.live.aiTop3.map((row) => (
-                <li key={row.id}>
-                  <b>{String(row.rank).padStart(2, "0")}</b>
-                  <span>{row.title}</span>
-                </li>
-              ))}
-            </ol>
-          </article>
-        </section>
-      ) : liveRank.some((theme) => theme.voteCount > 0) ? (
-        <section className="md-ops-section">
-          <h2>Текущо класиране</h2>
-          <p className="md-ops-note">Официалният топ 3 се заключва след гласуването.</p>
-          <ol className="md-ops-rank">
-            {liveRank.slice(0, 5).map((theme, index) => (
-              <li key={theme.id}>
-                <b>{String(index + 1).padStart(2, "0")}</b>
-                <span>{theme.title}</span>
-                <em>{theme.voteCount}</em>
+            </span>
+          </p>
+          <ul className="md-ops-judges">
+            {jury.judges.map((judge) => (
+              <li key={judge.judge}>
+                <StatusMark ok={judge.status === "succeeded"} busy={judge.status === "running" || judge.status === "pending"} />
+                <span>{LENS_COPY[judge.judge].title}</span>
+                <em>{judgeStatus(judge.status)}</em>
               </li>
             ))}
-          </ol>
-        </section>
-      ) : null}
+          </ul>
+          {campaign.phase === "AI_JURY" && !jury.complete && primary?.id !== "retry-jury" ? (
+            <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("retry-jury")}>
+              Повтори неуспешните
+            </button>
+          ) : null}
+          <details>
+            <summary>Покажи технически детайли</summary>
+            {failedAnalysis.slice(0, 3).map((run) => (
+              <pre key={run.id}>
+                {run.errorCode ?? "failed"}
+                {run.errorMessage ? `\n${run.errorMessage}` : ""}
+              </pre>
+            ))}
+            {jury.judges.map((judge) => (
+              <pre key={judge.judge}>
+                {LENS_COPY[judge.judge].title} · {judge.status}
+                {judge.errorCode ? `\n${judge.errorCode}` : ""}
+                {judge.errorMessage ? `\n${judge.errorMessage}` : ""}
+              </pre>
+            ))}
+          </details>
+        </article>
+        <article className="md-ops-panel" id="ops-top">
+          <h2>{snapshot.live.humanTop3.length > 0 ? "Изборът на участниците" : "Топ теми"}</h2>
+          {snapshot.live.humanTop3.length > 0 ? (
+            <ol className="md-ops-rank">
+              {snapshot.live.humanTop3.map((row) => {
+                const theme = themeById.get(row.id);
+                return (
+                  <li key={row.id}>
+                    <b>{String(row.rank).padStart(2, "0")}</b>
+                    <span>
+                      {row.title}
+                      {theme ? (
+                        <small>
+                          {theme.ideaCount} идеи · {theme.organizationCount} орг.
+                        </small>
+                      ) : null}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : liveRank.some((theme) => theme.voteCount > 0) ? (
+            <>
+              <p className="md-ops-note">Официалният топ 3 се заключва след гласуването.</p>
+              <ol className="md-ops-rank">
+                {liveRank.slice(0, 5).map((theme, index) => (
+                  <li key={theme.id}>
+                    <b>{String(index + 1).padStart(2, "0")}</b>
+                    <span>
+                      {theme.title}
+                      <small>
+                        {theme.ideaCount} идеи · {theme.organizationCount} орг. · {theme.voteCount} гласа
+                      </small>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            <p className="md-ops-note">Още няма класиране.</p>
+          )}
+          {snapshot.live.aiTop3.length > 0 ? (
+            <div className="md-ops-ai-quiet">
+              <h3>Независим поглед от ИИ</h3>
+              <ol className="md-ops-rank is-quiet">
+                {snapshot.live.aiTop3.map((row) => (
+                  <li key={row.id}>
+                    <b>{String(row.rank).padStart(2, "0")}</b>
+                    <span>{row.title}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+        </article>
+      </section>
 
-      <section className="md-ops-section">
-        <h2>Участници</h2>
+      <section className="md-ops-section" id="ops-people">
+        <h2>Участници ({snapshot.participants.length})</h2>
         <p className="md-ops-count">
           {filtered.length} от {snapshot.participants.length}
         </p>
@@ -348,7 +372,7 @@ export function MahniAdminDashboard({ initial }: Props) {
         </div>
       </section>
 
-      <section className="md-ops-section">
+      <section className="md-ops-section" id="ops-orgs">
         <h2>Организации за контакт</h2>
         {snapshot.winningOrganizations.length === 0 ? (
           <p className="md-ops-note">Ще се появи, когато има теми и класиране.</p>
@@ -395,7 +419,7 @@ export function MahniAdminDashboard({ initial }: Props) {
         )}
       </section>
 
-      <section className="md-ops-section">
+      <section className="md-ops-section" id="ops-themes">
         <h2>Теми ({snapshot.themes.length})</h2>
         <div className="md-ops-table-wrap">
           <table className="md-ops-table">
@@ -424,9 +448,10 @@ export function MahniAdminDashboard({ initial }: Props) {
         </div>
       </section>
 
-      <section className="md-ops-demo">
+      <section className="md-ops-demo" id="ops-demo">
+        <p className="md-ops-kicker">Не е част от живото събитие</p>
         <h2>Демо / репетиция</h2>
-        <p>Тези действия не са част от живото събитие. Пипат само демо записи.</p>
+        <p>Тези действия пипат само демо записи и стоят отделно от основното следващо действие.</p>
         <div className="md-ops-demo-actions">
           <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("seed")}>
             Зареди демо данни
@@ -437,7 +462,7 @@ export function MahniAdminDashboard({ initial }: Props) {
         </div>
       </section>
 
-      <section className="md-ops-section">
+      <section className="md-ops-section" id="ops-export">
         <h2>Експорт</h2>
         <button type="button" className="md-ops-btn" onClick={() => void mdExportCsv().then(setCsv)}>
           Генерирай CSV
