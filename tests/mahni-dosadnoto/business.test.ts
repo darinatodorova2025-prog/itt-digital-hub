@@ -234,4 +234,37 @@ describe("mahni next campaign", () => {
     expect([...store.ideas.values()].some((idea) => idea.campaignId === closed.id && idea.body === "Historical idea")).toBe(true);
     await expect(store.prepareNextCampaign({ isDemo: false })).rejects.toThrow("not_closed");
   });
+
+  it("rejects a theme from another campaign for vote, interest, and follow-up", async () => {
+    const store = resetMemoryStoreForTests();
+    const current = await store.ensureCampaign();
+    await store.transitionPhase("COLLECTING");
+    await store.registerParticipant(
+      { firstName: "Now", lastName: "Run", organization: "Org", role: "Eng", email: "now@example.test", marketingConsent: false },
+      "now-token",
+    );
+    await store.transitionPhase("ANALYZING");
+    await store.transitionPhase("VOTING");
+    const foreign: Theme = {
+      id: "11111111-1111-4111-8111-111111111111",
+      campaignId: "archived-campaign",
+      analysisRunId: "archived-run",
+      title: "Old theme",
+      description: "From the previous run",
+      isAiWildcard: false,
+      sortOrder: 0,
+      ideaCount: 1,
+      organizationCount: 1,
+      createdAt: "",
+    };
+    store.themes.set(foreign.id, foreign);
+
+    await expect(store.castVote("now-token", foreign.id)).rejects.toThrow("invalid_theme");
+    await expect(store.setInterest("now-token", foreign.id)).rejects.toThrow("invalid_theme");
+    current.phase = "RESULTS";
+    await expect(store.requestFollowup("now-token", foreign.id)).rejects.toThrow("invalid_theme");
+    expect(store.votes.size).toBe(0);
+    expect(store.interests.size).toBe(0);
+    expect(store.followups.size).toBe(0);
+  });
 });

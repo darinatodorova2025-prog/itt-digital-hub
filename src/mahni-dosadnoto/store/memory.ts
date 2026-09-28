@@ -227,7 +227,8 @@ export class MemoryMahniStore implements MahniStore {
     if (!interestAllowed(campaign.phase)) throw new Error("not_allowed");
     const participant = this.currentParticipant(sessionToken);
     if (!participant) throw new Error("unauthorized");
-    if (!this.themes.has(themeId)) throw new Error("invalid_theme");
+    const theme = this.themes.get(themeId);
+    if (!theme || theme.campaignId !== campaign.id) throw new Error("invalid_theme");
     const key = `${participant.id}:${themeId}`;
     const existing = [...this.interests.values()].find((i) => i.participantId === participant.id && i.themeId === themeId);
     if (existing) return { active: true };
@@ -248,7 +249,8 @@ export class MemoryMahniStore implements MahniStore {
     if (!followupAllowed(campaign.phase)) throw new Error("not_allowed");
     const participant = this.currentParticipant(sessionToken);
     if (!participant) throw new Error("unauthorized");
-    if (!this.themes.has(themeId)) throw new Error("invalid_theme");
+    const theme = this.themes.get(themeId);
+    if (!theme || theme.campaignId !== campaign.id) throw new Error("invalid_theme");
     const row: FollowupRequest = {
       id: randomUUID(),
       campaignId: campaign.id,

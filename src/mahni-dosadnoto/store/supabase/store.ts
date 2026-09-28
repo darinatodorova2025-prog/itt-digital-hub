@@ -222,10 +222,18 @@ export class SupabaseMahniStore implements MahniStore {
     return (data ?? []).map((row) => mapIdea(row));
   }
 
+  private async assertThemeInCampaign(campaignId: string, themeId: string) {
+    const sb = client();
+    const { data, error } = await sb.from("md_themes").select("id").eq("id", themeId).eq("campaign_id", campaignId).maybeSingle();
+    if (error) throw new MahniStoreUnavailableError();
+    if (!data) throw new Error("invalid_theme");
+  }
+
   async castVote(sessionToken: string, themeId: string, idempotencyKey?: string) {
     const campaign = await this.ensureCampaign();
     const participant = await this.resolveParticipant(sessionToken);
     if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
+    await this.assertThemeInCampaign(campaign.id, themeId);
     const scope = idempotencyKey ? `vote:${participant.id}:${idempotencyKey}` : "";
     const sb = client();
     const { data, error } = await sb.rpc("md_cast_vote", {
@@ -249,6 +257,7 @@ export class SupabaseMahniStore implements MahniStore {
     if (!interestAllowed(campaign.phase)) throw new Error("not_allowed");
     const participant = await this.resolveParticipant(sessionToken);
     if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
+    await this.assertThemeInCampaign(campaign.id, themeId);
     const sb = client();
     const { error } = await sb.from("md_interest_signals").upsert(
       {
@@ -268,6 +277,7 @@ export class SupabaseMahniStore implements MahniStore {
     if (!followupAllowed(campaign.phase)) throw new Error("not_allowed");
     const participant = await this.resolveParticipant(sessionToken);
     if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
+    await this.assertThemeInCampaign(campaign.id, themeId);
     const sb = client();
     const { data, error } = await sb
       .from("md_followup_requests")
