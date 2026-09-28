@@ -9,10 +9,10 @@ import type {
 
 export const settlementAnalyzer = {
   name: { bg: "Анализатор на населени места", en: "Settlement Analyzer" } satisfies L,
-  tagline: { bg: "Ориентировъчен пространствен анализ", en: "Indicative spatial analysis" } satisfies L,
+  tagline: { bg: "Първи пространствен поглед", en: "A first spatial view" } satisfies L,
   metaDescription: {
-    bg: "Автоматичен предварителен анализ на български населени места с отворени географски данни.",
-    en: "Automatic preliminary analysis of Bulgarian settlements using open geographic data.",
+    bg: "Ориентировъчна картина на застрояването, земеползването, улиците, сградите и обществените обекти чрез отворени пространствени данни.",
+    en: "An indicative view of built-up area, land use, streets, buildings and public sites from open spatial data.",
   } satisfies L,
   tools: { bg: "Инструменти", en: "Tools" } satisfies L,
   newAnalysis: { bg: "Нов анализ", en: "New analysis" } satisfies L,
@@ -27,8 +27,8 @@ export const settlementAnalyzer = {
   downloadingPack: { bg: "Сваляне на пакет...", en: "Downloading pack..." } satisfies L,
   cancelDownload: { bg: "Отказ", en: "Cancel" } satisfies L,
   packReady: { bg: "Пакетът е готов", en: "Pack is ready" } satisfies L,
-  packDownloadFailed: { bg: "Пакетът не бе свален цял и не е записан. Опитайте отново.", en: "The pack was not downloaded complete and was not saved. Try again." } satisfies L,
-  packDownloadCancelled: { bg: "Свалянето бе отказано. Непълен пакет не е записан.", en: "Download was cancelled. An incomplete pack was not saved." } satisfies L,
+  packDownloadFailed: { bg: "Пакетът не бе свален цял и не е записан. Опитайте отново.", en: "The pack did not download completely and was not saved. Try again." } satisfies L,
+  packDownloadCancelled: { bg: "Свалянето бе отказано. Непълен пакет не е записан.", en: "The download was cancelled. An incomplete pack was not saved." } satisfies L,
   packProgress: {
     bg: {
       landuse: "Предназначение на територията",
@@ -62,7 +62,7 @@ export const settlementAnalyzer = {
   zoomOut: { bg: "Намали мащаба", en: "Zoom out" } satisfies L,
   editTooltip: { bg: "Преместете точките, за да коригирате границата.", en: "Drag the points to adjust the boundary." } satisfies L,
   editSubtext: { bg: "Изберете „Отказ“, за да отмените промените.", en: "Choose Cancel to discard changes." } satisfies L,
-  searchFailed: { bg: "Търсенето не бе успешно.", en: "Search did not succeed." } satisfies L,
+  searchFailed: { bg: "Търсенето не бе успешно.", en: "The search failed." } satisfies L,
   searchBusy: { bg: "Услугата за търсене е временно натоварена. Изчакайте малко и опитайте отново.", en: "The search service is busy. Wait a moment and try again." } satisfies L,
   searchUnavailable: { bg: "Търсенето временно не е достъпно. Опитайте отново.", en: "Search is temporarily unavailable. Try again." } satisfies L,
   analysisUnexpected: { bg: "Анализът не бе завършен поради неочаквана грешка.", en: "The analysis did not finish because of an unexpected error." } satisfies L,
@@ -73,13 +73,15 @@ export const settlementAnalyzer = {
   aboutTitle: { bg: "За анализа", en: "About the analysis" } satisfies L,
   aboutBody: {
     bg: [
+      "Инструментът е подходящ за предварително проучване и ориентация.",
       "Данните идват от OpenStreetMap и може да са непълни.",
-      "Резултатът е ориентировъчен и не замества кадастрално или геодезическо измерване.",
+      "Резултатите зависят от наличността и качеството на използваните отворени данни и не заместват кадастрални, геодезически или проектни данни.",
       "Идея: др. Станислав Дарачев. Реализация: ITT Digital Hub.",
     ],
     en: [
+      "The tool is meant for a preliminary look and for orientation.",
       "The data come from OpenStreetMap and may be incomplete.",
-      "Results are indicative and do not replace a cadastral or geodetic survey.",
+      "Results depend on the availability and quality of the open data used. They do not replace cadastral, surveying or design data.",
       "Concept: Dr Stanislav Darachev. Built by ITT Digital Hub.",
     ],
   } satisfies L<string[]>,
@@ -87,11 +89,11 @@ export const settlementAnalyzer = {
   admin: { bg: "Администрация", en: "Admin" } satisfies L,
   welcomeTitle: { bg: "Анализатор на населени места", en: "Settlement Analyzer" } satisfies L,
   welcomeLead: {
-    bg: "Ориентировъчна граница, площи, сгради и улици от отворени данни.",
-    en: "Indicative boundary, areas, buildings and streets from open data.",
+    bg: "Изберете населено място и ще получите ориентировъчна картина на застрояването, земеползването, улиците, сградите и обществените обекти чрез отворени пространствени данни.",
+    en: "Choose a settlement for an indicative view of built-up area, land use, streets, buildings and public sites from open spatial data.",
   } satisfies L,
   loading: { bg: "Зареждане...", en: "Loading..." } satisfies L,
-  loadErrorTitle: { bg: "Достъпът временно не може да бъде зареден", en: "Access could not be loaded" } satisfies L,
+  loadErrorTitle: { bg: "Достъпът временно не може да бъде зареден", en: "Access could not be loaded just now" } satisfies L,
   fullName: { bg: "Име и фамилия", en: "Full name" } satisfies L,
   email: { bg: "Имейл", en: "Email" } satisfies L,
   organisation: { bg: "Организация / фирма", en: "Organisation" } satisfies L,
@@ -159,7 +161,7 @@ export const settlementAnalyzer = {
   closeMessage: { bg: "Затвори съобщението", en: "Dismiss message" } satisfies L,
   trackingOffline: { bg: "Анализаторът работи, но статистиката временно не се записва.", en: "The tool works, but statistics are not being recorded." } satisfies L,
   analysisUntracked: { bg: "Анализът е готов, но статистиката временно не беше записана.", en: "The analysis is ready, but statistics were not recorded." } satisfies L,
-  bootstrapLoadError: { bg: "Достъпът временно не може да бъде зареден.", en: "Access could not be loaded." } satisfies L,
+  bootstrapLoadError: { bg: "Достъпът временно не може да бъде зареден.", en: "Access could not be loaded just now." } satisfies L,
   confidenceHigh: { bg: "Висока", en: "High" } satisfies L,
   confidenceMedium: { bg: "Средна", en: "Medium" } satisfies L,
   confidenceLow: { bg: "Ниска", en: "Low" } satisfies L,
@@ -258,7 +260,7 @@ export const settlementAnalyzer = {
     },
     en: {
       agriculturalDominant: "Predominantly agricultural structure",
-      mixedResidentialIndustrial: "Mixed residential–industrial structure",
+      mixedResidentialIndustrial: "Mixed residential and industrial structure",
       veryLowBuiltUp: "Very low built-up density",
       lowBuiltUp: "Low built-up density",
       mediumBuiltUp: "Medium built-up density",

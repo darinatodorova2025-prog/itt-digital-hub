@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { isLocale, locales, type Locale } from "@/lib/i18n";
 import { site } from "@/content/site";
 
-export const alt = "ITT Digital Hub: Applied AI Consultancy";
+export const alt = "ITT Digital Hub";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

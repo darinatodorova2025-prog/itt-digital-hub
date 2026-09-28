@@ -38,8 +38,8 @@ describe("public project stories", () => {
       }).join("\n");
       expect(blob).not.toMatch(/\bATN\b/);
     }
-    expect(projects[0]?.title.en).toBe("Manufacturer-to-Customer Warranty Platform");
-    expect(projects[2]?.title.en).toBe("Creator & Social Intelligence");
+    expect(projects[0]?.title.en).toBe("Warranty as a direct channel to the customer");
+    expect(projects[2]?.title.en).toBe("From scattered campaigns to a traceable process");
   });
 
   it("keeps EN and BG story structure aligned", () => {
@@ -92,11 +92,11 @@ describe("public project stories", () => {
     const orchestration = projects.find((item) => item.slug === "local-ai-orchestration");
     expect(orchestration).toBeDefined();
     const blob = collectCopy(orchestration).join("\n");
-    expect(orchestration?.title.en).toBe("Local-First AI Orchestration");
-    expect(orchestration?.title.bg).toBe("Локално ориентирана ИИ оркестрация");
-    expect(orchestration?.seo?.documentTitle.en).toBe("Local-First AI Orchestration | ITT Digital Hub");
-    expect(orchestration?.seo?.documentTitle.bg).toBe("Локално ориентирана ИИ оркестрация | ITT Digital Hub");
-    expect(orchestration?.tags.en).toEqual(["Local models", "Orchestration", "MCP", "Data protection", "Durable execution"]);
+    expect(orchestration?.title.en).toBe("Local AI orchestration");
+    expect(orchestration?.title.bg).toBe("Локална ИИ оркестрация");
+    expect(orchestration?.seo?.documentTitle.en).toBe("Local AI orchestration | ITT Digital Hub");
+    expect(orchestration?.seo?.documentTitle.bg).toBe("Локална ИИ оркестрация | ITT Digital Hub");
+    expect(orchestration?.tags.en).toEqual(["Local models", "Cloud models", "Orchestration", "Control", "Tools"]);
     expect(blob).not.toMatch(/tCode/i);
     expect(blob).not.toMatch(/Task Captain/i);
     expect(blob).not.toMatch(/AI harness/i);
@@ -107,7 +107,8 @@ describe("public project stories", () => {
     expect(blob).toMatch(/MCP осигурява контролиран достъп/);
     expect(blob).toMatch(/orchestration layer remains responsible for execution/i);
     expect(blob).toMatch(/Оркестрационният слой остава отговорен за изпълнението/);
-    expect(blob).toMatch(/A model router alone does not solve this/);
+    expect(blob).toMatch(/A simple routing system chooses a model/);
+    expect(blob).not.toMatch(/never leaves|completely secure|guaranteed|zero risk/i);
     expect(blob).toMatch(/task-level cloud-token usage/);
     expect(blob).not.toMatch(/MCP is the orchestrat/i);
     expect(blob).not.toMatch(/MCP оркестрира/i);

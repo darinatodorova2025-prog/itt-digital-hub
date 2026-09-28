@@ -33,27 +33,26 @@ export type ToolItem = {
 const catalog: ToolSource[] = [
   {
     id: "vik-proektant",
-    title: { bg: "ВиК Проектант", en: "ViK Projektant" },
-    category: { bg: "ВиК · Работен процес", en: "WSS · Workflow" },
+    title: { bg: "ВиК Проектант", en: "Water & Sewerage Designer" },
+    category: { bg: "Инженерство · Нормативи", en: "Engineering · Regulations" },
     description: {
-      bg: "Помага при въпроси за водоснабдяване и канализация. Намира изискванията в наредбите и смята по подадените данни.",
-      en: "Helps with water supply and sewerage questions. Finds the requirements in the ordinances and calculates from the data you provide.",
+      bg: "Помага на ВиК проектанти да намират нормативни изисквания, да проследяват източниците и да правят изчисления по предоставените данни.",
+      en: "Helps water and sewerage designers find regulatory requirements, follow the sources and calculate from the data they provide.",
     },
     image: { bg: "/tools/vik-proektant-card.jpg", en: "/tools/vik-proektant-card.jpg" },
     imageAlt: {
       bg: "Илюстрация на ВиК Проектант: нормативна уредба, водопровод и канализационна шахта.",
-      en: "ViK Projektant illustration: a regulation, water pipes and a sewer manhole.",
+      en: "Water & Sewerage Designer illustration: a regulation, water pipes and a sewer manhole.",
     },
     hrefKey: "vik-proektant",
-    hrefSlug: "compare",
   },
   {
     id: "pipe-thermal-analysis",
-    title: { bg: "Топлинен анализ на тръбопроводи", en: "Pipe Thermal Analysis" },
-    category: { bg: "Инженерство · Модели", en: "Engineering · Models" },
+    title: { bg: "Топлинен анализ на изолирана тръба", en: "Pipe Thermal Analysis" },
+    category: { bg: "Инженерство · Изчисления", en: "Engineering · Models" },
     description: {
-      bg: "Анализира изстиването и топлинните загуби в изолиран PE тръбопровод и показва как температурата се променя с времето.",
-      en: "Analyses cooling and heat loss in an insulated PE pipeline and shows how temperature changes over time.",
+      bg: "Оценява как дебитът, изолацията, температурата и външните условия влияят върху изстиването на водата и риска от замръзване.",
+      en: "Shows how flow, insulation, temperature and external conditions affect water cooling and the risk of freezing.",
     },
     image: { bg: "/tools/pipe-thermal-analysis-hero.jpg", en: "/tools/pipe-thermal-analysis-hero.jpg" },
     imageAlt: {
@@ -64,11 +63,11 @@ const catalog: ToolSource[] = [
   },
   {
     id: "ai-act-assistant",
-    title: { bg: "Акт за изкуствения интелект", en: "AI Act Assistant" },
-    category: { bg: "AI · Регулации", en: "AI · Regulation" },
+    title: { bg: "AI Act Assistant", en: "AI Act Assistant" },
+    category: { bg: "Регулации · ИИ", en: "Regulation · AI" },
     description: {
-      bg: "Сравнява общ модел със специализиран асистент за Акта за изкуствения интелект: нормативен текст, роли и приложимост.",
-      en: "Compares a general model with a specialist assistant for the Artificial Intelligence Act: the regulation, roles and applicability.",
+      bg: "Свързва текста на AI Act с конкретен професионален контекст, за да даде по-полезна отправна точка за работа с регламента.",
+      en: "Connects the AI Act text with a specific professional context, so the regulation is easier to apply to a real case.",
     },
     image: { bg: "/tools/ai-act-assistant-card-bg.png", en: "/tools/ai-act-assistant-card-en.png" },
     imageAlt: {
@@ -80,10 +79,10 @@ const catalog: ToolSource[] = [
   {
     id: "settlement-analyzer",
     title: { bg: "Анализатор на населени места", en: "Settlement Analyzer" },
-    category: { bg: "Данни · Анализ", en: "Data · Analysis" },
+    category: { bg: "Данни · Пространствен анализ", en: "Data · Spatial analysis" },
     description: {
-      bg: "Интерактивен инструмент за анализ на данни за населени места при инженерни, инфраструктурни и проектантски задачи.",
-      en: "An interactive tool for settlement data analysis for engineering, infrastructure and planning tasks.",
+      bg: "Дава бърз ориентировъчен поглед върху застрояването, улиците, сградите, земеползването и други пространствени характеристики чрез отворени данни.",
+      en: "An initial spatial view of a settlement from open data: built-up area, streets, buildings, land use and related features.",
     },
     image: { bg: "/tools/settlement-analyzer-card-bg.png", en: "/tools/settlement-analyzer-card-en.png" },
     imageAlt: {

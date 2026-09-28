@@ -1,12 +1,12 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { COMPARISON_MAX_OUTPUT_TOKENS, CONTROL_INSTRUCTIONS, comparisonModel, expertMcpTool } from "./config";
+import { COMPARISON_MAX_OUTPUT_TOKENS, comparisonModel, expertMcpTool } from "./config";
 
 export type ComparisonRequestBody = {
   model: string;
   store: false;
   max_output_tokens: number;
-  instructions: string;
+  instructions?: string;
   input: string;
   tools?: [ReturnType<typeof expertMcpTool>];
 };
@@ -32,7 +32,7 @@ export function loadExpertInstructions(cwd = process.cwd()): string {
 export function buildComparisonRequests(userPrompt: string, env: Record<string, string | undefined> = process.env, cwd = process.cwd()) {
   const model = comparisonModel(env);
   const shared = { model, store: false as const, max_output_tokens: COMPARISON_MAX_OUTPUT_TOKENS };
-  const control: ComparisonRequestBody = { ...shared, instructions: CONTROL_INSTRUCTIONS, input: userPrompt };
+  const control: ComparisonRequestBody = { ...shared, input: userPrompt };
   const expert: ComparisonRequestBody = {
     ...shared,
     instructions: loadExpertInstructions(cwd),

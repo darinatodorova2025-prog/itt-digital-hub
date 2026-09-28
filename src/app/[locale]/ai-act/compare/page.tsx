@@ -3,8 +3,10 @@ import { isLocale, type Locale } from "@/lib/i18n";
 import { pageMetadata } from "@/lib/metadata";
 import { href } from "@/lib/paths";
 import { aiAct } from "@/content/ai-act";
+import { t } from "@/content/messages";
+import { breadcrumbTrail } from "@/lib/breadcrumbs";
 import { Container } from "@/components/layout/Container";
-import { BackLink } from "@/components/ui/BackLink";
+import { Breadcrumbs, ParentReturn } from "@/components/layout/Breadcrumbs";
 import { CompareLab } from "@/components/ai-act/CompareLab";
 
 type Params = { params: Promise<{ locale: string }> };
@@ -39,10 +41,11 @@ export default async function AiActComparePage({ params }: Params) {
     <div>
       <section className="hero-atmosphere -mt-[5.5rem] text-on-dark" data-surface="dark">
         <Container className="pt-24 pb-12 md:pt-28 md:pb-14">
-          <BackLink href={href(locale, "tools")} className="text-on-dark decoration-on-dark/35 hover:text-on-dark">
-            {text.back[locale]}
-          </BackLink>
-          <h1 className="mt-3 whitespace-pre-line text-h1 text-on-dark">{text.heading[locale]}</h1>
+          <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "ai-act-compare")} tone="dark" />
+          <ParentReturn href={href(locale, "ai-act")} tone="dark" className="mt-2">
+            {text.returnTo[locale]}
+          </ParentReturn>
+          <h1 className="mt-4 max-w-[22ch] whitespace-pre-line text-h1 text-on-dark md:max-w-[28ch]">{text.heading[locale]}</h1>
           <p className="mt-3 max-w-[68ch] text-body text-on-dark-muted">{text.lead[locale]}</p>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-small text-on-dark-muted">
             {text.leadPoints.map((point) => (

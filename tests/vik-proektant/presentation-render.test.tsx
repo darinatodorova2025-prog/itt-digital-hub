@@ -35,8 +35,9 @@ describe("answer markdown rendering", () => {
     expect(expert).not.toContain("\\frac");
     expect(expert).not.toContain("\\(");
     expect(expert).toContain("overflow-x-auto");
-    expect(control).toContain("√");
-    expect(control).not.toContain("\\frac");
+    expect(control).not.toContain("√");
+    expect(control).toContain("Q=v");
+    expect(control).toContain("\\frac");
     expect(control).not.toContain("<h3");
     expect(control).not.toContain("<table");
   });

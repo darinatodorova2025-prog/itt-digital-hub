@@ -2,7 +2,7 @@
   "name": "itt-digital-hub",
   "version": "0.1.0",
   "private": true,
-  "description": "ITT Digital Hub: Applied AI Consultancy. Independent website for AI Industrial Summit 2026 networking.",
+  "description": "ITT Digital Hub: process optimization and software systems.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

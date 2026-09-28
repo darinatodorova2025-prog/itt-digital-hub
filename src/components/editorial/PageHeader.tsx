@@ -8,6 +8,7 @@ export function PageHeader({
   label,
   heading,
   lead,
+  support,
   aside,
   className,
   tone = "paper",
@@ -16,6 +17,8 @@ export function PageHeader({
   label?: string;
   heading: string;
   lead?: ReactNode;
+  /** Extra paragraph under the lead. Used when a page has a second idea, not a new section. */
+  support?: string;
   aside?: ReactNode;
   className?: string;
   /** "dark" expects a dark atmosphere on the parent (e.g. hero-atmosphere). */
@@ -30,6 +33,7 @@ export function PageHeader({
           {label ? <p className={cn(dark ? "label-dark" : "label", "mb-5")}>{label}</p> : null}
           <h1 className={cn("text-h1", dark ? "text-on-dark" : "text-ink", heading.includes("\n") ? "whitespace-pre-line hyphens-none [text-wrap:wrap]" : "text-pretty")}>{heading}</h1>
           {lead ? <p className={cn("mt-7 max-w-[62ch] text-lead", dark ? "text-on-dark-muted" : "text-ink-2")}>{lead}</p> : null}
+          {support ? <p className={cn("mt-4 max-w-[62ch] text-body", dark ? "text-on-dark-muted" : "text-ink-2")}>{support}</p> : null}
         </div>
         {aside ? <div className="lg:col-span-4 lg:pt-10">{aside}</div> : null}
       </Container>

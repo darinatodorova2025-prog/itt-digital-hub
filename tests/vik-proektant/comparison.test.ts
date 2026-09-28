@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { comparisonExamples } from "../../src/content/vik-proektant";
-import { CONTROL_INSTRUCTIONS, comparisonModel } from "../../src/vik-proektant/comparison/config";
+import { comparisonModel } from "../../src/vik-proektant/comparison/config";
 import { buildComparisonRequests, loadExpertInstructions } from "../../src/vik-proektant/comparison/requests";
 import { runComparison } from "../../src/vik-proektant/comparison/run";
 import { chatGptDestination } from "../../src/vik-proektant/publication";
@@ -26,6 +26,7 @@ describe("comparison fairness", () => {
     expect(requests.control).not.toHaveProperty("temperature");
     expect(requests.expert).not.toHaveProperty("temperature");
     expect(requests.control).not.toHaveProperty("tools");
+    expect(requests.control).not.toHaveProperty("instructions");
   });
 
   it("keeps ViK tools and the skill off the control path", () => {
@@ -34,8 +35,7 @@ describe("comparison fairness", () => {
     expect(control).not.toContain("search_vik_knowledge");
     expect(control).not.toContain("calculate_pipe_diameter");
     expect(control).not.toContain("/api/mcp/vik");
-    expect(requests.control.instructions).toBe(CONTROL_INSTRUCTIONS);
-    expect(requests.control.instructions.toLowerCase()).not.toMatch(/vik|itt|наредба|водопровод/);
+    expect(control).not.toContain("instructions");
     expect(expert).toContain("search_vik_knowledge");
     expect(requests.expert.tools?.[0]?.server_url).toBe("https://ittdigitalhub.org/api/mcp/vik");
     expect(requests.expert.tools?.[0]?.allowed_tools).toContain("get_vik_reference");
@@ -48,7 +48,7 @@ describe("comparison fairness", () => {
     expect(source.toLowerCase()).not.toContain("generic answer");
     expect(source.toLowerCase()).not.toContain("not an expert");
     expect(source.toLowerCase()).not.toContain("be vague");
-    expect(CONTROL_INSTRUCTIONS.toLowerCase()).not.toContain("worse");
+    expect(requests.control).not.toHaveProperty("instructions");
   });
 
   it("handles independent failures and hides a model mismatch", async () => {

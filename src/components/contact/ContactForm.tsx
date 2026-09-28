@@ -23,6 +23,7 @@ function Field({
   autoComplete,
   multiline,
   maxLength,
+  placeholder,
 }: {
   label: string;
   name: string;
@@ -31,6 +32,7 @@ function Field({
   autoComplete?: string;
   multiline?: boolean;
   maxLength: number;
+  placeholder?: string;
 }) {
   const id = `contact-${name}`;
   return (
@@ -50,6 +52,7 @@ function Field({
           required={required}
           rows={6}
           maxLength={maxLength}
+          placeholder={placeholder}
           className={cn(controlClass, "min-h-36 resize-none")}
         />
       ) : (
@@ -109,6 +112,7 @@ export function ContactForm({ locale }: { locale: Locale }) {
             required
             multiline
             maxLength={contactFieldLimits.problem}
+            placeholder={copy.problemPlaceholder[locale]}
           />
         </div>
       )}

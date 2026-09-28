@@ -13,18 +13,18 @@ export const site = {
   } satisfies { bg: readonly [string, string]; en: readonly [string, string] },
   short: { bg: "ITT", en: "ITT" } satisfies L,
   descriptor: {
-    bg: "Приложен AI консултинг",
-    en: "Applied AI Consultancy",
+    bg: "Оптимизация на процеси и системи",
+    en: "Process Optimization & Software Systems",
   } satisfies L,
-  /** Temporary lockup line until the final mark arrives. Not a parent institution. */
+  /** Broader lockup used where a short descriptor is not enough. Not a parent institution. */
   anchor: {
-    bg: "Приложен AI консултинг",
-    en: "Applied AI Consultancy",
+    bg: "Бизнес процеси · Данни · Софтуерни системи",
+    en: "Business processes · Data · Software systems",
   } satisfies L,
   anchorShort: { bg: "ITT", en: "ITT" } satisfies L,
   description: {
-    bg: "ITT Digital Hub съчетава разбиране на бизнес процеси с практическо софтуерно инженерство, за да проектира и изгражда AI решения около реални операции, съществуващи системи и данни.",
-    en: "ITT Digital Hub combines business process expertise and hands-on software engineering to design and build AI solutions around real operations, existing systems and data.",
+    bg: "ITT Digital Hub помага на екипи да подредят информацията, да оптимизират работните процеси и да свържат системите си чрез автоматизация, специализиран софтуер и ИИ там, където той има практическа полза.",
+    en: "ITT Digital Hub helps teams organize information, improve how work is done and connect their systems, using automation, purpose-built software and AI where it is practically useful.",
   } satisfies L,
   contactNote: {
     bg: "Директен контакт:",
