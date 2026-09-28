@@ -215,13 +215,19 @@ export function MahniAdminDashboard({ initial }: Props) {
         <Metric icon={<StageGlyph stage={5} size={18} />} value={snapshot.counts.followups} label="Заявки за разговор" />
       </section>
 
-      <section className="md-ops-screen">
-        <button type="button" className="md-ops-btn" onClick={() => void mdToggleRecentIdeas(!campaign.showRecentIdeas).then(() => refresh())}>
-          Последни идеи на екрана: {campaign.showRecentIdeas ? "включени" : "изключени"}
-        </button>
-        <a className="md-ops-link" href="/bg/mahni-dosadnoto/live" target="_blank" rel="noreferrer">
-          Отвори екрана
-        </a>
+      <section className="md-ops-now" aria-label="Какво вижда залата">
+        <div>
+          <p className="md-ops-kicker">Какво вижда залата</p>
+          <p className="md-ops-now-phase">{roomSees(campaign.phase)}</p>
+        </div>
+        <div className="md-ops-now-actions">
+          <a className="md-ops-link" href="/bg/mahni-dosadnoto/live" target="_blank" rel="noreferrer">
+            Отвори екрана
+          </a>
+          <button type="button" className="md-ops-btn" onClick={() => void mdToggleRecentIdeas(!campaign.showRecentIdeas).then(() => refresh())}>
+            Последни идеи: {campaign.showRecentIdeas ? "включени" : "изключени"}
+          </button>
+        </div>
       </section>
 
       <section className="md-ops-section md-ops-split">
@@ -488,7 +494,7 @@ function StatusMark({ ok, busy }: { ok: boolean; busy?: boolean }) {
 }
 
 const ACTION_LABEL: Record<ActionId, string> = {
-  collect: "Отвори споделянето",
+  collect: "Стартирай събитието",
   "close-collect": "Приключи споделянето",
   analysis: "Подреждане на идеите",
   vote: "Отвори избора",
@@ -578,6 +584,15 @@ function advancedActions(phase: EventPhase, primaryId: ActionId | null, jury: Ju
   if (phase === "AI_JURY" && !jury.complete && primaryId !== "retry-jury") pool.push("retry-jury");
   if (phase === "RESULTS") pool.push("closed");
   return pool.filter((id) => id !== primaryId);
+}
+
+function roomSees(phase: EventPhase): string {
+  if (phase === "DRAFT") return "Очаква старт";
+  if (phase === "FINALIZING") return "03 · Последни секунди";
+  if (phase === "CLOSED") return "05 · Резултат";
+  const stage = storyForPhase(phase);
+  if (stage) return `${String(stage.n).padStart(2, "0")} · ${stage.label}`;
+  return operatorPhaseTitle(phase);
 }
 
 function judgeStatus(status: JuryProgress["judges"][number]["status"]): string {

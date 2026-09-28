@@ -86,7 +86,7 @@ export function operatorPhaseTitle(phase: EventPhase): string {
 export function operatorPhaseNote(phase: EventPhase): string {
   switch (phase) {
     case "DRAFT":
-      return "Събитието още не е отворено за участници.";
+      return "Събитието още не е стартирало.";
     case "COLLECTING":
       return "Реалните проблеми влизат в системата.";
     case "ANALYZING":
