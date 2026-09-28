@@ -15,6 +15,7 @@ import {
 import {
   assertTransition,
   followupAllowed,
+  ideasAllowed,
   interestAllowed,
 } from "../../state-machine";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../../validation";
@@ -188,8 +189,10 @@ export class SupabaseMahniStore implements MahniStore {
   }
 
   async submitIdea(sessionToken: string, body: string, frequency: string | null, idempotencyKey?: string) {
+    const campaign = await this.ensureCampaign();
     const participant = await this.resolveParticipant(sessionToken);
-    if (!participant) throw new Error("unauthorized");
+    if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
+    if (!ideasAllowed(campaign.phase)) throw new Error("not_collecting");
     const scope = idempotencyKey ? `idea:${participant.id}:${idempotencyKey}` : "";
     const sb = client();
     const { data, error } = await sb.rpc("md_submit_idea", {
@@ -206,8 +209,9 @@ export class SupabaseMahniStore implements MahniStore {
   }
 
   async listParticipantIdeas(sessionToken: string) {
+    const campaign = await this.ensureCampaign();
     const participant = await this.resolveParticipant(sessionToken);
-    if (!participant) return [];
+    if (!participant || participant.campaignId !== campaign.id) return [];
     const sb = client();
     const { data, error } = await sb
       .from("md_ideas")
@@ -219,8 +223,9 @@ export class SupabaseMahniStore implements MahniStore {
   }
 
   async castVote(sessionToken: string, themeId: string, idempotencyKey?: string) {
+    const campaign = await this.ensureCampaign();
     const participant = await this.resolveParticipant(sessionToken);
-    if (!participant) throw new Error("unauthorized");
+    if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
     const scope = idempotencyKey ? `vote:${participant.id}:${idempotencyKey}` : "";
     const sb = client();
     const { data, error } = await sb.rpc("md_cast_vote", {
