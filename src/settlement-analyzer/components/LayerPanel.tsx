@@ -12,9 +12,10 @@ interface Props {
   onChange: (visible: LayerVisibility) => void
   collapsed: boolean
   onToggleCollapsed: () => void
+  terrainLabel: string
 }
 
-export function LayerPanel({ locale, visible, onChange, collapsed, onToggleCollapsed }: Props) {
+export function LayerPanel({ locale, visible, onChange, collapsed, onToggleCollapsed, terrainLabel }: Props) {
   const copy = sa(locale)
   const toggle = (key: keyof LayerVisibility) => onChange({ ...visible, [key]: !visible[key] })
   return (
@@ -37,6 +38,7 @@ export function LayerPanel({ locale, visible, onChange, collapsed, onToggleColla
           <div className="layer-divider" />
           <LayerRow checked={visible.buildings} onChange={() => toggle('buildings')} color="#f3f1e8" label={copy.buildings} icon={<Building2 size={17} />} />
           <LayerRow checked={visible.pois} onChange={() => toggle('pois')} color="#002cff" label={copy.pois} icon={<MapPin size={17} />} />
+          <LayerRow checked={visible.terrain} onChange={() => toggle('terrain')} color="#d07a45" label={terrainLabel} />
           <LayerRow checked={visible.cadastre} onChange={() => toggle('cadastre')} color="#b3261e" label={copy.cadastreLayer} />
         </div>
       )}

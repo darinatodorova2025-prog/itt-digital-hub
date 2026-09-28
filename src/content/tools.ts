@@ -78,11 +78,11 @@ const catalog: ToolSource[] = [
   },
   {
     id: "settlement-analyzer",
-    title: { bg: "Анализатор на населени места", en: "Settlement Analyzer" },
-    category: { bg: "Данни · Пространствен анализ", en: "Data · Spatial analysis" },
+    title: { bg: "Предпроектен ВиК анализ", en: "Preliminary Water Infrastructure Analysis" },
+    category: { bg: "ВиК · Територия", en: "Water · Territory" },
     description: {
-      bg: "Дава бърз ориентировъчен поглед върху застрояването, улиците, сградите, земеползването и други пространствени характеристики чрез отворени данни.",
-      en: "An initial spatial view of a settlement from open data: built-up area, streets, buildings, land use and related features.",
+      bg: "Начална пространствена картина на населено място преди подробен ВиК проект: застрояване, улици и релеф.",
+      en: "An initial spatial picture of a settlement before detailed water-infrastructure design: development, streets and terrain.",
     },
     image: { bg: "/tools/settlement-analyzer-card-bg.png", en: "/tools/settlement-analyzer-card-en.png" },
     imageAlt: {

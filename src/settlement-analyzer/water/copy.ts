@@ -1,0 +1,136 @@
+import type { L, Locale } from "@/lib/i18n";
+import type { WaterContext } from "./modes";
+import type { SourceRecord } from "./sources";
+
+const text = {
+  modesLabel: { bg: "Вид анализ", en: "Analysis" } satisfies L,
+  modes: {
+    bg: { supply: "Водоснабдяване", wastewater: "Битова канализация", stormwater: "Дъждовни води", extension: "Разширение на мрежата" },
+    en: { supply: "Water supply", wastewater: "Wastewater", stormwater: "Stormwater", extension: "Network extension" },
+  } satisfies L<Record<WaterContext, string>>,
+  lead: {
+    bg: {
+      supply: "Къде е съсредоточено застрояването и какъв релеф трябва да се има предвид преди хидравличен модел.",
+      wastewater: "Къде гравитачното отвеждане заслужава внимание. Релефът не е достатъчно точен за наклон на канал.",
+      stormwater: "Къде е събрана застроената повърхност и накъде клони теренът. Няма изчисление на дъжд.",
+      extension: "Кои жилищни части са отделени от основното ядро и по кои улици може да се мисли разширение.",
+    },
+    en: {
+      supply: "Where development is concentrated, and what relief to keep in mind before any hydraulic model.",
+      wastewater: "Where gravity drainage deserves attention. This terrain model is not precise enough for a sewer gradient.",
+      stormwater: "Where built surface is concentrated and which way the ground falls. No rainfall calculation.",
+      extension: "Which residential parts sit apart from the main core, and which streets frame a possible extension.",
+    },
+  } satisfies L<Record<WaterContext, string>>,
+  terrainDisclaimer: { bg: "Подходящо за предварителна пространствена оценка. Не замества геодезическо заснемане.", en: "Suitable for a preliminary spatial assessment. It does not replace a geodetic survey." } satisfies L,
+  terrainLoading: { bg: "Зареждане на релефа...", en: "Loading terrain..." } satisfies L,
+  terrainUnavailable: { bg: "Релефът временно не е достъпен.", en: "Terrain is temporarily unavailable." } satisfies L,
+  elevation: { bg: "Кота", en: "Elevation" } satisfies L,
+  elevationDiff: { bg: "Денивелация", en: "Elevation difference" } satisfies L,
+  slope: { bg: "Наклон", en: "Slope" } satisfies L,
+  components: { bg: "Жилищни части", en: "Residential parts" } satisfies L,
+  buildings: { bg: "Сгради", en: "Buildings" } satisfies L,
+  residentialArea: { bg: "Жилищна / застроена площ", en: "Residential / built-up area" } satisfies L,
+  streets: { bg: "Улици в зоната", en: "Streets in the area" } satisfies L,
+  density: { bg: "Сгради на км²", en: "Buildings per km²" } satisfies L,
+  lowZone: { bg: "Ниска зона", en: "Low zone" } satisfies L,
+  midZone: { bg: "Средна зона", en: "Middle zone" } satisfies L,
+  highZone: { bg: "Висока зона", en: "High zone" } satisfies L,
+  terrainLayer: { bg: "Релеф", en: "Terrain" } satisfies L,
+  uploadAction: { bg: "Качи съществуваща ВиК мрежа", en: "Upload existing network" } satisfies L,
+  modalTitle: { bg: "Анализ на съществуваща ВиК мрежа", en: "Analysis of an existing water network" } satisfies L,
+  modalBody: { bg: "Планираме възможност да качите съществуваща ВиК мрежа и да я сравните със застрояването, релефа и потенциално необслужваните зони.", en: "We plan a way to bring in an existing water network and compare it with development, terrain and areas that may still be unserved." } satisfies L,
+  modalQuestion: { bg: "Тази функционалност би ли била полезна за работата ви?", en: "Would this be useful in your work?" } satisfies L,
+  modalYes: { bg: "Да, бих я използвал", en: "Yes, I would use it" } satisfies L,
+  modalNo: { bg: "Не е приоритет за мен", en: "Not a priority for me" } satisfies L,
+  modalThanks: { bg: "Благодарим. Отговорът е записан анонимно.", en: "Thank you. The answer was recorded anonymously." } satisfies L,
+  modalUnstored: { bg: "Изборът е отбелязан тук, но не беше записан. Може да опитате отново.", en: "The choice was noted here, but it was not saved. You can try again." } satisfies L,
+  close: { bg: "Затвори", en: "Close" } satisfies L,
+  landCover: { bg: "Земно покритие", en: "Land cover" } satisfies L,
+  sources: { bg: "Източници и надеждност", en: "Sources and confidence" } satisfies L,
+  active: { bg: "Активен", en: "Active" } satisfies L,
+  unavailable: { bg: "Временно недостъпен", en: "Temporarily unavailable" } satisfies L,
+  planned: { bg: "Не е наличен", en: "Not available" } satisfies L,
+  kinds: {
+    bg: { direct: "пряк", derived: "производен", estimated: "оценен", visual: "само за карта" },
+    en: { direct: "direct", derived: "derived", estimated: "estimated", visual: "map only" },
+  } satisfies L<Record<SourceRecord["kind"], string>>,
+  sourceNames: {
+    bg: { ekatte: "Регистър ЕКАТТЕ", osm: "OpenStreetMap", terrain: "EU-DEM 25 m", cadastre: "Кадастър, публична извадка", overture: "Overture Buildings", dynamicWorld: "Google Dynamic World", geofabrik: "Geofabrik България", population: "Население" },
+    en: { ekatte: "EKATTE register", osm: "OpenStreetMap", terrain: "EU-DEM 25 m", cadastre: "Cadastre, public sample", overture: "Overture Buildings", dynamicWorld: "Google Dynamic World", geofabrik: "Geofabrik Bulgaria", population: "Population" },
+  } satisfies L<Record<string, string>>,
+  sourceRoles: {
+    bg: {
+      ekatte: "Идентичност на населеното място. Координатата е опорна точка, не граница.",
+      osm: "Сгради, улици, земеползване и обществени обекти.",
+      terrain: "Коти, денивелация, зони и ориентировъчен наклон. Резолюция 25 м. При отказ на услугата се ползва Copernicus GLO-90.",
+      cadastre: "Визуална извадка. Не влиза в показателите.",
+      overture: "Допълнителни отпечатъци на сгради. Още не е зареден.",
+      dynamicWorld: "Оценен на 27.09.2026 г. Earth Engine API не е включен в проекта: показаните абонаменти започват от 500 USD на месец. OSM сградите вече локализират застрояването. Не е включен.",
+      geofabrik: "Национален OSM архив за предварителна обработка. Още не е включен.",
+      population: "Няма население в регистъра. Не се показва измислена бройка.",
+    },
+    en: {
+      ekatte: "Settlement identity. The coordinate is an anchor, not a boundary.",
+      osm: "Buildings, streets, land use and public sites.",
+      terrain: "Elevations, difference, zones and an indicative slope. 25 m resolution. Copernicus GLO-90 is used if that service is unavailable.",
+      cadastre: "Visual sample. It is not used in the figures.",
+      overture: "Additional building footprints. Not loaded yet.",
+      dynamicWorld: "Evaluated on 27 September 2026. The Earth Engine API is not enabled: the listed subscriptions start at USD 500 per month. OSM buildings already locate built-up areas. Not connected.",
+      geofabrik: "National OSM archive for preprocessing. Not connected yet.",
+      population: "Population is not in the register. No figure is invented.",
+    },
+  } satisfies L<Record<string, string>>,
+  downhill: { bg: "Наклонът сочи приблизително", en: "The ground falls roughly" } satisfies L,
+  compass: {
+    bg: ["север", "североизток", "изток", "югоизток", "юг", "югозапад", "запад", "северозапад"],
+    en: ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"],
+  } satisfies L<string[]>,
+};
+
+export function waterText(locale: Locale) {
+  return {
+    modesLabel: text.modesLabel[locale],
+    modes: text.modes[locale],
+    lead: text.lead[locale],
+    terrainDisclaimer: text.terrainDisclaimer[locale],
+    terrainLoading: text.terrainLoading[locale],
+    terrainUnavailable: text.terrainUnavailable[locale],
+    elevation: text.elevation[locale],
+    elevationDiff: text.elevationDiff[locale],
+    slope: text.slope[locale],
+    components: text.components[locale],
+    buildings: text.buildings[locale],
+    residentialArea: text.residentialArea[locale],
+    streets: text.streets[locale],
+    density: text.density[locale],
+    lowZone: text.lowZone[locale],
+    midZone: text.midZone[locale],
+    highZone: text.highZone[locale],
+    terrainLayer: text.terrainLayer[locale],
+    uploadAction: text.uploadAction[locale],
+    modalTitle: text.modalTitle[locale],
+    modalBody: text.modalBody[locale],
+    modalQuestion: text.modalQuestion[locale],
+    modalYes: text.modalYes[locale],
+    modalNo: text.modalNo[locale],
+    modalThanks: text.modalThanks[locale],
+    modalUnstored: text.modalUnstored[locale],
+    close: text.close[locale],
+    landCover: text.landCover[locale],
+    sources: text.sources[locale],
+    active: text.active[locale],
+    unavailable: text.unavailable[locale],
+    planned: text.planned[locale],
+    kinds: text.kinds[locale],
+    sourceNames: text.sourceNames[locale],
+    sourceRoles: text.sourceRoles[locale],
+    downhill: text.downhill[locale],
+    compass: text.compass[locale],
+  };
+}
+
+export function compassLabel(locale: Locale, bearing: number | null) {
+  if (bearing == null) return null;
+  return text.compass[locale][Math.round(bearing / 45) % 8] ?? null;
+}

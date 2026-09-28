@@ -19,7 +19,7 @@ export const APP_CONFIG = {
     editedBoundaryPaddingM: 350,
     maximumEditedRadiusM: 15_000,
     timeoutSeconds: 22,
-    overallTimeoutMs: 110_000,
+    overallTimeoutMs: 180_000,
     packDownload: {
       partTimeoutSeconds: 90,
       primaryTimeoutMs: 100_000,
@@ -50,8 +50,8 @@ export const APP_CONFIG = {
   },
   boundary: {
     clusterDistanceM: 260,
-    clusterBridgeDistanceM: 560,
-    cityClusterBridgeDistanceM: 1100,
+    clusterBridgeDistanceM: 380,
+    cityClusterBridgeDistanceM: 480,
     minimumClusterSize: 6,
     secondaryClusterMinSize: 4,
     secondaryClusterMinRatio: 0.06,

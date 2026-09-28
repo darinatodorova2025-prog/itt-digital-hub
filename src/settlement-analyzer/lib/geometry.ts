@@ -64,7 +64,7 @@ export function safeUnion(features: Array<Feature<Polygon | MultiPolygon> | null
   if (valid.length === 1) return asPolygonFeature(valid[0])
   const max = APP_CONFIG.analysis.maxUnionFeatures
   const chunk = APP_CONFIG.analysis.unionChunkSize
-  const limited = valid.length > max ? valid.slice(0, max) : valid
+  const limited = valid.length > max ? takeEvenly(valid, max) : valid
   if (limited.length <= chunk) return unionMany(limited)
   const parts: PolygonFeature[] = []
   for (let index = 0; index < limited.length; index += chunk) {
@@ -188,6 +188,43 @@ function clusterBbox(cluster: Array<{ center: Feature<Point> }>) {
   return [minLon, minLat, maxLon, maxLat] as const
 }
 
+function clusterGapMeters(
+  merged: Array<{ center: Feature<Point> }>,
+  candidate: Array<{ center: Feature<Point> }>,
+  lat: number,
+  bridgeM: number,
+) {
+  const boxGap = bboxGapMeters(clusterBbox(merged), clusterBbox(candidate), lat)
+  if (boxGap > bridgeM) return boxGap
+  const cellM = Math.max(80, bridgeM / 2)
+  const grid = new Map<string, Feature<Point>[]>()
+  for (const item of merged) {
+    const [lon, pointLat] = item.center.geometry.coordinates
+    const key = gridKey(lon, pointLat, cellM)
+    const bucket = grid.get(key)
+    if (bucket) bucket.push(item.center)
+    else grid.set(key, [item.center])
+  }
+  let best = Number.POSITIVE_INFINITY
+  const reach = 1 + Math.ceil(bridgeM / cellM)
+  for (const item of candidate) {
+    const [lon, pointLat] = item.center.geometry.coordinates
+    const [cx, cy] = gridKey(lon, pointLat, cellM).split(':').map(Number)
+    for (let dx = -reach; dx <= reach; dx += 1) {
+      for (let dy = -reach; dy <= reach; dy += 1) {
+        const bucket = grid.get(`${cx + dx}:${cy + dy}`)
+        if (!bucket) continue
+        for (const center of bucket) {
+          const gap = distance(item.center, center, { units: 'meters' })
+          if (gap < best) best = gap
+          if (best <= bridgeM) return best
+        }
+      }
+    }
+  }
+  return best
+}
+
 function bboxGapMeters(
   a: readonly [number, number, number, number],
   b: readonly [number, number, number, number],
@@ -207,7 +244,16 @@ export function clusterBuildings(
   buildings: FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>,
   settlementCenter: Feature<Point>,
   maxDistanceM = APP_CONFIG.boundary.centerPreferenceM,
-  options?: { seed?: 'largest' | 'nearest'; bridgeM?: number; minSecondary?: number },
+  options?: { seed?: 'largest' | 'nearest'; bridgeM?: number; minSecondary?: number; includeInside?: PolygonFeature },
+) {
+  return settledClusterGroups(buildings, settlementCenter, maxDistanceM, options).flat()
+}
+
+function settledClusterGroups(
+  buildings: FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>,
+  settlementCenter: Feature<Point>,
+  maxDistanceM = APP_CONFIG.boundary.centerPreferenceM,
+  options?: { seed?: 'largest' | 'nearest'; bridgeM?: number; minSecondary?: number; includeInside?: PolygonFeature },
 ) {
   const cellM = APP_CONFIG.boundary.clusterDistanceM
   const centers = buildings.features.map((feature, index) => ({ feature, center: featureCenter(feature), index }))
@@ -249,12 +295,20 @@ export function clusterBuildings(
     clusters.push(cluster)
   }
 
+  const insideMask = (cluster: typeof centers) => {
+    const mask = options?.includeInside
+    if (!mask) return false
+    return cluster.some((item) => {
+      try { return booleanPointInPolygon(item.center, mask) } catch { return false }
+    })
+  }
+
   const ranked = (clusters.length ? clusters : [])
     .map((cluster) => ({
       cluster,
       nearestToSettlementM: Math.min(...cluster.map((item) => distance(item.center, settlementCenter, { units: 'meters' }))),
     }))
-    .filter(({ nearestToSettlementM }) => nearestToSettlementM <= maxDistanceM)
+    .filter(({ cluster, nearestToSettlementM }) => nearestToSettlementM <= maxDistanceM || insideMask(cluster))
     .sort((a, b) => (
       options?.seed === 'nearest'
         ? a.nearestToSettlementM - b.nearestToSettlementM || b.cluster.length - a.cluster.length
@@ -270,6 +324,7 @@ export function clusterBuildings(
     Math.ceil(primary.length * APP_CONFIG.boundary.secondaryClusterMinRatio),
   )
   const bridgeM = options?.bridgeM ?? APP_CONFIG.boundary.clusterBridgeDistanceM
+  const groups: typeof centers[] = [primary]
   const merged = [...primary]
   const remaining = ranked.filter(({ cluster }) => cluster !== primary && cluster.length >= minimumSecondarySize)
   const settlementLat = settlementCenter.geometry.coordinates[1]
@@ -278,20 +333,19 @@ export function clusterBuildings(
   // road, river or undeveloped strip. Join only substantial nearby clusters;
   // isolated farms and single buildings remain excluded.
   let added = true
-  let mergedBox = clusterBbox(merged)
   while (added) {
     added = false
     for (let index = remaining.length - 1; index >= 0; index -= 1) {
       const candidate = remaining[index].cluster
-      if (bboxGapMeters(mergedBox, clusterBbox(candidate), settlementLat) <= bridgeM) {
+      if (clusterGapMeters(merged, candidate, settlementLat, bridgeM) <= bridgeM || insideMask(candidate)) {
+        groups.push(candidate)
         merged.push(...candidate)
-        mergedBox = clusterBbox(merged)
         remaining.splice(index, 1)
         added = true
       }
     }
   }
-  return merged
+  return groups
 }
 
 export function dataRadiusForBoundary(boundary: PolygonFeature, lat: number, lon: number) {
@@ -306,9 +360,26 @@ export function dataRadiusForBoundary(boundary: PolygonFeature, lat: number, lon
   return Math.ceil((farthestCornerM + APP_CONFIG.overpass.editedBoundaryPaddingM) / 100) * 100
 }
 
+function thinCenters(centers: Feature<Point>[]) {
+  const maxPoints = APP_CONFIG.boundary.connectedHullGridMaxPoints
+  if (centers.length <= maxPoints) return centers
+  const cellM = APP_CONFIG.boundary.clusterDistanceM
+  const seen = new Set<string>()
+  const thinned: Feature<Point>[] = []
+  for (const center of centers) {
+    const [lon, lat] = center.geometry.coordinates
+    const key = gridKey(lon, lat, cellM)
+    if (seen.has(key)) continue
+    seen.add(key)
+    thinned.push(center)
+  }
+  return thinned
+}
+
 function hullAndBuffer(centers: Feature<Point>[], maxEdgeM = APP_CONFIG.boundary.clusterDistanceM * 2.4): PolygonFeature | null {
-  if (centers.length < 3) return null
-  const collection = featureCollection(centers)
+  const input = thinCenters(centers)
+  if (input.length < 3) return null
+  const collection = featureCollection(input)
   let hull: PolygonFeature | null = null
   try { hull = concave(collection, { maxEdge: maxEdgeM, units: 'meters' }) as PolygonFeature | null } catch { hull = null }
   if (!hull) hull = bboxPolygon(bbox(collection)) as PolygonFeature
@@ -321,22 +392,20 @@ function hullAndBuffer(centers: Feature<Point>[], maxEdgeM = APP_CONFIG.boundary
   }
 }
 
-function hullFromBuildingCenters(centers: Feature<Point>[]): PolygonFeature | null {
-  const maxPoints = APP_CONFIG.boundary.connectedHullGridMaxPoints
-  let hullInput = centers
-  if (centers.length > maxPoints) {
-    const cellM = APP_CONFIG.boundary.clusterDistanceM
-    const seen = new Set<string>()
-    hullInput = []
-    for (const center of centers) {
-      const [lon, lat] = center.geometry.coordinates
-      const key = gridKey(lon, lat, cellM)
-      if (seen.has(key)) continue
-      seen.add(key)
-      hullInput.push(center)
-    }
-  }
-  return hullAndBuffer(hullInput, APP_CONFIG.boundary.connectedHullMaxEdgeM)
+function boundaryFromGroups(
+  groups: Array<Array<{ center: Feature<Point> }>>,
+  mask?: PolygonFeature | null,
+  maxEdgeM = APP_CONFIG.boundary.clusterDistanceM * 2.4,
+) {
+  const hulls = groups
+    .map((group) => hullAndBuffer(group.map((item) => item.center), maxEdgeM))
+    .filter((hull): hull is PolygonFeature => Boolean(hull))
+  return clipToMask(safeUnion(hulls), mask)
+}
+
+function clipToMask(hull: PolygonFeature | null, mask?: PolygonFeature | null) {
+  if (!hull || !mask) return hull
+  return safeIntersect(hull, mask) ?? hull
 }
 
 export function boundaryFromBuildingCluster(
@@ -344,9 +413,10 @@ export function boundaryFromBuildingCluster(
   lat: number,
   lon: number,
   maxDistanceM = APP_CONFIG.boundary.centerPreferenceM,
+  mask?: PolygonFeature | null,
 ): PolygonFeature | null {
-  const cluster = clusterBuildings(buildings, point([lon, lat]), maxDistanceM)
-  return hullAndBuffer(cluster.map((item) => item.center))
+  const groups = settledClusterGroups(buildings, point([lon, lat]), maxDistanceM, { includeInside: mask ?? undefined })
+  return boundaryFromGroups(groups, mask)
 }
 
 export function boundaryFromBuildingSample(
@@ -374,8 +444,9 @@ export function boundaryFromConnectedBuildings(
   lat: number,
   lon: number,
   bridgeM = APP_CONFIG.boundary.clusterBridgeDistanceM,
+  mask?: PolygonFeature | null,
 ): PolygonFeature | null {
-  const cluster = clusterBuildings(
+  const groups = settledClusterGroups(
     buildings,
     point([lon, lat]),
     Number.POSITIVE_INFINITY,
@@ -383,10 +454,34 @@ export function boundaryFromConnectedBuildings(
       seed: 'nearest',
       bridgeM,
       minSecondary: APP_CONFIG.boundary.minimumClusterSize,
+      includeInside: mask ?? undefined,
     },
   )
-  if (cluster.length < 3) return null
-  return hullFromBuildingCenters(cluster.map((item) => item.center))
+  if (groups.flat().length < 3) return null
+  return boundaryFromGroups(groups, mask, Math.min(bridgeM, APP_CONFIG.boundary.connectedHullMaxEdgeM))
+}
+
+export function sampleFeaturesForDisplay<T>(features: T[], max: number, pointOf: (feature: T) => [number, number] | null) {
+  if (features.length <= max) return features
+  const cellM = 90
+  const seen = new Set<string>()
+  const spread: T[] = []
+  const rest: T[] = []
+  for (const feature of features) {
+    const coords = pointOf(feature)
+    if (!coords) { rest.push(feature); continue }
+    const key = gridKey(coords[0], coords[1], cellM)
+    if (seen.has(key)) rest.push(feature)
+    else { seen.add(key); spread.push(feature) }
+  }
+  if (spread.length >= max) return takeEvenly(spread, max)
+  return [...spread, ...takeEvenly(rest, max - spread.length)]
+}
+
+function takeEvenly<T>(items: T[], max: number) {
+  if (items.length <= max) return items
+  const step = items.length / max
+  return Array.from({ length: max }, (_, index) => items[Math.min(items.length - 1, Math.floor(index * step))]!)
 }
 
 export function fallbackBoundary(lat: number, lon: number): PolygonFeature {
@@ -401,7 +496,7 @@ export function validateSettlementPolygon(
   geometry: GeoJSON.Geometry | undefined,
   lat: number,
   lon: number,
-  limits?: { maximumAreaKm2?: number; maximumCentroidOffsetM?: number },
+  limits?: { maximumAreaKm2?: number; maximumCentroidOffsetM?: number; containsCenter?: boolean },
 ): PolygonFeature | null {
   if (!geometry || (geometry.type !== 'Polygon' && geometry.type !== 'MultiPolygon')) return null
   const feature = { type: 'Feature', properties: {}, geometry } as PolygonFeature
@@ -409,8 +504,15 @@ export function validateSettlementPolygon(
   const maximumAreaKm2 = limits?.maximumAreaKm2 ?? APP_CONFIG.boundary.maximumAreaKm2
   const maximumCentroidOffsetM = limits?.maximumCentroidOffsetM ?? APP_CONFIG.boundary.maximumCentroidOffsetM
   if (areaKm2 < APP_CONFIG.boundary.minimumAreaKm2 || areaKm2 > maximumAreaKm2) return null
+  const center = point([lon, lat])
   try {
-    const offset = distance(centerOfMass(feature), point([lon, lat]), { units: 'meters' })
+    if (limits?.containsCenter) {
+      if (booleanPointInPolygon(center, feature)) return feature
+      const near = safeBuffer(feature, 400)
+      if (near && booleanPointInPolygon(center, near)) return feature
+      return null
+    }
+    const offset = distance(centerOfMass(feature), center, { units: 'meters' })
     if (offset > maximumCentroidOffsetM) return null
   } catch { return null }
   return feature

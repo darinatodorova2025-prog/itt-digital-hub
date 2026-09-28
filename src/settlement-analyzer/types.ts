@@ -40,6 +40,9 @@ export interface RawGeodata {
   fetchedAt?: string
   source?: 'overpass' | 'pack'
   queryRadiusM?: number
+  terrainSamples?: Array<{ lat: number; lon: number; elevationM: number; dLat?: number; dLon?: number }>
+  terrainSourceName?: string
+  terrainResolutionM?: number
 }
 
 export interface CategoryResult {
@@ -90,7 +93,7 @@ export type BoundaryReasonCode =
   | 'buildingCluster'
   | 'centerBuffer'
 
-export type AnalysisWarningCode = 'noBuildings' | 'noRoads' | 'incompleteData' | 'dataExtentReached'
+export type AnalysisWarningCode = 'noBuildings' | 'noRoads' | 'incompleteData' | 'dataExtentReached' | 'plotBuffersOmitted' | 'roadAreaEstimated' | 'areasCapped'
 
 export type ConfidenceReasonCode =
   | 'classifiedBuildings'

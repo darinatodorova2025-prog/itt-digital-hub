@@ -10,6 +10,7 @@ export interface LayerVisibility {
   buildings: boolean
   pois: boolean
   cadastre: boolean
+  terrain: boolean
 }
 
 export function createDefaultLayerVisibility(): LayerVisibility {
@@ -24,6 +25,7 @@ export function createDefaultLayerVisibility(): LayerVisibility {
     other: true,
     buildings: true,
     pois: true,
-    cadastre: true,
+    cadastre: false,
+    terrain: true,
   }
 }

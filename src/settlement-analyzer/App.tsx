@@ -8,14 +8,20 @@ import { ProductHeader } from './ProductHeader'
 import { sa } from './copy'
 import { APP_CONFIG } from './config'
 import { LayerPanel } from './components/LayerPanel'
-import { createDefaultLayerVisibility, type LayerVisibility } from './components/layer-visibility'
+import { type LayerVisibility } from './components/layer-visibility'
 import type { AnalysisResult, AnalysisStage, PackCatalogItem, PackDownloadProgress, PolygonFeature, RawGeodata, SettlementResult } from './types'
 import { PackMenu } from './components/PackMenu'
 import { ResultsPanel } from './components/ResultsPanel'
 import { SearchPanel } from './components/SearchPanel'
 import { analysisToCsv, analysisToGeoJson, downloadText, safeFilename } from './lib/export'
 import { dataRadiusForBoundary } from './lib/geometry'
+import { bbox } from '@turf/turf'
 import { analysisRadiusForSettlement, analyzeSettlement } from './services/analysis'
+import { trackEvent } from './conference/tracking'
+import { NetworkInterestModal } from './water/NetworkInterestModal'
+import { samplesInsideBoundary, summarizeTerrain, type ElevationSample, type TerrainSummary } from './water/metrics'
+import { layersForMode, terrainStyle, WATER_CONTEXTS, type WaterContext } from './water/modes'
+import { waterText } from './water/copy'
 import { fetchUrbanizedParcels } from './services/cadastre'
 import { fetchSettlementGeodata, GeodataTooLargeError, GeodataUnavailableError } from './services/overpass'
 import { catalogHas, loadPackCatalog, loadShippedPackCatalog } from './services/pack-catalog'
@@ -29,6 +35,8 @@ type MapViewProps = {
   visible: LayerVisibility
   editing: boolean
   cadastre: FeatureCollection | null
+  terrain: TerrainSummary | null
+  terrainStyleMode: 'elevation' | 'slope'
   onBoundaryEdited: (boundary: PolygonFeature) => void
 }
 
@@ -70,7 +78,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   const [rawDataRadiusM, setRawDataRadiusM] = useState(0)
   const [stage, setStage] = useState<AnalysisStage>('idle')
   const [analysisError, setAnalysisError] = useState<string | null>(null)
-  const [visible, setVisible] = useState<LayerVisibility>(createDefaultLayerVisibility)
+  const [visible, setVisible] = useState<LayerVisibility>(() => layersForMode('supply'))
   const [layersCollapsed, setLayersCollapsed] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -79,6 +87,10 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   const [packCatalog, setPackCatalog] = useState<PackCatalogItem[]>([])
   const [downloadProgress, setDownloadProgress] = useState<PackDownloadProgress | null>(null)
   const [lastFailure, setLastFailure] = useState<'analysis' | 'pack' | null>(null)
+  const [mode, setMode] = useState<WaterContext>('supply')
+  const [terrain, setTerrain] = useState<TerrainSummary | null>(null)
+  const [terrainState, setTerrainState] = useState<'idle' | 'loading' | 'active' | 'unavailable'>('idle')
+  const [networkOpen, setNetworkOpen] = useState(false)
   const analysisAbort = useRef<AbortController | null>(null)
   const downloadAbort = useRef<AbortController | null>(null)
   const polygonRequest = useRef<{ key: string; promise: Promise<GeoJSON.Geometry | undefined> } | null>(null)
@@ -103,6 +115,49 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   useEffect(() => {
     refreshPackCatalog()
   }, [refreshPackCatalog])
+
+  useEffect(() => {
+    if (!result) {
+      setTerrain(null)
+      setTerrainState('idle')
+      return
+    }
+    const embedded = rawData?.terrainSamples
+    if (embedded && embedded.length >= 4) {
+      const inside = samplesInsideBoundary(embedded, result.boundary)
+      const summary = summarizeTerrain(inside, rawData?.fetchedAt ?? null)
+      if (inside.length >= 4) {
+        if (rawData?.terrainSourceName) summary.sourceName = rawData.terrainSourceName
+        if (rawData?.terrainResolutionM) summary.resolutionM = rawData.terrainResolutionM
+        setTerrain(summary)
+        setTerrainState(summary.status)
+        return
+      }
+    }
+    const [west, south, east, north] = bbox(result.boundary)
+    const controller = new AbortController()
+    setTerrainState('loading')
+    void fetch('/api/settlement-analyzer/terrain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ west, south, east, north }),
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) throw new Error('terrain')
+      const payload = await response.json() as { fetchedAt?: string; sourceName?: string; resolutionM?: number; samples?: ElevationSample[] }
+      const inside = samplesInsideBoundary(payload.samples ?? [], result.boundary)
+      const summary = summarizeTerrain(inside, payload.fetchedAt ?? null)
+      if (payload.sourceName) summary.sourceName = payload.sourceName
+      if (payload.resolutionM) summary.resolutionM = payload.resolutionM
+      setTerrain(summary)
+      setTerrainState(summary.status)
+    }).catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      setTerrain(null)
+      setTerrainState('unavailable')
+    })
+    return () => controller.abort()
+  }, [rawData, result])
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 820px)')
@@ -234,12 +289,10 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
     setLastFailure(null)
     setResult(null)
     setCadastreParcels(null)
-    setStage('landuse')
+    setStage('boundary')
     try {
-      const polygonWait = new Promise<GeoJSON.Geometry | undefined>((resolve) => {
-        window.setTimeout(() => resolve(undefined), 1800)
-      })
-      const geojson = await Promise.race([requestOpenPolygon(selected), polygonWait])
+      setStage('boundary')
+      const geojson = await requestOpenPolygon(selected)
       const settlementForAnalysis = geojson ? { ...selected, geojson } : selected
       if (geojson) setSelected(settlementForAnalysis)
       const analysisRadiusM = analysisRadiusForSettlement(settlementForAnalysis)
@@ -254,13 +307,28 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
         },
         settlementForAnalysis.ekatte,
       )
+      let currentRaw = raw
+      let currentRadius: number = analysisRadiusM
+      let analysis = analyzeSettlement(settlementForAnalysis, currentRaw)
+      if (analysis.warnings.includes('dataExtentReached') && currentRadius < APP_CONFIG.overpass.cityRadiusM) {
+        const widerRadius = Math.min(APP_CONFIG.overpass.cityRadiusM, Math.round(currentRadius * 1.8 / 100) * 100)
+        if (widerRadius > currentRadius) {
+          setStage('buildings')
+          currentRaw = await fetchSettlementGeodata(
+            settlementForAnalysis.lat,
+            settlementForAnalysis.lon,
+            controller.signal,
+            widerRadius,
+            undefined,
+            settlementForAnalysis.ekatte,
+          )
+          currentRadius = widerRadius
+          analysis = analyzeSettlement(settlementForAnalysis, currentRaw)
+        }
+      }
       if (analysisAbort.current !== controller) return
-      setRawData(raw)
-      setRawDataRadiusM(analysisRadiusM)
-      setStage('geometry')
-      await new Promise((resolve) => window.setTimeout(resolve, 40))
-      if (analysisAbort.current !== controller) return
-      const analysis = analyzeSettlement(settlementForAnalysis, raw)
+      setRawData(currentRaw)
+      setRawDataRadiusM(currentRadius)
       setStage('metrics')
       setResult(analysis)
       onAnalysisCompleted?.(analysis)
@@ -285,7 +353,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       const aborted = controller.signal.aborted
       const detail = aborted || error instanceof GeodataUnavailableError
         ? (ownerMode && error instanceof GeodataUnavailableError ? `${copy.geodataUnavailable} ${error.sources}` : copy.geodataUnavailable)
-        : error instanceof Error ? error.message : copy.analysisUnexpected
+        : copy.analysisUnexpected
       setAnalysisError(detail)
       setStage('idle')
       setLastFailure('analysis')
@@ -310,7 +378,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
     setEditing(false)
     setEditedBoundary(null)
     setCadastreParcels(null)
-    setVisible(createDefaultLayerVisibility())
+    setVisible(layersForMode(mode))
     polygonRequest.current = null
     setDownloadProgress(null)
   }
@@ -440,13 +508,20 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
             <button type="button" className="retry-button" onClick={lastFailure === 'pack' ? runPackDownload : runAnalysis}><RotateCcw size={16} /> {copy.retry}</button>
           </div>
         ) : null}
+        <div className="mode-bar" role="tablist" aria-label={waterText(locale).modesLabel}>
+          {WATER_CONTEXTS.map((item) => (
+            <button key={item} type="button" role="tab" aria-selected={mode === item} className={mode === item ? 'mode-bar__item mode-bar__item--active' : 'mode-bar__item'} onClick={() => { setMode(item); setVisible(layersForMode(item)) }}>
+              {waterText(locale).modes[item]}
+            </button>
+          ))}
+        </div>
       </section>
 
       <main className={`workspace ${result ? 'workspace--with-results' : ''}`}>
         <section className="map-region" aria-label={copy.mapRegion}>
-          <ClientMap locale={locale} selected={selected} result={result} visible={visible} editing={editing} cadastre={cadastreParcels} onBoundaryEdited={handleBoundaryEdited} />
-          <LayerPanel locale={locale} visible={visible} onChange={setVisible} collapsed={layersCollapsed} onToggleCollapsed={() => setLayersCollapsed((value) => !value)} />
-          {analyzing && <div className="analysis-overlay"><span className="analysis-loader" /><strong>{copy.stages[stage] ?? ''}</strong></div>}
+          <ClientMap locale={locale} selected={selected} result={result} visible={visible} editing={editing} cadastre={cadastreParcels} terrain={terrain} terrainStyleMode={terrainStyle(mode)} onBoundaryEdited={handleBoundaryEdited} />
+          <LayerPanel locale={locale} terrainLabel={waterText(locale).terrainLayer} visible={visible} onChange={setVisible} collapsed={layersCollapsed} onToggleCollapsed={() => setLayersCollapsed((value) => !value)} />
+          {analyzing && <div className="analysis-overlay" role="status" aria-live="polite"><span className="analysis-loader" /><strong>{copy.stages[stage] ?? ''}</strong></div>}
           {downloading && downloadProgress ? (
             <div className="analysis-overlay" role="status" aria-live="polite">
               <span className="analysis-loader" />
@@ -458,15 +533,18 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
               <button type="button" className="button" onClick={cancelPackDownload}>{copy.cancelDownload}</button>
             </div>
           ) : null}
-          <p className="map-caption">{copy.mapDisclaimer}</p>
         </section>
 
         {result ? (
           <ResultsPanel
             locale={locale}
+            mode={mode}
             result={result}
+            terrain={terrain}
+            terrainState={terrainState}
             editing={editing}
             cadastreLoaded={Boolean(cadastreParcels && cadastreParcels.features.length > 0)}
+            onOpenNetwork={() => { setNetworkOpen(true); void trackEvent('network_upload_modal_open') }}
             onStartEditing={startEditing}
             onCancelEditing={cancelEditing}
             onRecalculate={recalculate}
@@ -475,6 +553,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
           />
         ) : null}
       </main>
+      <NetworkInterestModal locale={locale} open={networkOpen} onClose={() => setNetworkOpen(false)} />
     </div>
   )
 }

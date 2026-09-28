@@ -8,8 +8,9 @@ import type { Locale } from '@/lib/i18n'
 import { sa } from '../copy'
 import { APP_CONFIG } from '../config'
 import { tagsOf } from '../lib/classification'
-import { clipCollectionToBoundary } from '../lib/geometry'
+import { clipCollectionToBoundary, sampleFeaturesForDisplay } from '../lib/geometry'
 import type { AnalysisResult, PolygonFeature, SettlementResult } from '../types'
+import type { TerrainSummary } from '../water/metrics'
 import type { LayerVisibility } from './layer-visibility'
 import type { FeatureCollection } from 'geojson'
 
@@ -22,6 +23,8 @@ interface Props {
   visible: LayerVisibility
   editing: boolean
   cadastre: FeatureCollection | null
+  terrain: TerrainSummary | null
+  terrainStyleMode: 'elevation' | 'slope'
   onBoundaryEdited: (boundary: PolygonFeature) => void
 }
 
@@ -93,19 +96,21 @@ function poiLabel(tags: Record<string, string>, labels: Record<string, string>) 
   return labels[tags.amenity ?? ''] || (tags.sport ? labels.sport : labels.other)
 }
 
-export function MapView({ locale, selected, result, visible, editing, cadastre, onBoundaryEdited }: Props) {
+export function MapView({ locale, selected, result, visible, editing, cadastre, terrain, terrainStyleMode, onBoundaryEdited }: Props) {
   const copy = sa(locale)
   const layers = useMemo(() => result?.categories.filter((category) => visible[category.key]) ?? [], [result, visible])
   const buildingLayer = useMemo(() => {
     if (!result || !visible.buildings) return null
     const max = APP_CONFIG.analysis.maxMapBuildings
     if (result.buildings.features.length <= max) return result.buildings
-    const step = result.buildings.features.length / max
     return {
       ...result.buildings,
-      features: Array.from({ length: max }, (_, index) => (
-        result.buildings.features[Math.min(result.buildings.features.length - 1, Math.floor(index * step))]
-      )),
+      features: sampleFeaturesForDisplay(result.buildings.features, max, (feature) => {
+        const coords = feature.geometry.type === 'Polygon'
+          ? feature.geometry.coordinates[0]?.[0]
+          : feature.geometry.coordinates[0]?.[0]?.[0]
+        return Array.isArray(coords) && coords.length >= 2 ? [coords[0], coords[1]] as [number, number] : null
+      }),
     }
   }, [result, visible.buildings])
   const cadastreLayer = useMemo(() => {
@@ -114,7 +119,8 @@ export function MapView({ locale, selected, result, visible, editing, cadastre, 
   }, [cadastre, result, visible.cadastre])
   const mapKey = result?.createdAt ?? (selected ? `sel-${selected.placeId}` : 'bg')
   return (
-    <MapContainer key={mapKey} className="map" center={[42.72, 25.48]} zoom={7} zoomControl={false} preferCanvas>
+    <>
+      <MapContainer key={mapKey} className="map" center={[42.72, 25.48]} zoom={7} zoomControl={false} preferCanvas>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -122,6 +128,20 @@ export function MapView({ locale, selected, result, visible, editing, cadastre, 
       />
       <ZoomControl position="topright" zoomInTitle={copy.zoomIn} zoomOutTitle={copy.zoomOut} />
       <FitMap locale={locale} selected={selected} result={result} />
+      {terrain && visible.terrain && terrain.cells.length > 0 && (
+        <GeoJSON
+          key={`terrain-${result?.createdAt}-${terrainStyleMode}`}
+          data={{ type: 'FeatureCollection', features: terrain.cells } as FeatureCollection}
+          style={(feature) => {
+            const props = feature?.properties as { zone?: string; slopePercent?: number | null } | undefined
+            const slope = props?.slopePercent ?? 0
+            const color = terrainStyleMode === 'slope'
+              ? (slope < 2 ? '#d7e4ea' : slope < 6 ? '#7aa0b8' : '#8d4a4a')
+              : props?.zone === 'high' ? '#d07a45' : props?.zone === 'low' ? '#d5e0c4' : '#e6c36a'
+            return { color, fillColor: color, fillOpacity: 0.45, weight: 0.4 }
+          }}
+        />
+      )}
       {layers.map((category) => category.geometry && (
         <GeoJSON
           key={`${result?.createdAt}-${category.key}`}
@@ -154,6 +174,13 @@ export function MapView({ locale, selected, result, visible, editing, cadastre, 
         </CircleMarker>
       )}
       {result && editing && <BoundaryEditor boundary={result.boundary} onChange={onBoundaryEdited} />}
-    </MapContainer>
+      </MapContainer>
+      <div className="map-notes">
+        {buildingLayer && result && result.buildings.features.length > buildingLayer.features.length ? (
+          <p className="map-note">{copy.mapBuildingsSampled.replace('{shown}', String(buildingLayer.features.length)).replace('{total}', String(result.buildings.features.length))}</p>
+        ) : null}
+        <p className="map-note">{copy.mapDisclaimer}</p>
+      </div>
+    </>
   )
 }
