@@ -18,14 +18,15 @@ export function clusteringUserPrompt(ideas: Array<{ id: string; body: string; or
 }
 
 export const JUDGE_PROMPTS = {
-  business_value: `Оцени бизнес стойност: време, ресурси, качество, ръчен труд, организация. Избери Top 3 теми.`,
-  feasibility: `Оцени реализируемост с налични технологии и разумни усилия. Избери Top 3 теми.`,
-  innovation: `Оцени иновация: по-добър начин на работа с технологии/ИИ. Избери Top 3 теми.`,
+  business_value: `Оцени бизнес стойност: време, ресурси, качество, ръчен труд, организация. Класирай подадените теми.`,
+  feasibility: `Оцени реализируемост с налични технологии и разумни усилия. Класирай подадените теми.`,
+  innovation: `Оцени иновация: по-добър начин на работа с технологии/ИИ. Класирай подадените теми.`,
 } as const;
 
 export function juryUserPrompt(themes: Array<{ id: string; title: string; description: string; isAiWildcard: boolean }>) {
+  const count = Math.min(3, themes.length);
   return JSON.stringify({
-    instruction: "Върни JSON picks[] с 3 елемента: themeId, rank (1-3), rationale.",
+    instruction: `Върни JSON picks[] с точно ${count} елемента: themeId от подадените, уникален rank от 1 до ${count}, rationale.`,
     themes: themes.map(({ id, title, description, isAiWildcard }) => ({ id, title, description, isAiWildcard })),
   });
 }

@@ -520,19 +520,20 @@ export class MemoryMahniStore implements MahniStore {
 
   async startJuryRun(judge: import("../types").JudgeType) {
     const campaign = this.campaignOrThrow();
+    const previous = [...this.juryRuns.values()].find((run) => run.campaignId === campaign.id && run.judgeType === judge);
     const run: AiJuryRun = {
-      id: randomUUID(),
+      id: previous?.id ?? randomUUID(),
       campaignId: campaign.id,
       judgeType: judge,
       status: "running",
       provider: null,
       model: null,
-      attempt: 1,
+      attempt: (previous?.attempt ?? 0) + 1,
       errorCode: null,
       errorMessage: null,
       startedAt: nowIso(),
       finishedAt: null,
-      createdAt: nowIso(),
+      createdAt: previous?.createdAt ?? nowIso(),
     };
     this.juryRuns.set(run.id, run);
     return run;

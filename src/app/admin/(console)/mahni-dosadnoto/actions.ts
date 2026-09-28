@@ -77,8 +77,9 @@ export async function mdRunAnalysis() {
 
 export async function mdRunJury() {
   await assertAdmin();
-  await runFullJury();
+  const result = await runFullJury();
   revalidatePath("/admin/mahni-dosadnoto");
+  return { succeeded: result.progress.succeeded, complete: result.progress.complete };
 }
 
 export async function mdRetryJury(judges?: JudgeType[]) {
@@ -86,9 +87,13 @@ export async function mdRetryJury(judges?: JudgeType[]) {
   const store = getMahniStore();
   const progress = summarizeJuryProgress(await store.listJuryResults());
   const target = judges ?? progress.judges.filter((j) => j.status !== "succeeded").map((j) => j.judge);
-  if (target.length === 0) return;
-  await runJuryWithResilience(store, { judges: target });
+  if (target.length === 0) {
+    const current = summarizeJuryProgress(await store.listJuryResults());
+    return { succeeded: current.succeeded, complete: current.complete };
+  }
+  const result = await runJuryWithResilience(store, { judges: target });
   revalidatePath("/admin/mahni-dosadnoto");
+  return { succeeded: result.progress.succeeded, complete: result.progress.complete };
 }
 
 export async function mdRevealResults() {

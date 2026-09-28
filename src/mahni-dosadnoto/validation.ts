@@ -98,11 +98,37 @@ export const juryPickSchema = z.object({
   rationale: z.string().min(10).max(800),
 });
 
-export const juryOutputSchema = z.object({
-  picks: z.array(juryPickSchema).length(3),
-});
+export type JuryOutput = {
+  picks: Array<{ themeId: string; rank: 1 | 2 | 3; rationale: string }>;
+};
 
-export type JuryOutput = z.infer<typeof juryOutputSchema>;
+/** Rank every available theme, and never ask for more than three. */
+export function juryPickCount(themeCount: number): number {
+  return Math.min(3, Math.max(0, Math.floor(themeCount)));
+}
+
+export function juryOutputSchemaFor(themeCount: number): z.ZodType<JuryOutput> {
+  const count = juryPickCount(themeCount);
+  const rank =
+    count <= 1
+      ? z.literal(1)
+      : count === 2
+        ? z.union([z.literal(1), z.literal(2)])
+        : z.union([z.literal(1), z.literal(2), z.literal(3)]);
+  return z.object({
+    picks: z
+      .array(
+        z.object({
+          themeId: z.string().uuid(),
+          rank,
+          rationale: z.string().min(10).max(800),
+        }),
+      )
+      .length(Math.max(1, count)),
+  });
+}
+
+export const juryOutputSchema = juryOutputSchemaFor(3);
 
 export function validateClusteringAgainstIdeas(
   output: ClusteringOutput,

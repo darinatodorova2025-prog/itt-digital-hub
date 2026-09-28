@@ -546,7 +546,17 @@ export class SupabaseMahniStore implements MahniStore {
     const { data, error } = await sb
       .from("md_ai_jury_runs")
       .upsert(
-        { campaign_id: campaign.id, judge_type: judge, status: "running", started_at: new Date().toISOString(), error_code: null, error_message: null },
+        {
+          campaign_id: campaign.id,
+          judge_type: judge,
+          status: "running",
+          started_at: new Date().toISOString(),
+          finished_at: null,
+          provider: null,
+          model: null,
+          error_code: null,
+          error_message: null,
+        },
         { onConflict: "campaign_id,judge_type" },
       )
       .select("*")

@@ -26,6 +26,7 @@ export async function completeJson<T>(
   system: string,
   user: string,
   providerOverride?: AiProviderId,
+  timeoutMs?: number,
 ): Promise<{ data: T; provider: string; model: string }> {
   const config = readMahniAiConfig();
   if (!providerOverride && !providerKeyConfigured(config)) {
@@ -33,11 +34,12 @@ export async function completeJson<T>(
   }
   const strictUser = `${user}\n\nОтговори САМО с валиден JSON без markdown.`;
   const { id, impl, model } = pickProvider(config, providerOverride);
+  const bounded = timeoutMs ? Math.min(25_000, Math.max(5_000, timeoutMs)) : Math.max(config.timeoutMs, 60_000);
   const result = await impl.complete({
     model,
     system,
     messages: [{ role: "user", content: strictUser }],
-    timeoutMs: Math.max(config.timeoutMs, 60_000),
+    timeoutMs: bounded,
   });
   let parsed: unknown;
   try {

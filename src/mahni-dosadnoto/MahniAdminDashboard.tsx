@@ -532,6 +532,15 @@ const ACTION_LABEL: Record<ActionId, string> = {
   closed: "Приключи събитието",
 };
 
+async function drainJury(run: () => Promise<{ succeeded: number; complete: boolean }>) {
+  let previous = -1;
+  for (let pass = 0; pass < 3; pass++) {
+    const result = await run();
+    if (result.complete || result.succeeded <= previous) return;
+    previous = result.succeeded;
+  }
+}
+
 const actionRunners: Record<ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real", () => Promise<void>> = {
   collect: () => mdStartCollecting(),
   "close-collect": () => mdCloseCollection(),
@@ -539,8 +548,8 @@ const actionRunners: Record<ActionId | "seed" | "reset" | "prepare-rehearsal" | 
   vote: () => mdOpenVoting(),
   final: () => mdStartFinalCountdown(),
   "close-vote": () => mdCloseVoting(),
-  jury: () => mdRunJury(),
-  "retry-jury": () => mdRetryJury(),
+  jury: () => drainJury(() => mdRunJury()),
+  "retry-jury": () => drainJury(() => mdRetryJury()),
   results: () => mdRevealResults(),
   closed: () => mdCloseEvent(),
   seed: () => mdSeedDemo(),
