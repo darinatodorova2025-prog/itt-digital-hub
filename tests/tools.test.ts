@@ -12,9 +12,9 @@ describe("tools catalogue", () => {
   it("lists ViK, pipe thermal analysis, AI Act, then the settlement analyzer", () => {
     const ids = toolsFor("bg").map((tool) => tool.id);
     expect(ids).toEqual(["vik-proektant", "pipe-thermal-analysis", "ai-act-assistant", "settlement-analyzer"]);
-    expect(toolsFor("bg")[0]?.href).toBe("/bg/vik-proektant/compare");
+    expect(toolsFor("bg")[0]?.href).toBe("/bg/vik-proektant");
     expect(toolsFor("bg")[0]?.status).toBeUndefined();
-    expect(toolsFor("en")[0]?.href).toBe("/en/vik-proektant/compare");
+    expect(toolsFor("en")[0]?.href).toBe("/en/vik-proektant");
     expect(toolsFor("bg")[1]?.href).toBe("/bg/pipe-thermal-analysis");
     expect(toolsFor("en")[1]?.href).toBe("/en/pipe-thermal-analysis");
     expect(toolsFor("bg")[1]?.image).toBe("/tools/pipe-thermal-analysis-hero.jpg");
@@ -42,7 +42,7 @@ describe("tools catalogue", () => {
   });
 
   it("uses the specified document titles", () => {
-    expect(toolsPage.meta.title.bg).toBe("Инструменти · ITT Digital Hub");
-    expect(toolsPage.meta.title.en).toBe("Tools · ITT Digital Hub");
+    expect(toolsPage.meta.title.bg).toBe("Инструменти | ITT Digital Hub");
+    expect(toolsPage.meta.title.en).toBe("Tools | ITT Digital Hub");
   });
 });

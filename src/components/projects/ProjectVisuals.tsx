@@ -120,9 +120,9 @@ export function WarrantyCardDiagram({ locale }: { locale: Locale }) {
 export function OrchestrationCardDiagram({ locale }: { locale: Locale }) {
   const steps = locale === "bg" ? ["Задача", "Политика", "Оркестрация", "Резултат"] : ["Task", "Policy", "Orchestration", "Result"];
   const cells = [
-    { title: locale === "bg" ? "Локално" : "Local first", note: locale === "bg" ? "Предпочитаният път" : "The default path" },
+    { title: locale === "bg" ? "Локално" : "Local first", note: locale === "bg" ? "По-голям контрол" : "The default path" },
     { title: locale === "bg" ? "MCP" : "MCP", note: locale === "bg" ? "Достъп, не оркестрация" : "Access, not orchestration" },
-    { title: locale === "bg" ? "Облак" : "Cloud", note: locale === "bg" ? "Само при нужда" : "Only when justified" },
+    { title: locale === "bg" ? "Облак" : "Cloud", note: locale === "bg" ? "Когато е необходим" : "Only when justified" },
   ];
 
   return (

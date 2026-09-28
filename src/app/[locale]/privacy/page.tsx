@@ -4,9 +4,10 @@ import { pageMetadata } from "@/lib/metadata";
 import { privacyPage as c } from "@/content/pages";
 import { PageHeader } from "@/components/editorial/PageHeader";
 import { Container } from "@/components/layout/Container";
+import { t } from "@/content/messages";
+import { breadcrumbTrail } from "@/lib/breadcrumbs";
 import { Paragraphs } from "@/components/editorial/Blocks";
-import { BackLink } from "@/components/ui/BackLink";
-import { href } from "@/lib/paths";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 type Params = { params: Promise<{ locale: string }> };
 
@@ -23,7 +24,7 @@ export default async function PrivacyPage({ params }: Params) {
     <>
       <PageHeader
         heading={c.heading[locale]}
-        back={<BackLink href={href(locale, "home")}>{c.back[locale]}</BackLink>}
+        back={<Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "privacy")} />}
       />
       <Container className="pb-section">
         <div className="max-w-[68ch] border-t border-line pt-8">

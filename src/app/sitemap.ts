@@ -17,6 +17,7 @@ const staticRoutes: Array<{ key: RouteKey; priority: number }> = [
   { key: "ai-act", priority: 0.8 },
   { key: "settlement-analyzer", priority: 0.8 },
   { key: "pipe-thermal-analysis", priority: 0.8 },
+  { key: "vik-proektant", priority: 0.8 },
 ];
 
 function entry(key: RouteKey, priority: number, slug?: string): MetadataRoute.Sitemap {

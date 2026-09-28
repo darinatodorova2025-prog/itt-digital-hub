@@ -56,7 +56,7 @@ describe("homepage section map", () => {
   });
 
   it("keeps spy ids in homepage document order", () => {
-    expect([...homeSpySectionIds]).toEqual(["experience", "work", "problems", "judgement", "approach", "people", "contact"]);
+    expect([...homeSpySectionIds]).toEqual(["experience", "work", "problems", "judgement", "benefit", "approach", "people", "contact"]);
   });
 
   it("aligns homepage-mapped nav order with document-order spy progression", () => {

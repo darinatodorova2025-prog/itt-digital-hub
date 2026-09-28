@@ -25,7 +25,13 @@ export default async function ToolsPage({ params }: Params) {
 
   return (
     <div className="hero-atmosphere text-on-dark" data-surface="dark">
-      <PageHeader heading={c.heading[locale]} lead={c.lead[locale]} tone="dark" className="pt-14 md:pt-20" />
+      <PageHeader
+        heading={c.heading[locale]}
+        lead={c.lead[locale]}
+        support={c.support[locale] || undefined}
+        tone="dark"
+        className="pt-14 md:pt-20"
+      />
       <Container className="pb-section">
         <ol className="grid gap-8 lg:grid-cols-2 lg:gap-10 xl:grid-cols-3">
           {tools.map((tool) => (

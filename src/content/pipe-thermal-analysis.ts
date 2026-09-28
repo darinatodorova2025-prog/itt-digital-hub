@@ -2,21 +2,21 @@ import type { L } from "@/lib/i18n";
 
 export const pipeThermalAnalysis = {
   meta: {
-    title: { bg: "Топлинен анализ на тръбопроводи", en: "Pipe Thermal Analysis" } satisfies L,
+    title: { bg: "Топлинен анализ на изолирана тръба", en: "Pipe Thermal Analysis" } satisfies L,
     description: {
-      bg: "Интерактивен инженерен инструмент за анализ на температурните изменения и топлинните загуби при изолирани PE тръбопроводи.",
-      en: "Interactive engineering tool for analysing temperature change and heat loss in insulated PE pipelines.",
+      bg: "Как дебитът, изолацията, температурата и външните условия влияят върху изстиването на водата и риска от замръзване.",
+      en: "See how flow, insulation, temperature and external conditions affect water cooling and the risk of freezing in an insulated pipe.",
     } satisfies L,
   },
-  label: { bg: "Инструмент", en: "Tool" } satisfies L,
+  label: { bg: "Инженерство · Изчисления", en: "Tool" } satisfies L,
   back: { bg: "Инструменти", en: "Tools" } satisfies L,
-  heading: { bg: "Топлинен анализ на тръбопроводи", en: "Pipe Thermal Analysis" } satisfies L,
+  heading: { bg: "Как условията влияят върху изстиването на водата.", en: "Pipe Thermal Analysis" } satisfies L,
   lead: {
-    bg: "Оценява как водата в изолирана полиетиленова тръба изстива с времето и кога се появява риск от замръзване.",
-    en: "Estimates how water in an insulated polyethylene pipe cools over time and when freezing risk appears.",
+    bg: "Вижте как дебитът, изолацията, температурата и външните условия влияят върху изстиването на водата и риска от замръзване.",
+    en: "See how flow, insulation, temperature and external conditions affect how the water cools and when freezing risk appears.",
   } satisfies L,
   support: {
-    bg: "Лумпиран топлинен модел за 1 m тръба.",
+    bg: "Инструментът използва топлинен модел със съсредоточени параметри за 1 m тръба и е предназначен за предварителен инженерен анализ.",
     en: "Lumped thermal model for 1 m of pipe.",
   } satisfies L,
   heroImageAlt: {
@@ -165,7 +165,7 @@ export const pipeThermalAnalysis = {
     en: "This tool shows how an existing engineering model and calculation workflow can become an accessible digital application without losing the logic behind them.",
   } satisfies L,
   disclaimer: {
-    bg: "Резултатите зависят от въведените параметри и от лумпирания топлинен модел. Не заместват проектна проверка за конкретна инсталация.",
+    bg: "Резултатите са ориентировъчни и не заместват проектно изчисление за конкретен обект. Зависят от въведените параметри и от топлинния модел със съсредоточени параметри.",
     en: "Results depend on the entered parameters and on the lumped thermal model. They do not replace a design check for a specific installation.",
   } satisfies L,
   invalidSummary: {

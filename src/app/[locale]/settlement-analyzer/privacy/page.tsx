@@ -5,6 +5,9 @@ import { contactEmail } from "@/content/site";
 import { privacyConfig } from "@/settlement-analyzer/server/config";
 import { sa, settlementAnalyzer } from "@/settlement-analyzer/copy";
 import { pageMetadata } from "@/lib/metadata";
+import { t } from "@/content/messages";
+import { breadcrumbTrail } from "@/lib/breadcrumbs";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 type Params = { params: Promise<{ locale: string }> };
 
@@ -42,8 +45,7 @@ export default async function SettlementAnalyzerPrivacyPage({ params }: Params) 
   return (
     <main className="privacy-page">
       <div className="page-topbar">
-        <a href={href(locale, "settlement-analyzer")}>← {copy.name}</a>
-        <strong>{copy.privacyPageTitle}</strong>
+        <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "settlement-privacy")} />
       </div>
       <article className="privacy-content">
         <h1>{privacy.heading}</h1>

@@ -15,6 +15,7 @@ export type HeroLayout = "split" | "stacked" | "editorial" | "overlay";
 export function Hero({
   headline,
   lead,
+  support,
   primary,
   secondary,
   visual,
@@ -25,6 +26,8 @@ export function Hero({
 }: {
   headline: string;
   lead: string;
+  /** Second paragraph under the lead. Omitted when empty. */
+  support?: string;
   primary: { href: string; label: string };
   secondary?: { href: string; label: string };
   visual?: ReactNode;
@@ -96,7 +99,7 @@ export function Hero({
             className={cn(
               "text-hero text-balance hyphens-none font-sans font-normal",
               dark ? "text-on-dark" : "text-ink",
-              headline.includes("\n") ? "max-w-[18ch] whitespace-pre-line md:max-w-[22ch]" : "max-w-[18ch] md:max-w-[22ch]",
+              headline.includes("\n") ? "max-w-[20ch] whitespace-pre-line md:max-w-[38ch]" : "max-w-[18ch] md:max-w-[22ch]",
               label && "mt-5",
             )}
           >
@@ -104,7 +107,10 @@ export function Hero({
           </h1>
           <div className="mt-10 grid items-end gap-10 lg:mt-16 lg:grid-cols-12 lg:gap-14">
             <div className="lg:col-span-5">
-              <p className={cn("max-w-[44ch] text-lead font-light", dark ? "text-on-dark-muted" : "text-ink-2")}>{lead}</p>
+              <p className={cn("max-w-[48ch] text-lead font-light", dark ? "text-on-dark-muted" : "text-ink-2")}>{lead}</p>
+              {support ? (
+                <p className={cn("mt-4 max-w-[48ch] text-small font-light", dark ? "text-on-dark-muted" : "text-ink-3")}>{support}</p>
+              ) : null}
               {actions}
             </div>
             {visual ? <div className="lg:col-span-7">{visual}</div> : null}

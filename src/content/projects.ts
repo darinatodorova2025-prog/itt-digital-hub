@@ -3,8 +3,8 @@ import type { Project } from "./types";
 import { approachName } from "./approach";
 
 const discussProject = {
-  bg: "Обсъдете проекта си",
-  en: "Discuss your project",
+  bg: "Обсъдете вашия процес",
+  en: "Discuss your process",
 } satisfies L;
 
 const discussCreator = {
@@ -18,67 +18,65 @@ export const projects: Project[] = [
     featured: true,
     status: "production",
     type: { bg: "Бизнес платформа", en: "Business platform" },
-    domain: { bg: "Следпродажбено обслужване", en: "After-sales" },
+    domain: { bg: "Следпродажбено обслужване", en: "After-sales service" },
     methodologyName: approachName,
     title: {
-      bg: "Платформа за директна връзка между производител и краен клиент",
-      en: "Manufacturer-to-Customer Warranty Platform",
+      bg: "Гаранцията като директен канал към клиента",
+      en: "Warranty as a direct channel to the customer",
     },
     standfirst: {
-      bg: "Многоезична дигитална платформа, която свързва производителя директно с крайния клиент, автоматизира гаранционната регистрация с помощта на ИИ и превръща натрупаните данни в полезна бизнес и пазарна информация.",
-      en: "A multilingual digital platform that connects manufacturers directly with end customers, automates warranty verification with AI and turns registrations into actionable customer and market insight.",
+      bg: "Платформа за регистрация на продукт, проверка на покупката и управление на удължена гаранция, без необходимост производителят да променя съществуващия си дистрибуционен модел.",
+      en: "A platform for product registration, purchase checks and extended warranty management, without the manufacturer having to change its distribution model.",
     },
     summary: {
-      bg: "Директна дигитална връзка между производител и краен клиент, с автоматична гаранционна проверка с ИИ и собствена пазарна информация.",
-      en: "A direct digital relationship between manufacturer and customer, with AI-assisted warranty verification and first-party market insight.",
+      bg: "Платформа за регистрация, проверка на документи и управление на удължена гаранция, която създава директна връзка между производител и краен клиент.",
+      en: "Registration, document checks and extended warranty management that create a direct relationship between the manufacturer and the end customer.",
     },
     tags: {
-      bg: ["ИИ автоматизация", "Управление на процеси", "Собствени клиентски данни", "Бизнес анализ"],
-      en: ["AI-assisted verification", "Workflow automation", "First-party data", "Business intelligence"],
+      bg: ["Удължена гаранция", "Проверка на документи", "Проследимост", "Директен канал"],
+      en: ["Extended warranty", "Document checks", "Traceability", "Direct channel"],
     },
     cta: discussProject,
     proposition: {
-      bg: "Удължената гаранция е входът към директна връзка с крайния клиент, без да се променя дистрибуционният модел.",
-      en: "Extended warranty is the entry point into a direct customer relationship, without changing the distribution model.",
+      bg: "Гаранционната регистрация създава директен канал към крайния клиент, без производителят да променя дистрибуционния си модел.",
+      en: "Warranty registration creates a direct channel to the end customer, without the manufacturer changing its distribution model.",
     },
     story: {
       challenge: {
-        heading: { bg: "Предизвикателството", en: "The challenge" },
+        heading: { bg: "Проблемът", en: "The problem" },
         body: {
           bg: [
-            "Физическият продукт минава през дистрибутори и търговци, преди да стигне до крайния клиент. Производителят често губи видимост към това кой реално притежава продукта, къде е закупен и как се използва след продажбата.",
-            "Гаранционната регистрация обикновено е разпръсната между документи, ръчна проверка и отделни екипи. Това забавя потвърждението и оставя малко структурирана информация за реалната пазарна активност.",
+            "Когато продуктът достига до крайния клиент през дистрибутори и търговци, производителят често няма директна връзка с човека, който реално използва продукта.",
+            "Гаранционната регистрация създава естествена причина за такава връзка, но ръчната проверка на документи и данни лесно превръща процеса в административно натоварване.",
           ],
           en: [
-            "The physical product still passes through distributors and retailers before it reaches the end customer. The manufacturer often loses sight of who actually owns the product, where it was bought and how it is used after the sale.",
-            "Warranty registration is usually split across documents, manual checks and separate teams. That slows confirmation and leaves little structured information about real market activity.",
+            "When a product reaches the end customer through distributors and retailers, the manufacturer often has no direct relationship with the person who actually uses it.",
+            "Warranty registration is a natural reason for that relationship, but checking documents and data by hand quickly turns the process into an administrative burden.",
           ],
         },
       },
       built: {
-        heading: { bg: "Какво изградихме", en: "What we built" },
+        heading: { bg: "Решението", en: "The solution" },
         body: {
           bg: [
-            "Изградихме многоезична платформа, която превръща гаранционната регистрация във вход към директна дигитална връзка между производителя и крайния клиент.",
-            "Клиентът идентифицира продукта, въвежда данни за покупката и качва касова бележка или фактура. ИИ прочита документа, извлича датата на покупка и я сравнява с ръчно въведената дата, след което проверява условието за допустимост.",
-            "Когато всичко съвпада, процесът продължава автоматично. Когато нещо липсва или е несъгласувано, клиентът е информиран и автоматично се създава случай за човешка проверка. Операторите работят през структурирана система за обработка на случаи на настолен и мобилен уеб.",
+            "Клиентът регистрира продукта и предоставя информация за покупката. Системата извлича необходимите данни от документа, проверява правилата за допустимост и насочва неясните случаи за човешка проверка.",
+            "Когато документът и въведените данни съвпадат, процесът продължава. Когато нещо липсва или е несъгласувано, клиентът е информиран и се създава случай за преглед. Операторите работят през система за обработка на случаи на настолен и мобилен уеб.",
           ],
           en: [
-            "We built a multilingual platform that turns warranty registration into an entry point for a direct digital relationship between the manufacturer and the end customer.",
-            "The customer identifies the product, enters purchase details and uploads a receipt or invoice. AI reads the document, extracts the purchase date, compares it with the date entered by the customer and checks the eligibility condition.",
-            "When everything matches, the process continues automatically. When something is incomplete or inconsistent, the customer is informed and a case is created for human review. Operators manage those exceptions through a structured case-management system on desktop and mobile web.",
+            "The customer registers the product and provides the purchase information. The system extracts the required data from the document, checks eligibility and sends unclear cases for human review.",
+            "When the document and the entered data match, the process continues. When something is missing or inconsistent, the customer is told and a review case is opened. Operators work through a case system on desktop and mobile web.",
           ],
         },
         quote: {
-          bg: "ИИ обработва рутинната проверка. Хората се намесват при изключенията.",
-          en: "AI handles routine verification. People handle exceptions.",
+          bg: "Ясните случаи минават през системата. Неясните остават за човешка проверка.",
+          en: "Clear cases go through the system. Unclear cases stay with a person.",
         },
       },
       howItWorks: {
         heading: { bg: "Как работи", en: "How it works" },
         body: {
           bg: [
-            "Клиентското пътуване покрива ключови европейски пазари на 6 езика. Продуктовите данни се синхронизират автоматично със системите на производителя, така че новодобавените продукти да стават налични без повтаряща се ръчна поддръжка.",
+            "Регистрацията за клиента е на 6 езика за основните европейски пазари. Продуктовите данни се синхронизират със системите на производителя, така че новодобавените продукти да стават налични без повтаряща се ръчна поддръжка.",
             "Съгласието за маркетинг се обработва отделно от гаранционната регистрация. Ако клиентът даде съгласие, се използва отделен процес за потвърждение. Проследимостта и изискванията на GDPR са вградени в процеса.",
           ],
           en: [
@@ -91,7 +89,7 @@ export const projects: Project[] = [
             "Идентифициране на продукта",
             "Данни за клиента и покупката",
             "Качване на касова бележка или фактура",
-            "ИИ прочита документа и извлича датата",
+            "Системата извлича данните от документа",
             "Сравнение с въведената дата и проверка на допустимостта",
             "Автоматично продължаване или случай за човешка проверка",
             "Потвърждение на гаранцията",
@@ -101,7 +99,7 @@ export const projects: Project[] = [
             "Identify the product",
             "Enter customer and purchase details",
             "Upload the receipt or invoice",
-            "AI reads the document and extracts the date",
+            "The system extracts the data from the document",
             "Compare dates and check eligibility",
             "Continue automatically, or open a human review case",
             "Warranty confirmation",
@@ -110,7 +108,7 @@ export const projects: Project[] = [
         },
       },
       value: {
-        heading: { bg: "Директна връзка и пазарна видимост", en: "Direct relationship and market visibility" },
+        heading: { bg: "Директна връзка и пазарна видимост", en: "A direct relationship and market visibility" },
         body: {
           bg: [
             "Дистрибуционният модел остава непроменен: производител, дистрибутори, търговци, клиент. Платформата добавя паралелна директна връзка: производител, дигитална платформа, клиент.",
@@ -143,33 +141,35 @@ export const projects: Project[] = [
         },
       },
       outcome: {
-        heading: { bg: "Резултат", en: "Outcome" },
+        heading: { bg: "Резултатът", en: "The result" },
         body: {
           bg: [
-            "За клиентите: проста многоезична регистрация. За операциите: по-малко ненужна ръчна проверка. За производителя: директни клиентски отношения, собствена пазарна видимост и структурирана основа за по-умно следпродажбено взаимодействие.",
+            "По-малко ръчна обработка за екипа и по-ясна проследимост на процеса.",
+            "За производителя гаранцията се превръща и в директен канал към крайния клиент. Регистрацията остава многоезична, а пазарната видимост към държави, търговци, продукти и случаи се пази за екипа, който управлява процеса.",
           ],
           en: [
-            "For customers: simple multilingual registration. For operations: less unnecessary manual review. For the manufacturer: direct customer relationships, first-party market visibility and a structured foundation for smarter after-sales engagement.",
+            "Less manual processing for the team, and clearer traceability.",
+            "For the manufacturer, the warranty also becomes a direct channel to the end customer. Registration stays multilingual, and visibility of countries, retailers, products and cases stays with the team that runs the process.",
           ],
         },
       },
     },
     seo: {
       documentTitle: {
-        bg: "Платформа за директна връзка между производител и краен клиент | ITT Digital Hub",
-        en: "Manufacturer-to-Customer Warranty Platform | ITT Digital Hub",
+        bg: "Гаранцията като директен канал към клиента | ITT Digital Hub",
+        en: "Warranty as a direct channel to the customer | ITT Digital Hub",
       },
       description: {
-        bg: "Многоезична платформа, която свързва производителя с крайния клиент, автоматизира гаранционната проверка с ИИ и създава собствена пазарна информация.",
-        en: "A multilingual platform that connects manufacturers with end customers, automates warranty verification with AI and creates first-party market insight.",
+        bg: "Платформа за регистрация на продукт, проверка на покупката и управление на удължена гаранция, без промяна на дистрибуционния модел.",
+        en: "Product registration, purchase checks and extended warranty management, without changing the distribution model.",
       },
       ogTitle: {
-        bg: "Платформа за директна връзка между производител и краен клиент",
-        en: "Manufacturer-to-Customer Warranty Platform",
+        bg: "Гаранцията като директен канал към клиента",
+        en: "Warranty as a direct channel to the customer",
       },
       ogDescription: {
-        bg: "Удължената гаранция като вход към директна клиентска връзка, автоматична проверка и бизнес информация.",
-        en: "Extended warranty as the entry point to a direct customer relationship, automated verification and business insight.",
+        bg: "Удължената гаранция като директен канал към крайния клиент, с по-малко ръчна обработка.",
+        en: "Extended warranty as a direct channel to the end customer, with less manual processing.",
       },
       image: "/stories/warranty-journey.jpg",
     },
@@ -182,16 +182,16 @@ export const projects: Project[] = [
     domain: { bg: "Възобновяема енергия", en: "Renewable energy" },
     methodologyName: approachName,
     title: {
-      bg: "Пазарно оптимизирано управление на соларни паркове",
-      en: "Market Optimised Solar Park Management",
+      bg: "Управление на соларни паркове според пазарните условия",
+      en: "Managing solar parks according to market conditions",
     },
     standfirst: {
-      bg: "Софтуерна система за управление на фотоволтаични централи и батерийни системи, която свързва производството с пазарните цени на електроенергията и помага активите да работят за по-добър икономически резултат, а не просто за максимално производство.",
-      en: "A software platform for managing photovoltaic plants and battery systems by connecting energy production with electricity market prices, helping assets operate for stronger economic performance rather than simply maximum output.",
+      bg: "Управление според пазара, не само според производството. При енергийните активи максималното производство не винаги означава най-добрия икономически резултат.",
+      en: "Manage according to the market, not production alone. For energy assets, maximum production does not always mean the best economic result.",
     },
     summary: {
-      bg: "Управление на соларни паркове и батерии според пазарните цени, а не само според максималното производство.",
-      en: "Solar park and battery control driven by market prices, not maximum output alone.",
+      bg: "Система, която свързва производството с пазарните сигнали и подпомага по-доброто икономическо управление на активите.",
+      en: "A system that connects production with market signals and supports better economic management of the assets.",
     },
     tags: {
       bg: ["Управление на ФЕЦ", "Батерийни системи", "Пазарна оптимизация"],
@@ -203,35 +203,35 @@ export const projects: Project[] = [
     },
     cta: discussProject,
     proposition: {
-      bg: "Целта не е максимално производство. Целта е максимална икономическа ефективност.",
-      en: "The goal is not maximum production. The goal is maximum economic efficiency.",
+      bg: "Производството се разглежда заедно с пазарните условия, а не само с техническия капацитет.",
+      en: "Production is considered together with market conditions, not only with technical capacity.",
     },
     story: {
       challenge: {
-        heading: { bg: "Предизвикателството", en: "The challenge" },
+        heading: { bg: "Проблемът", en: "The problem" },
         body: {
           bg: [
-            "Максималното производство не винаги означава максимална печалба. Цените на електроенергията се променят динамично. В неблагоприятни или отрицателни ценови периоди допълнителното производство може да намали финансовия резултат.",
-            "Системата затова гледа не само колко може да произведе централата, но и дали има икономически смисъл да произвежда точно сега.",
+            "Производството трябва да бъде разглеждано заедно с пазарните условия, прогнозите, техническите ограничения и правилата за работа на конкретния актив.",
+            "Цените на електроенергията се променят. В неблагоприятни периоди допълнителното производство може да влоши икономическия резултат, затова самото количество произведена енергия не е достатъчен ориентир.",
           ],
           en: [
-            "Maximum production does not always mean maximum profit. Electricity prices change dynamically. During unfavourable or negative price periods, producing additional electricity can reduce the financial result.",
-            "The system therefore considers not only how much the plant can produce, but whether it makes economic sense to produce it right now.",
+            "Production has to be considered together with market conditions, forecasts, technical constraints and the operating rules of the specific asset.",
+            "Electricity prices change. In unfavourable periods, extra production can worsen the economic result, so the amount of energy produced is not a sufficient guide on its own.",
           ],
         },
       },
       built: {
-        heading: { bg: "Какво изградихме", en: "What we built" },
+        heading: { bg: "Решението", en: "The solution" },
         body: {
           bg: [
-            "Изградихме софтуерна платформа за наблюдение и управление на фотоволтаични централи и батерийни системи. Тя свързва физическите енергийни активи с пазарна информация от IBEX, независимата българска енергийна борса.",
-            "Системата следи производството и състоянието на централата, свързаните батерийни системи и пазарните цени. Използва предварително дефинирани ценови и оперативни правила, може да адаптира производството автоматично, да го ограничава или временно да го спира, когато това е икономически обосновано, и изчислява приходите спрямо цените на IBEX.",
-            "Финансовото представяне се проследява на интервали от 15 минути спрямо пазарните цени на IBEX.",
+            "Системата обединява необходимите сигнали и прилага предварително определена логика за реакция при различни пазарни и оперативни условия.",
+            "Детерминираните правила остават в основата на критичните действия. ИИ може да се използва като допълнителен слой за анализ и подпомагане на решенията там, където това е подходящо.",
+            "Платформата свързва фотоволтаичните централи и батерийните системи с пазарна информация от IBEX. Следи производството и състоянието на актива, може да адаптира, ограничи или временно спре производството според зададените правила и проследява приходите на интервали от 15 минути.",
           ],
           en: [
-            "We built a software platform for monitoring and controlling photovoltaic plants and battery systems. It connects physical energy assets with market information from IBEX, the Independent Bulgarian Energy Exchange.",
-            "The system monitors production and plant status, connected battery systems and market prices. It uses predefined price and operational rules, can adapt production automatically, curtail it or temporarily stop it where that is economically appropriate, and calculates revenues against IBEX prices.",
-            "Financial performance is tracked in 15 minute intervals against IBEX market prices.",
+            "The system brings the necessary signals together and applies predefined logic for how to respond under different market and operating conditions.",
+            "Deterministic rules remain the basis of critical actions. AI can be used as an additional layer for analysis and decision support where that is appropriate.",
+            "The platform connects photovoltaic plants and battery systems with market information from IBEX. It monitors production and asset status, can adapt, limit or temporarily stop production according to the set rules, and tracks revenue in 15 minute intervals.",
           ],
         },
       },
@@ -240,16 +240,16 @@ export const projects: Project[] = [
         body: {
           bg: [
             "Фотоволтаичното производство и батерийното съхранение се управляват като свързани енергийни активи, които реагират на технически и пазарни условия.",
-            "Системата не зависи от ИИ, за да работи. ИИ е допълнителен слой, който постепенно подобрява анализа и подпомага оптимизационните решения. Заедно с детерминираната логика за управление се обучава специализиран ИИ модел върху натрупани оперативни и пазарни данни, за да подпомага по-добра оптимизация с времето.",
+            "Критичните действия следват детерминирани правила. ИИ остава допълнителен слой за анализ върху натрупани оперативни и пазарни данни, когато това подпомага решението.",
           ],
           en: [
-            "Photovoltaic production and battery storage are managed as connected energy assets responding to technical and market conditions.",
-            "The platform does not depend on AI to operate. AI acts as an additional learning layer that progressively improves analysis and supports optimisation decisions. Alongside the deterministic control logic, a specialised AI model is being trained on accumulated operational and market data, so optimisation can improve as more real operating data becomes available.",
+            "Photovoltaic production and battery storage are managed as connected energy assets that respond to technical and market conditions.",
+            "Critical actions follow deterministic rules. AI stays an additional layer of analysis over accumulated operational and market data, where that supports the decision.",
           ],
         },
         quote: {
-          bg: "Целта не е максимално производство. Целта е максимална икономическа ефективност.",
-          en: "The goal is not maximum production. The goal is maximum economic efficiency.",
+          bg: "Критичните действия остават върху детерминирани правила.",
+          en: "Critical actions stay on deterministic rules.",
         },
       },
       value: {
@@ -280,33 +280,33 @@ export const projects: Project[] = [
         },
       },
       outcome: {
-        heading: { bg: "Резултат", en: "Outcome" },
+        heading: { bg: "Резултатът", en: "The result" },
         body: {
           bg: [
-            "Соларният парк вече не просто произвежда енергия. Той реагира на пазара и постепенно става по-добър в това.",
+            "По-малко ръчно наблюдение и по-ясна връзка между пазарната ситуация и начина, по който активите се управляват.",
           ],
           en: [
-            "The solar park no longer simply generates electricity. It responds to the market and becomes better at doing so over time.",
+            "Less manual monitoring, and a clearer link between the market situation and how the assets are managed.",
           ],
         },
       },
     },
     seo: {
       documentTitle: {
-        bg: "Пазарно оптимизирано управление на соларни паркове | ITT Digital Hub",
-        en: "Market Optimised Solar Park Management | ITT Digital Hub",
+        bg: "Управление на соларни паркове според пазарните условия | ITT Digital Hub",
+        en: "Managing solar parks according to market conditions | ITT Digital Hub",
       },
       description: {
-        bg: "Софтуер за управление на фотоволтаични централи и батерии според пазарните цени на IBEX. Внедрена в над 30 соларни парка.",
-        en: "Software for managing photovoltaic plants and batteries against IBEX market prices. Deployed across more than 30 solar parks.",
+        bg: "Система, която свързва производството с пазарните сигнали и подпомага икономическото управление на енергийните активи.",
+        en: "A system that connects production with market signals and supports the economic management of energy assets. Deployed across more than 30 solar parks.",
       },
       ogTitle: {
-        bg: "Пазарно оптимизирано управление на соларни паркове",
-        en: "Market Optimised Solar Park Management",
+        bg: "Управление на соларни паркове според пазарните условия",
+        en: "Managing solar parks according to market conditions",
       },
       ogDescription: {
-        bg: "Производство, което реагира на пазара. Внедрена в над 30 соларни парка.",
-        en: "Production that responds to the market. Deployed across more than 30 solar parks.",
+        bg: "По-ясна връзка между пазарната ситуация и управлението на активите.",
+        en: "A clearer link between the market situation and how the assets are managed. Deployed across more than 30 solar parks.",
       },
       image: "/stories/solar-batteries-cover.jpg",
     },
@@ -319,16 +319,16 @@ export const projects: Project[] = [
     domain: { bg: "Създатели на съдържание", en: "Creator marketing" },
     methodologyName: approachName,
     title: {
-      bg: "Управление и анализ на създатели на съдържание",
-      en: "Creator & Social Intelligence",
+      bg: "От разпръснати кампании към проследим процес",
+      en: "From scattered campaigns to a traceable process",
     },
     standfirst: {
-      bg: "Свързана система за целия жизнен цикъл на работата със създатели на съдържание: откриване, оценка, сътрудничество, проследяване, измерване и учене.",
-      en: "A connected system for the full creator relationship lifecycle: discover, evaluate, collaborate, track, measure and learn.",
+      bg: "С кого да работим? Какво договорихме? Какво беше доставено? Какво даде резултат и къде има смисъл да инвестираме следващия път?",
+      en: "Who should we work with? What did we agree? What was delivered? What produced a result, and where does the next investment make sense?",
     },
     summary: {
-      bg: "От разпокъсано управление на създатели на съдържание към една структурирана система за отношения, доставки, съдържание и представяне.",
-      en: "From fragmented creator management to one structured system for relationships, deliverables, content and performance.",
+      bg: "Единен процес за откриване, оценка, работа и анализ на създатели на съдържание.",
+      en: "One process for finding, assessing, working with and analysing content creators.",
     },
     tags: {
       bg: ["Операции със създатели", "Сътрудничества", "Анализ на представянето", "Откриване"],
@@ -336,33 +336,35 @@ export const projects: Project[] = [
     },
     cta: discussCreator,
     proposition: {
-      bg: "Съберете отношенията, сътрудничествата, доставките, съдържанието и представянето в една оперативна система.",
-      en: "Bring creator relationships, collaborations, deliverables, content and performance into one operational system.",
+      bg: "Единен процес свързва откриването, работата, доставките и анализа.",
+      en: "One process connects discovery, the work, the deliveries and the analysis.",
     },
     story: {
       challenge: {
-        heading: { bg: "Предизвикателството", en: "The challenge" },
+        heading: { bg: "Проблемът", en: "The problem" },
         body: {
           bg: [
-            "Работата със създатели на съдържание често се разпръсква между таблици, съобщения, имейли, социални платформи, файлове и знанието на отделни хора в екипа.",
-            "Това затруднява да се разбере с кого работи компанията, какво е договорено, какви продукти или възнаграждение са предоставени, какво съдържание трябва да бъде доставено, какво е публикувано, как е работило и кои създатели се представят най-добре за конкретни продукти или категории.",
+            "При работа с много създатели на съдържание информацията лесно се разпределя между таблици, съобщения, договорки, платформи и отделни кампании.",
+            "Тогава е трудно да се проследи с кого се работи, какво е договорено, какво е доставено и кой резултат дава основание за следваща инвестиция.",
           ],
           en: [
-            "Creator marketing operations often become fragmented across spreadsheets, messages, emails, social platforms, files and individual team knowledge.",
-            "That makes it difficult to understand who the company works with, what was agreed, what products or compensation were provided, what content should be delivered, what was actually published, how it performed and which creators perform best for specific products or categories.",
+            "When a company works with many content creators, information easily spreads across spreadsheets, messages, agreements, platforms and separate campaigns.",
+            "It then becomes hard to trace who is being worked with, what was agreed, what was delivered, and which result justifies the next investment.",
           ],
         },
       },
       built: {
-        heading: { bg: "Какво изградихме", en: "What we built" },
+        heading: { bg: "Решението", en: "The solution" },
         body: {
           bg: [
-            "Изградихме платформа, която събира отношенията със създатели на съдържание, сътрудничествата, доставките, съдържанието и представянето в една свързана оперативна система.",
-            "Публикуваното съдържание остава свързано със създателя, сътрудничеството, продукта, договорените доставки, възнаграждението или продуктовия обмен и с данните за представяне. Целта е да се запази бизнес контекстът зад всяка публикация.",
+            "Единен процес свързва откриването и оценката на потенциални партньори, комуникацията, договорените ангажименти, доставеното съдържание и последващия анализ.",
+            "ИИ подпомага задачи като търсене, класификация, обобщаване и сравнение, но самият модел не е центърът на системата.",
+            "Публикуваното съдържание остава свързано със създателя, сътрудничеството, продукта, договорените доставки и данните за представяне.",
           ],
           en: [
-            "We built a platform that brings creator relationships, collaborations, deliverables, content and performance into one connected operational system.",
-            "Published content remains linked to the creator, the collaboration, the product, the agreed deliverables, compensation or product exchange and performance. The goal is to preserve the business context behind each piece of content.",
+            "One process connects the discovery and assessment of potential partners, the communication, the agreed commitments, the delivered content and the analysis that follows.",
+            "AI supports tasks such as search, classification, summarization and comparison, but the model is not the centre of the system.",
+            "Published content stays linked to the creator, the collaboration, the product, the agreed deliveries and the performance data.",
           ],
         },
         items: {
@@ -388,12 +390,12 @@ export const projects: Project[] = [
           bg: [
             "Работният поток следва жизнения цикъл на отношението: откриване, оценка, сътрудничество, проследяване, измерване и учене.",
             "Платформата може да идентифицира създатели извън съществуващата партньорска мрежа, които вече се представят силно около релевантни продуктови категории. Това помага екипите да откриват бъдещи партньори по доказана релевантност и представяне, а не само по брой последователи.",
-            "ИИ подпомага анализ на релевантност, откриване, сравнение, анализ на съдържание, класификация, обобщение, откриване на закономерности и препоръки. Центърът на историята остава по-добрите операции и по-добрите решения, а не самият модел.",
+            "ИИ подпомага търсене, класификация, обобщаване и сравнение. Решението за следваща работа остава върху проследимия процес, не върху самия модел.",
           ],
           en: [
             "The workflow follows the relationship lifecycle: discover, evaluate, collaborate, track, measure and learn.",
             "The platform can identify creators outside the existing partner network who already perform strongly around relevant product categories. This helps teams discover potential future partners based on demonstrated relevance and performance, not simply follower count.",
-            "AI supports relevance analysis, discovery, comparison, content analysis, classification, summarisation, pattern detection and recommendations. The centre of the story remains better creator marketing operations and better decisions, not the model itself.",
+            "AI supports search, classification, summarization and comparison. The decision about the next piece of work stays with the traceable process, not with the model itself.",
           ],
         },
         steps: {
@@ -433,33 +435,33 @@ export const projects: Project[] = [
         },
       },
       outcome: {
-        heading: { bg: "Резултат", en: "Outcome" },
+        heading: { bg: "Резултатът", en: "The result" },
         body: {
           bg: [
-            "Екипите получават свързан оперативен изглед към програмата със създатели на съдържание: отношения, договорености, доставки, публикувано съдържание и представяне на едно място, с основа за по-добри следващи решения.",
+            "По-добра проследимост на целия цикъл и по-надеждна основа за следващите решения.",
           ],
           en: [
-            "Teams get a connected operational view of the creator programme: relationships, agreements, deliverables, published content and performance in one place, with a foundation for better next decisions.",
+            "Clearer traceability across the whole cycle, and a more reliable basis for the next decisions.",
           ],
         },
       },
     },
     seo: {
       documentTitle: {
-        bg: "Управление и анализ на създатели на съдържание | ITT Digital Hub",
-        en: "Creator & Social Intelligence | ITT Digital Hub",
+        bg: "От разпръснати кампании към проследим процес | ITT Digital Hub",
+        en: "From scattered campaigns to a traceable process | ITT Digital Hub",
       },
       description: {
-        bg: "Платформа за откриване, сътрудничество, доставки, съдържание и представяне на създатели на съдържание в една свързана оперативна система.",
-        en: "A platform for creator discovery, collaboration, deliverables, content and performance in one connected operational system.",
+        bg: "Единен процес за откриване, оценка, работа и анализ на създатели на съдържание.",
+        en: "One process for finding, assessing, working with and analysing content creators.",
       },
       ogTitle: {
-        bg: "Управление и анализ на създатели на съдържание",
-        en: "Creator & Social Intelligence",
+        bg: "От разпръснати кампании към проследим процес",
+        en: "From scattered campaigns to a traceable process",
       },
       ogDescription: {
-        bg: "От разпокъсано управление към структурирана интелигентност за създатели на съдържание.",
-        en: "From fragmented creator management to structured creator and social intelligence.",
+        bg: "По-добра проследимост на цикъла и по-надеждна основа за следващите решения.",
+        en: "Clearer traceability across the cycle, and a more reliable basis for the next decisions.",
       },
       image: "/stories/creator-content-library.jpg",
     },
@@ -472,52 +474,50 @@ export const projects: Project[] = [
     domain: { bg: "ИИ системи", en: "AI systems" },
     methodologyName: approachName,
     title: {
-      bg: "Локално ориентирана ИИ оркестрация",
-      en: "Local-First AI Orchestration",
+      bg: "Локална ИИ оркестрация",
+      en: "Local AI orchestration",
     },
     standfirst: {
-      bg: "Архитектура за контролирано ИИ изпълнение, която извършва основната част от работата локално, управлява сложни многостъпкови задачи и използва облачни модели само когато те действително добавят стойност.",
-      en: "A controlled AI execution architecture that keeps most work local, coordinates complex multi-step tasks and uses cloud intelligence only when it genuinely adds value.",
+      bg: "Контрол върху това кой модел се използва, къде и защо. Не всяка задача трябва да бъде изпращана към един и същ облачен модел.",
+      en: "Control over which model is used, where and why. Not every task should be sent to the same cloud model.",
     },
     summary: {
-      bg: "Локално ориентирано ИИ изпълнение, което координира сложна работа, проверява резултата и използва облака само когато добавя стойност.",
-      en: "Local-first AI execution that coordinates complex work, verifies completion and uses the cloud only when it adds value.",
+      bg: "Архитектура за комбиниране на локални и облачни модели според задачата, чувствителността на информацията, необходимото качество и разхода.",
+      en: "An architecture for combining local and cloud models according to the task, the sensitivity of the information, the quality required and the cost.",
     },
     tags: {
-      bg: ["Локални модели", "Оркестрация", "MCP", "Защита на данните", "Устойчиво изпълнение"],
-      en: ["Local models", "Orchestration", "MCP", "Data protection", "Durable execution"],
+      bg: ["Локални модели", "Облачни модели", "Оркестрация", "Контрол", "Инструменти"],
+      en: ["Local models", "Cloud models", "Orchestration", "Control", "Tools"],
     },
     cta: discussProject,
     proposition: {
-      bg: "Не използваме най-големия модел за всяка задача. Използваме правилния начин на изпълнение за правилната работа.",
-      en: "We do not use the largest model for every task. We use the right execution path for the right work.",
+      bg: "Изборът на модел зависи от задачата, чувствителността на информацията, качеството и разхода.",
+      en: "The choice of model depends on the task, the sensitivity of the information, the quality required and the cost.",
     },
     story: {
       challenge: {
-        heading: { bg: "Предизвикателството", en: "The challenge" },
+        heading: { bg: "Подходът", en: "The approach" },
         body: {
           bg: [
-            "Не всяка ИИ задача изисква най-големия и най-скъп облачен модел. Изпращането на всяка задача към голям външен модел увеличава използването на облака, извежда повече проектен контекст извън локалната среда и прави процесите зависими от конкретни доставчици.",
-            "Скъпият капацитет за разсъждение се харчи за работа, която може да се свърши локално. Надеждната ИИ работа се нуждае и от оркестрация, възстановяване, достъп до инструменти, проектно знание, проверка и ясен краен резултат. Само изборът на модел не решава това.",
+            "Не всяка задача трябва да бъде изпращана към един и същ облачен модел.",
+            "Архитектурата комбинира локални и облачни модели, инструменти, правила и състояние на процеса. В зависимост от задачата системата може да избере локална обработка или външен модел според необходимото качество, чувствителността на информацията и икономическата логика.",
           ],
           en: [
-            "Not every AI task requires the largest and most expensive cloud model. Sending every task to a large external model increases cloud usage, moves more project context outside the local environment and makes workflows dependent on specific providers.",
-            "Expensive reasoning capacity is then spent on work that can be handled locally. Reliable AI work also needs orchestration, recovery, tool access, project knowledge, verification and a clear final result. A model router alone does not solve this.",
+            "Not every task should be sent to the same cloud model.",
+            "The architecture combines local and cloud models, tools, rules and the state of the process. Depending on the task, the system can choose local processing or an external model according to the quality required, the sensitivity of the information and the cost.",
           ],
         },
       },
       built: {
-        heading: { bg: "Какво изградихме", en: "What we built" },
+        heading: { bg: "Как е устроена", en: "How it is structured" },
         body: {
           bg: [
-            "Изградихме локално ориентиран слой за ИИ изпълнение и оркестрация, който координира клиентски заявки, инструменти, локални работници, модели и контролирано използване на облачни услуги.",
-            "Оркестрационният слой анализира задачата, прилага политика за изпълнение, разбива работата, разпределя локални работници, оценява междинни резултати, повтаря опитите при нужда и възстановява изпълнението след прекъсване.",
-            "Многостъпковата работа запазва състояние, така че вече завършените части не се рестартират безразборно. MCP осигурява контролиран достъп до инструменти, файлове, данни и външни услуги. Оркестрационният слой остава отговорен за изпълнението.",
+            "Оркестрационният слой анализира задачата, прилага правила за изпълнение, разбива работата и разпределя локални работници. Междинните резултати се оценяват, а прекъсната работа може да продължи от запазеното състояние.",
+            "MCP осигурява контролиран достъп до инструменти, файлове и външни услуги. Оркестрационният слой остава отговорен за изпълнението.",
           ],
           en: [
-            "We built a local-first AI execution and orchestration layer that coordinates clients, tools, local workers, model runtimes and approved cloud escalation.",
-            "The orchestration layer analyses the task, applies an execution policy, decomposes work, dispatches local workers, evaluates intermediate results, retries where needed and recovers after interruption.",
-            "Multi-step work keeps durable state, so already completed units are not blindly restarted. MCP provides controlled access to tools, files, data and external services. The orchestration layer remains responsible for execution.",
+            "The orchestration layer analyses the task, applies execution rules, breaks the work down and assigns local workers. Intermediate results are assessed, and interrupted work can continue from the saved state.",
+            "MCP provides controlled access to tools, files and external services. The orchestration layer remains responsible for execution.",
           ],
         },
         items: {
@@ -538,41 +538,41 @@ export const projects: Project[] = [
         },
         quote: {
           bg: "MCP осигурява достъп. Оркестрацията управлява изпълнението.",
-          en: "MCP provides access. The orchestration layer owns execution.",
+          en: "MCP provides access. The orchestration layer runs the execution.",
         },
       },
       howItWorks: {
         heading: { bg: "Как работи", en: "How it works" },
         body: {
           bg: [
-            "Локалното изпълнение е предпочитаният път. Облачни модели се използват само когато добавят реална стойност и политиката за изпълнение го позволява.",
+            "Локалното изпълнение може да даде по-голям контрол върху начина, по който се обработва информацията. Облачните модели могат да бъдат използвани при задачи, при които техните възможности са необходими и правилата за изпълнение го позволяват.",
             "Многостъпковата работа може да спре и да продължи. Системата запазва състоянието на задачата, така че прекъсване или рестарт не връща вече свършената работа в началото.",
             "Системата е проектирана да проверява дали работата действително е изпълнена, вместо да приема отговора на модела като достатъчно доказателство. Работниците получават нужния проектен контекст: структура, инструкции, умения и текущо състояние на работното пространство.",
           ],
           en: [
-            "Local execution is the default. Cloud intelligence is used only when it adds real value and when policy permits it.",
-            "Multi-step work can pause and resume. The system preserves task state, so a disconnect or restart does not send already completed work back to the beginning.",
-            "The system is designed to verify that work actually completed, rather than treating model output alone as proof of success. Workers receive the project context they need: structure, instructions, skills and current workspace state.",
+            "Local execution can provide greater control over how information is processed. Cloud models can be used for tasks where their capabilities are needed and the execution rules allow it.",
+            "Multi-step work can pause and continue. The system keeps the state of the task, so an interruption or restart does not send finished work back to the beginning.",
+            "The system is designed to check whether the work was actually completed, rather than treating the model's answer as sufficient proof. Workers receive the project context they need: structure, instructions, skills and the current state of the workspace.",
           ],
         },
         quote: {
-          bg: "Локалното изпълнение е предпочитаният път. Облачни модели се използват само когато добавят реална стойност.",
-          en: "Local execution is the default. Cloud intelligence is used only when it adds real value.",
+          bg: "Локалното изпълнение може да даде по-голям контрол върху обработката на информацията.",
+          en: "Local execution can provide greater control over how information is processed.",
         },
       },
       extras: [
         {
-          heading: { bg: "Повече от избор на модел", en: "More than model routing" },
+          heading: { bg: "Повече от избор на модел", en: "More than choosing a model" },
           body: {
             bg: [
               "Простата система за маршрутизиране избира модел и връща отговор. Тази архитектура управлява пътя на изпълнение: политика, оркестрация, локални работници, инструменти, оценка, проверка и резултат.",
-              "Чувствителният контекст може да остане локален. Външните модели получават само необходимия контекст. Достъпът до работното пространство е ограничен, а използването на облака се определя от политика.",
+              "Локалната обработка може да ограничи какъв контекст се изпраща навън. Външен модел получава само контекста, който задачата изисква, а използването на облака се определя от правила.",
               "Моделите и средите за изпълнение могат да се сменят според качество, производителност, цена и пригодност към задачата. Клиентите и процесите не трябва да се препроектират при всеки нов доставчик.",
             ],
             en: [
-              "A simple routing system chooses a model and returns an answer. This architecture owns the execution path: policy, orchestration, local workers, tools, evaluation, verification and a result.",
-              "Sensitive context can remain local. External models receive only the context that is necessary. Workspace access is scoped, and cloud use is policy-controlled.",
-              "Models and runtimes can change according to quality, performance, cost and task suitability. Clients and workflows do not need to be redesigned around every new provider.",
+              "A simple routing system chooses a model and returns an answer. This architecture manages the path of execution: policy, orchestration, local workers, tools, assessment, verification and a result.",
+              "Local processing can limit what context is sent out. An external model receives only the context the task requires, and cloud use is set by rules.",
+              "Models and execution environments can change according to quality, performance, cost and fit for the task. Clients and processes do not have to be redesigned for every new provider.",
             ],
           },
           items: {
@@ -587,7 +587,7 @@ export const projects: Project[] = [
             ],
             en: [
               "Less unnecessary cloud usage",
-              "More sensitive context stays local",
+              "More of the sensitive context can stay local",
               "Complex tasks can continue after interruptions",
               "Work is verified instead of blindly trusted",
               "Different models can be used without vendor lock-in",
@@ -606,7 +606,7 @@ export const projects: Project[] = [
           ],
           en: [
             "The architecture is applied to internal workloads in four areas.",
-            "In measured internal workloads, local-first execution can substantially reduce task-level cloud-token usage compared with approaches that rely primarily on large cloud models. This is not a claim of the same reduction in total operating cost.",
+            "In measured internal workloads, locally oriented execution can substantially reduce task-level cloud-token usage compared with approaches that rely mainly on large cloud models. This is not a claim of the same reduction in total operating cost.",
           ],
         },
         items: {
@@ -625,37 +625,35 @@ export const projects: Project[] = [
         },
       },
       outcome: {
-        heading: { bg: "Резултат", en: "Outcome" },
+        heading: { bg: "Защо", en: "Why" },
         body: {
           bg: [
-            "Резултатът не е просто по-малко използване на облачни модели. Получаваме по-контролиран начин за ИИ изпълнение, който е локално ориентиран, възстановим, наблюдаем, независим от доставчик, работи с проектен контекст и проверява дали задачата действително е изпълнена.",
-            "Не използваме най-големия модел за всяка задача. Използваме правилния начин на изпълнение за правилната работа.",
-            "Могат ли вашите ИИ процеси да работят по-ефективно? Проектираме архитектури, които комбинират локални модели, облачна интелигентност, проектен контекст, инструменти и автоматизация според реалните бизнес изисквания.",
+            "Локалното изпълнение може да даде по-голям контрол върху начина, по който се обработва информацията, докато облачните модели могат да бъдат използвани при задачи, при които техните възможности са необходими.",
+            "Многостъпковата работа пази състояние и се проверява спрямо задачата, вместо отговорът на модела да се приема за достатъчен резултат.",
           ],
           en: [
-            "The result is not simply lower cloud usage. It is a more controlled AI execution model that is local-first, recoverable, observable, provider-independent, context-aware and designed to verify that work actually completed.",
-            "We do not use the largest model for every task. We use the right execution path for the right work.",
-            "Could your AI workflows operate more efficiently? We design architectures that combine local models, cloud intelligence, project context, tools and automation around real business requirements.",
+            "Local execution can provide greater control over how information is processed, while cloud models can be used for tasks where their capabilities are needed.",
+            "Multi-step work keeps its state and is checked against the task, instead of treating the model's answer as a sufficient result.",
           ],
         },
       },
     },
     seo: {
       documentTitle: {
-        bg: "Локално ориентирана ИИ оркестрация | ITT Digital Hub",
-        en: "Local-First AI Orchestration | ITT Digital Hub",
+        bg: "Локална ИИ оркестрация | ITT Digital Hub",
+        en: "Local AI orchestration | ITT Digital Hub",
       },
       description: {
-        bg: "Архитектура за контролирано ИИ изпълнение, която работи локално по подразбиране, управлява сложни задачи и използва облака само когато добавя реална стойност.",
-        en: "A controlled AI execution architecture that works locally by default, coordinates complex tasks and uses the cloud only when it adds real value.",
+        bg: "Архитектура за комбиниране на локални и облачни модели според задачата, чувствителността на информацията, качеството и разхода.",
+        en: "An architecture for combining local and cloud models according to the task, the sensitivity of the information, the quality required and the cost.",
       },
       ogTitle: {
-        bg: "Локално ориентирана ИИ оркестрация",
-        en: "Local-First AI Orchestration",
+        bg: "Локална ИИ оркестрация",
+        en: "Local AI orchestration",
       },
       ogDescription: {
-        bg: "Локално ориентирано изпълнение, устойчива оркестрация и облачна интелигентност само когато добавя стойност.",
-        en: "Local-first execution, durable orchestration and cloud intelligence only when it adds value.",
+        bg: "Контрол върху това кой модел се използва, къде и защо.",
+        en: "Control over which model is used, where and why.",
       },
       image: "/stories/local-orchestration-cover.webp",
     },

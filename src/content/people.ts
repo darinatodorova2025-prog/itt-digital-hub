@@ -12,41 +12,31 @@ const confirmedPeople: Person[] = [
   {
     slug: "ivan-todorov",
     name: { bg: "Иван Тодоров", en: "Ivan Todorov" },
-    axis: { bg: "AI / Трансформация", en: "AI / Transformation" },
+    axis: { bg: "Бизнес / Оптимизация", en: "Business / Optimization" },
     role: {
-      bg: "Консултант по AI стратегия и бизнес трансформация",
-      en: "AI Strategy & Business Transformation Consultant",
+      bg: "Консултант по бизнес оптимизация и ИИ",
+      en: "Business optimization and AI consultant",
     },
     expertise: {
-      bg: [
-        "AI стратегия",
-        "Бизнес трансформация",
-        "Проектиране на процеси",
-        "Автоматизация",
-        "Корпоративни системи",
-      ],
-      en: ["AI Strategy", "Business Transformation", "Process Design", "Automation", "Enterprise Systems"],
+      bg: ["Процеси", "Автоматизация", "Бизнес оптимизация", "Проследимост", "Корпоративни системи"],
+      en: ["Processes", "Automation", "Business optimization", "Traceability", "Enterprise systems"],
     },
     cardBio: {
       bg: [
-        "Работя на пресечната точка между бизнес стратегията, процесите и приложния AI. Фокусирам се върху това да разбирам как реално работят организациите, къде възникват затруднения и къде технологиите могат да създадат реална стойност.",
-        "В ITT Digital Hub водя discovery, AI стратегията и оформянето на решения, превръщайки бизнес нуждите в практически инициативи за трансформация.",
+        "Фокусирам се върху процесите: къде се губят време и информация, кои стъпки могат да се опростят и къде технологията има реален смисъл.",
       ],
       en: [
-        "I work at the intersection of business strategy, processes and applied AI. I focus on understanding how organisations actually work, where friction appears and where technology can create meaningful value.",
-        "At ITT Digital Hub, I lead discovery, AI strategy and solution shaping, turning business needs into practical transformation initiatives.",
+        "I focus on the process: where time and information are lost, which steps can be simplified, and where technology is actually useful.",
       ],
     },
     bio: {
       bg: [
-        "Работата ми обединява бизнес анализ, оптимизация на процеси, корпоративни системи и приложен AI. Фокусирам се първо върху реалния оперативен проблем и едва след това върху технологията, която трябва да го реши.",
-        "Работя с организации за разбиране на работните процеси, откриване на неефективности и превръщане на бизнес нуждите в ясни възможности за трансформация. Решението може да включва AI, автоматизация, корпоративни платформи или комбинация от технологии според конкретната ситуация.",
-        "В ITT Digital Hub водя работата по AI стратегия, discovery и бизнес трансформация и оставам ангажиран през валидирането и реализацията. Целта ми е технологията да създава измерима оперативна стойност, а не просто да добавя още един изолиран инструмент.",
+        "Работя с бизнес процеси, автоматизация и приложението на ИИ в конкретна работна среда. Интересува ме не самият инструмент, а ефектът върху начина на работа: по-малко рутина, по-добра проследимост и повече време за решенията, които изискват човешка преценка.",
+        "В проектите свързвам бизнес нуждата с техническото изпълнение, от формулирането на проблема и изискванията до тестовете и реалното използване.",
       ],
       en: [
-        "My work combines business analysis, process improvement, enterprise systems and applied AI. I focus on identifying the real operational problem before deciding what technology should be used to solve it.",
-        "I work with organisations to understand workflows, uncover inefficiencies and translate business needs into clear transformation opportunities. This can involve AI, automation, enterprise platforms or a combination of technologies, depending on what the situation actually requires.",
-        "At ITT Digital Hub, I lead AI strategy, discovery and business transformation work and stay involved through validation and delivery. My goal is to ensure that technology creates measurable operational value rather than becoming another isolated tool.",
+        "I work on business processes, automation and the use of AI in a specific working environment. What matters to me is the effect on how work is done: less routine, clearer traceability and more time for decisions that need human judgment.",
+        "I connect the business need with the technical work, from stating the problem and the requirements through to testing and actual use.",
       ],
     },
     portrait: {
@@ -59,35 +49,31 @@ const confirmedPeople: Person[] = [
   {
     slug: "ivan-tomchev",
     name: { bg: "Иван Томчев", en: "Ivan Tomchev" },
-    axis: { bg: "AI / Инженеринг", en: "AI / Engineering" },
+    axis: { bg: "Системи / Инженеринг", en: "Systems / Engineering" },
     role: {
-      bg: "Архитект на системи с AI и софтуерен инженер",
-      en: "AI Systems Architect & Software Engineer",
+      bg: "Софтуерен инженер и архитект на системи",
+      en: "Software engineer and systems architect",
     },
     expertise: {
-      bg: ["Софтуерна архитектура", "Local AI", "Оркестрация", "Интеграции", "Инфраструктура"],
-      en: ["Software Architecture", "Local AI", "Orchestration", "Integrations", "Infrastructure"],
+      bg: ["Софтуерна архитектура", "Интеграции", "Инфраструктура", "Локални и облачни модели", "Оркестрация"],
+      en: ["Software architecture", "Integrations", "Infrastructure", "Local and cloud models", "Orchestration"],
     },
     cardBio: {
       bg: [
-        "Проектирам и изграждам софтуерни и AI системи за сложни оперативни среди, с фокус върху архитектура, локален AI, оркестрация и системни интеграции.",
-        "В ITT Digital Hub водя техническата архитектура и инженерната реализация, превръщайки валидираните концепции в надеждни системи за реална експлоатация.",
+        "Проектирам и изграждам системите зад процеса: приложения, интеграции, инфраструктура и ИИ компоненти там, където са необходими.",
       ],
       en: [
-        "I design and build software and AI systems for complex operational environments, with a focus on architecture, local AI, orchestration and system integration.",
-        "At ITT Digital Hub, I lead technical architecture and hands-on engineering, turning validated concepts into reliable operational systems.",
+        "I design and build the systems behind the process: applications, integrations, infrastructure and AI components where they are needed.",
       ],
     },
     bio: {
       bg: [
-        "Работя като софтуерен инженер и системен архитект, като проектирам надеждни системи за сложни оперативни среди. Работата ми включва софтуерна архитектура, интеграции, инфраструктура и инженерните решения, необходими за стабилната работа на системите в реална среда.",
-        "При приложния AI се фокусирам върху локално изпълнение на модели, оркестрация, интеграция с инструменти и архитектури, при които AI е част от по-голяма софтуерна система, а не изолирана функционалност.",
-        "В ITT Digital Hub водя техническата архитектура и инженерната реализация, като превръщам валидираните концепции в работещи системи чрез имплементация, интеграция и реално внедряване. Фокусът ми е върху системи, които са технически стабилни, поддържаеми и готови за реална експлоатация.",
+        "Фокусирам се върху техническата архитектура и реализацията: как различните системи, данни и модели да работят заедно надеждно и под контрол.",
+        "Работя както с класически софтуерни системи, така и с архитектури, които комбинират локални и облачни ИИ модели според конкретната задача.",
       ],
       en: [
-        "I work as a software engineer and systems architect, designing dependable systems for complex operational environments. My work spans software architecture, integrations, infrastructure and the engineering required to make systems reliable in production.",
-        "In applied AI, I focus on local model execution, orchestration, tool integration and architectures where AI operates as part of a larger software system rather than as an isolated feature.",
-        "At ITT Digital Hub, I lead technical architecture and engineering, taking validated concepts through implementation, integration and operational deployment. My focus is on building systems that are technically sound, maintainable and ready to work in real environments.",
+        "I focus on the technical architecture and the implementation: how systems, data and models work together reliably and under control.",
+        "I work with conventional software and with architectures that combine local and cloud AI models according to the task.",
       ],
     },
     portrait: {

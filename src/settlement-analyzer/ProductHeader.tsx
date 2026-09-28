@@ -4,6 +4,9 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n";
 import { href } from "@/lib/paths";
+import { t } from "@/content/messages";
+import { breadcrumbTrail } from "@/lib/breadcrumbs";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { sa } from "./copy";
 
 export function ProductHeader({
@@ -21,10 +24,7 @@ export function ProductHeader({
   return (
     <header className="sa-header">
       <div className="sa-header__identity">
-        <Link href={href(locale, "tools")} className="sa-header__crumb">
-          {copy.tools}
-        </Link>
-        <strong>{copy.name}</strong>
+        <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "settlement")} />
       </div>
       <div className="sa-header__actions">
         {ownerMode ? (

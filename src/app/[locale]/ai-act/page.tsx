@@ -3,8 +3,10 @@ import { isLocale, type Locale } from "@/lib/i18n";
 import { pageMetadata } from "@/lib/metadata";
 import { href } from "@/lib/paths";
 import { aiAct } from "@/content/ai-act";
+import { t } from "@/content/messages";
+import { breadcrumbTrail } from "@/lib/breadcrumbs";
 import { Container } from "@/components/layout/Container";
-import { BackLink } from "@/components/ui/BackLink";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 
 type Params = { params: Promise<{ locale: string }> };
@@ -34,19 +36,9 @@ export default async function AiActPage({ params }: Params) {
     <div>
       <section className="hero-atmosphere -mt-[5.5rem] text-on-dark" data-surface="dark">
         <Container className="pt-24 pb-12 md:pt-28 md:pb-14">
-          <BackLink href={href(locale, "tools")} className="text-on-dark decoration-on-dark/35 hover:text-on-dark">
-            {aiAct.back[locale]}
-          </BackLink>
-          <p className="mt-3 text-meta text-on-dark-muted">{aiAct.label[locale]}</p>
-          <h1 className="mt-3 text-h1 text-on-dark">{aiAct.heading[locale]}</h1>
+          <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "ai-act")} tone="dark" />
+          <h1 className="mt-4 max-w-[24ch] text-h1 text-on-dark md:max-w-[32ch]">{aiAct.heading[locale]}</h1>
           <p className="mt-3 max-w-[62ch] text-body text-on-dark-muted">{aiAct.lead[locale]}</p>
-          <ul className="mt-4 max-w-[68ch] list-disc space-y-1.5 pl-5 text-small text-on-dark-muted">
-            {aiAct.points.map((point) => (
-              <li key={point.label.en}>
-                <strong className="font-medium text-on-dark">{point.label[locale]}</strong> {point.text[locale]}
-              </li>
-            ))}
-          </ul>
         </Container>
       </section>
       <div className="bg-paper">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/lib/i18n";
 import { href } from "@/lib/paths";
 import { pageMetadata } from "@/lib/metadata";
+import { primaryNav } from "@/content/site";
 import { methodologyPage as c } from "@/content/pages";
 import { t } from "@/content/messages";
 import { approachStages } from "@/content/approach";
@@ -14,7 +15,10 @@ type Params = { params: Promise<{ locale: string }> };
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : "bg";
-  return pageMetadata({ locale, key: "methodology", title: c.meta.title[locale], description: c.meta.description[locale] });
+  return {
+    ...pageMetadata({ locale, key: "methodology", title: c.meta.title[locale], description: c.meta.description[locale] }),
+    title: { absolute: c.meta.title[locale] },
+  };
 }
 
 export default async function MethodologyPage({ params }: Params) {
@@ -24,7 +28,7 @@ export default async function MethodologyPage({ params }: Params) {
 
   return (
     <>
-      <PageHeader label={c.meta.title[locale]} heading={c.heading[locale]} lead={c.lead[locale]} />
+      <PageHeader label={primaryNav.find((item) => item.key === "methodology")?.label[locale]} heading={c.heading[locale]} lead={c.lead[locale]} />
       <Section size="sm" labelledBy="approach-stages">
         <ol id="approach-stages" className="grid border-t border-line md:grid-cols-3">
           {approachStages.map((stage) => (

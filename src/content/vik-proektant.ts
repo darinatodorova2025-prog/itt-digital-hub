@@ -71,37 +71,37 @@ export function exampleById(id: string): ComparisonExample | undefined {
 
 export const vikProektant = {
   meta: {
-    title: { bg: "ВиК Проектант", en: "ViK Projektant" },
+    title: { bg: "ВиК Проектант", en: "Water & Sewerage Designer" },
     description: {
-      bg: "Специализиран работен процес за ВиК проектиране върху общ AI модел: професионални стъпки, източници и изчисления.",
-      en: "A specialized water and sewerage design workflow on a general AI model: professional steps, sources and calculations.",
+      bg: "Асистент за ВиК проектанти: изходни данни, нормативна справка, изчисление и ясни допускания.",
+      en: "From the question to a verifiable engineering step: input data, the regulatory source, the calculation and the assumptions.",
     },
   },
   compareMeta: {
-    title: { bg: "Сравнение · ВиК Проектант", en: "Comparison · ViK Projektant" },
+    title: { bg: "Сравнение · ВиК Проектант", en: "Compare · Water & Sewerage Designer" },
     description: {
-      bg: "Един и същ въпрос и един и същ AI модел. Отдясно е специализираният ВиК работен процес на ITT Digital Hub.",
-      en: "The same question and the same AI model. The right side uses ITT Digital Hub's specialized water and sewerage workflow.",
+      bg: "От въпроса до проверимия ход: нормативна справка, изчисление и ясни допускания.",
+      en: "From the question to a step you can check: the regulatory source, the calculation and clear assumptions.",
     },
   },
   back: { bg: "Инструменти", en: "Tools" },
-  label: { bg: "ВиК · Специализиран работен процес", en: "WSS · Specialized workflow" },
-  heading: { bg: "ВиК Проектант", en: "ViK Projektant" },
+  label: { bg: "Инженерство · Нормативи", en: "Engineering · Regulations" },
+  heading: { bg: "От въпроса до проверимия ход.", en: "From the question to a step you can check." },
   lead: {
-    bg: "Същият общ AI модел, подреден за работата на ВиК проектанта: професионален ход, проверими източници и изчисления с ясни входни данни.",
-    en: "The same general AI model, arranged for a water and sewerage designer's work: a professional sequence, checkable sources and calculations with explicit inputs.",
+    bg: "Асистент за ВиК проектанти, който следва професионална последователност: изходни данни, нормативна справка, изчисление и ясни допускания.",
+    en: "An assistant for water and sewerage designers that follows a professional sequence: the input data, the regulatory source, the calculation and clear assumptions.",
   },
   support: {
-    bg: "Работи в познатата среда на ChatGPT. Тук може да се види разликата върху един и същ въпрос.",
-    en: "It works in the familiar ChatGPT environment. Here you can see the difference on one and the same question.",
+    bg: "Когато липсва информация, пита. Когато използва нормативен източник, го посочва. Когато трябва да се получи число, показва как е получено.",
+    en: "It asks when information is missing. It cites a source when one is used. When a number is required, it shows how that number was obtained.",
   },
   scopeTitle: { bg: "Какво покрива", en: "What it covers" },
   scopePoints: [
     {
-      title: { bg: "Работа", en: "Work" },
+      title: { bg: "Какво прави", en: "What it does" },
       text: {
-        bg: "Помага при проектиране на водоснабдяване, канализация и тръбни системи. Върви по професионалния ход: първо изходните данни, после проверка спрямо правилата и едва след това избор на размер.",
-        en: "It helps with the design of water supply, sewerage and pipe systems. It follows the professional sequence: the starting data first, then a check against the rules, and only then a choice of size.",
+        bg: "Помага при търсене в нормативни източници, структуриране на инженерния въпрос и извършване на изчисления по предоставените данни.",
+        en: "It helps with searching regulatory sources, structuring the engineering question and calculating from the data provided.",
       },
     },
     {
@@ -112,17 +112,17 @@ export const vikProektant = {
       },
     },
     {
-      title: { bg: "Граници", en: "Limits" },
+      title: { bg: "Какво не прави", en: "What it does not do" },
       text: {
-        bg: "Не замества проектантската проверка и не е официално тълкуване на нормативен акт. Част от формулите в изходните документи не са напълно извлечени. Пълните текстове на БДС и EN не са в базата.",
-        en: "It does not replace a designer's check and it is not an official reading of a legal act. Some formulas in the source documents were not fully extracted. The full texts of BDS and EN standards are not in the collection.",
+        bg: "Не заменя проектанта, неговата професионална преценка или отговорността за крайното проектно решение. Не е официално тълкуване на нормативен акт. Част от формулите в изходните документи не са напълно извлечени. Пълните текстове на БДС и EN не са в базата.",
+        en: "It does not replace the engineer, their professional judgment or responsibility for the final design. It is not an official interpretation of a regulation. Some formulas in the source documents were not fully extracted. The full texts of BDS and EN standards are not in the collection.",
       },
     },
   ],
   doesTitle: { bg: "Какво прави", en: "What it does" },
   does: {
-    bg: "Помага при въпроси за водоснабдяване, канализация, тръбни системи и свързаните с тях технически изисквания. Когато отговорът опира до наредба, търси в подбраната база. Когато трябва число от формула, смята с подадените данни и показва допусканията.",
-    en: "It helps with water supply, sewerage, pipe systems and the related technical requirements. When an answer depends on an ordinance, it searches the curated collection. When a formula needs a number, it calculates from the given data and shows the assumptions.",
+    bg: "Помага при търсене в нормативни източници, структуриране на инженерния въпрос и извършване на изчисления по предоставените данни.",
+    en: "It helps with searching regulatory sources, structuring the engineering question and calculating from the data provided.",
   },
   casesTitle: { bg: "За какви задачи", en: "Where it is used" },
   cases: [
@@ -145,8 +145,8 @@ export const vikProektant = {
   ],
   howTitle: { bg: "Как се специализира", en: "How specialization works" },
   how: {
-    bg: "Общият модел остава същият. ITT Digital Hub добавя професионалния ход, доверените източници и изчислителните стъпки. Моделът не става „по-умен“. Става по-полезен за конкретната работа, защото следва този ход и може да се опре на тях.",
-    en: "The general model stays the same. ITT Digital Hub adds the professional sequence, the trusted sources and the calculation steps. The model does not become “smarter”. It becomes more useful for this work because it follows that sequence and can rely on them.",
+    bg: "Сравнява се общ отговор на езиков модел с отговор, който разполага със специализиран нормативен и професионален контекст. Самият модел не е необходимо да бъде различен.",
+    en: "A general language-model answer is compared with an answer that has specialized regulatory and professional context. The model itself does not have to be different.",
   },
   sourcesTitle: { bg: "Източници", en: "Sources" },
   sources: {
@@ -160,13 +160,13 @@ export const vikProektant = {
   },
   limitsTitle: { bg: "Граници", en: "Limits" },
   limits: {
-    bg: "Това не замества проектантската проверка и не е официално тълкуване на нормативен акт. Част от формулите в изходните документи не са напълно извлечени. Пълните текстове на БДС и EN не са в базата.",
-    en: "This does not replace a designer's check and it is not an official reading of a legal act. Some formulas in the source documents were not fully extracted. The full texts of BDS and EN standards are not in the collection.",
+    bg: "Не заменя проектанта, неговата професионална преценка или отговорността за крайното проектно решение. Не е официално тълкуване на нормативен акт. Част от формулите в изходните документи не са напълно извлечени. Пълните текстове на БДС и EN не са в базата.",
+    en: "It does not replace the engineer, their professional judgment or responsibility for the final design. It is not an official interpretation of a regulation. Some formulas in the source documents were not fully extracted. The full texts of BDS and EN standards are not in the collection.",
   },
   compareCta: { bg: "Сравни отговорите", en: "Compare the answers" },
   compareHint: {
-    bg: "Един въпрос към същия модел, с и без специализирания ВиК ход.",
-    en: "One question to the same model, with and without the specialized workflow.",
+    bg: "Един въпрос. Два различни начина за работа с контекста.",
+    en: "One question. Two different ways of working with the context.",
   },
   chatgptCta: { bg: "Отвори в ChatGPT", en: "Open in ChatGPT" },
   chatgptWaiting: {
@@ -175,10 +175,11 @@ export const vikProektant = {
   },
   compare: {
     back: { bg: "Инструменти", en: "Tools" },
-    heading: { bg: "Един въпрос.\nДва начина на работа.", en: "One question.\nTwo ways of working." },
+    returnTo: { bg: "Към ВиК Проектант", en: "To Water & Sewerage Designer" },
+    heading: { bg: "От въпроса до проверимия ход.", en: "From the question to a step you can check." },
     lead: {
-      bg: "И двата отговора се генерират от GPT‑6 Sol по един и същ въпрос.",
-      en: "Both answers are generated by GPT‑6 Sol from the same question.",
+      bg: "Асистент за ВиК проектанти, който следва професионална последователност: изходни данни, нормативна справка, изчисление и ясни допускания. Когато липсва информация, пита. Когато използва нормативен източник, го посочва. Когато трябва да се получи число, показва как е получено.",
+      en: "An assistant for water and sewerage designers that follows a professional sequence: the input data, the regulatory source, the calculation and clear assumptions. It asks when information is missing, cites a source when one is used, and shows how a number was obtained.",
     },
     leadPoints: [
       {
@@ -186,7 +187,7 @@ export const vikProektant = {
         text: { bg: "Без специализирана ВиК база.", en: "Without a specialized water and sewerage collection." },
       },
       {
-        label: { bg: "ВиК асистент.", en: "ViK assistant." },
+        label: { bg: "ВиК асистент.", en: "Water and sewerage assistant." },
         text: { bg: "Специализирана база, инструкции и изчисления от ITT Digital Hub.", en: "A specialized collection, instructions and calculations from ITT Digital Hub." },
       },
     ],
@@ -199,8 +200,8 @@ export const vikProektant = {
     fairness: { bg: "Един и същ модел · Един и същ въпрос", en: "Same model · Same question" },
     submit: { bg: "Сравни отговорите", en: "Compare the answers" },
     pending: { bg: "Сравнението тече", en: "Comparison in progress" },
-    controlTitle: { bg: "Стандартен GPT‑6 Sol AI модел", en: "Standard GPT‑6 Sol AI model" },
-    expertTitle: { bg: "ВиК Асистент от ITT Digital Hub", en: "ViK Assistant from ITT Digital Hub" },
+    controlTitle: { bg: "Езиков модел", en: "Standard model" },
+    expertTitle: { bg: "ВиК Асистент от ITT Digital Hub", en: "Water and sewerage assistant from ITT Digital Hub" },
     controlNote: { bg: "Без специализирана ВиК база", en: "Without the specialized water and sewerage collection" },
     expertNote: { bg: "Със специализирана ВиК база и инструкции.", en: "With a specialized water and sewerage collection and instructions." },
     controlWaiting: { bg: "Генерира отговор…", en: "Generating an answer…" },

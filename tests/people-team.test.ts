@@ -48,25 +48,26 @@ describe("public team", () => {
     expect(people[0]?.portrait?.src).toBe("/images/team/ivan-todorov-portrait-v2.jpg");
     expect(people[0]?.name).toEqual({ bg: "Иван Тодоров", en: "Ivan Todorov" });
     expect(people[0]?.role).toEqual({
-      bg: "Консултант по AI стратегия и бизнес трансформация",
-      en: "AI Strategy & Business Transformation Consultant",
+      bg: "Консултант по бизнес оптимизация и ИИ",
+      en: "Business optimization and AI consultant",
     });
-    expect(people[0]?.axis).toEqual({ bg: "AI / Трансформация", en: "AI / Transformation" });
+    expect(people[0]?.axis).toEqual({ bg: "Бизнес / Оптимизация", en: "Business / Optimization" });
     expect(people[1]?.name).toEqual({ bg: "Иван Томчев", en: "Ivan Tomchev" });
     expect(people[1]?.role).toEqual({
-      bg: "Архитект на системи с AI и софтуерен инженер",
-      en: "AI Systems Architect & Software Engineer",
+      bg: "Софтуерен инженер и архитект на системи",
+      en: "Software engineer and systems architect",
     });
-    expect(people[1]?.axis).toEqual({ bg: "AI / Инженеринг", en: "AI / Engineering" });
+    expect(people[1]?.axis).toEqual({ bg: "Системи / Инженеринг", en: "Systems / Engineering" });
     expect(people[1]?.portrait?.src).toBe("/images/team/ivan-tomchev-portrait-v2.jpg");
   });
 
   it("keeps homepage cards shorter than About / People profiles", () => {
     for (const person of founders()) {
-      expect(person.cardBio?.en).toHaveLength(2);
-      expect(person.cardBio?.bg).toHaveLength(2);
-      expect(person.bio.en).toHaveLength(3);
-      expect(person.bio.bg).toHaveLength(3);
+      expect(person.cardBio?.en?.length).toBeGreaterThan(0);
+      expect(person.cardBio?.bg?.length).toBeGreaterThan(0);
+      expect(person.bio.en.length).toBeGreaterThan(person.cardBio?.en?.length ?? 0);
+      expect(person.bio.bg.length).toBeGreaterThan(0);
+      expect(person.cardBio?.bg?.length).toBeLessThan(person.bio.bg.length);
       expect(personIntro(person, "en", "card").join("\n")).not.toBe(personIntro(person, "en", "profile").join("\n"));
       expect(personIntro(person, "bg", "card").join("\n")).not.toBe(personIntro(person, "bg", "profile").join("\n"));
     }
@@ -81,7 +82,7 @@ describe("public team", () => {
       expect(person.links).toBeUndefined();
       expect(linkedInHref(person)).toBeUndefined();
       expect(person.cardBio?.en.every((paragraph) => /^(I |At ITT Digital Hub, I )/.test(paragraph))).toBe(true);
-      expect(person.cardBio?.bg.every((paragraph) => /^(Работя |Проектирам |В ITT Digital Hub )/.test(paragraph))).toBe(
+      expect(person.cardBio?.bg.every((paragraph) => /^(Работя |Проектирам |Фокусирам |В ITT Digital Hub )/.test(paragraph))).toBe(
         true,
       );
     }
@@ -113,12 +114,11 @@ describe("public team", () => {
       createElement(FoundersPair, { people: founders(), locale: "en", variant: "profile" }),
     );
 
-    expect(card).toContain("I work at the intersection of business strategy");
-    expect(card).not.toContain("My work combines business analysis");
-    expect(card).not.toContain("AI Strategy · Business Transformation");
-    expect(profile).toContain("My work combines business analysis");
-    expect(profile).toContain("AI Strategy · Business Transformation");
-    expect(profile).toContain("Software Architecture · Local AI");
+    expect(card).toContain("I focus on the process");
+    expect(card).not.toContain("I work on business processes, automation");
+    expect(profile).toContain("I work on business processes, automation");
+    expect(profile).toContain("Processes · Automation · Business optimization");
+    expect(profile).toContain("Software architecture · Integrations · Infrastructure");
     expect(card).not.toMatch(/LinkedIn/i);
     expect(profile).not.toMatch(/LinkedIn/i);
     expect(card).not.toContain("TODO_CONTENT");
@@ -143,8 +143,8 @@ describe("About / People framing", () => {
       peoplePage.team.label.bg,
     ].join("\n");
 
-    expect(peoplePage.heading.en).toContain("Business sets the direction.");
-    expect(peoplePage.heading.bg).toContain("Бизнесът определя посоката.");
+    expect(peoplePage.heading.en).toContain("Business and engineering at the same table.");
+    expect(peoplePage.heading.bg).toContain("Бизнесът и инженерството на една маса.");
     expect(peoplePage.structure.heading.en).toContain("Two complementary roles.");
     expect(peoplePage.structure.heading.bg).toContain("Две допълващи се роли.");
     expect(blob).not.toMatch(/Two complementary specialists|One accountable team|small senior team|fewer handoffs|hard silos|rigid silos|one engagement|Business understanding ×|Двама допълващи се специалисти|отговорен екип|Малкият старши|по-малко предавания|твърди силози|един ангажимент|Бизнес разбиране ×/i);
@@ -153,10 +153,10 @@ describe("About / People framing", () => {
 
 describe("homepage TEAM intro", () => {
   it("positions the team around problem-to-system delivery", () => {
-    expect(home.people.heading.en).toBe("From the business problem to the working system.");
-    expect(home.people.heading.bg).toBe("От бизнес проблема до работещата система.");
-    expect(home.people.lead.en).toContain("AI strategy and business transformation");
-    expect(home.people.lead.bg).toContain("AI стратегия и бизнес трансформация");
+    expect(home.people.heading.en).toBe("Business and engineering at the same table.");
+    expect(home.people.heading.bg).toBe("Бизнесът и инженерството на една маса.");
+    expect(home.people.lead.en).toContain("We work together from defining the problem");
+    expect(home.people.lead.bg).toContain("Работим заедно от дефинирането на проблема");
     const blob = [home.people.label.en, home.people.label.bg, home.people.heading.en, home.people.heading.bg, home.people.lead.en, home.people.lead.bg].join("\n");
     expect(blob).not.toMatch(/Two complementary specialists|One accountable team|Direct contact|fewer handoffs|Директен контакт|малко предавания|Двама допълващи се специалисти|Един отговорен екип/i);
   });

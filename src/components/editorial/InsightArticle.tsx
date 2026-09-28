@@ -1,8 +1,9 @@
-import Link from "next/link";
 import type { Locale } from "@/lib/i18n";
 import { href, type RouteKey } from "@/lib/paths";
 import type { Insight, Project } from "@/content/types";
 import { t } from "@/content/messages";
+import { homeCrumb } from "@/lib/breadcrumbs";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { insightRouteKey } from "@/lib/insight-channel";
 import { formatSourceDate } from "@/lib/format-source-date";
 import { Container } from "@/components/layout/Container";
@@ -49,15 +50,10 @@ export function InsightArticle({
     <article>
       <header className="bg-paper">
         <Container className="pt-12 pb-10 md:pt-16 md:pb-12">
-          <nav aria-label={m.breadcrumb} className="label">
-            <Link href={href(locale, listingKey)} className="hover:text-ink">
-              {listingTitle}
-            </Link>
-            <span aria-hidden="true" className="mx-2">
-              /
-            </span>
-            <span className="text-ink-2">{typeLabel}</span>
-          </nav>
+          <Breadcrumbs
+            label={m.breadcrumb}
+            items={[homeCrumb(locale), { label: listingTitle, href: href(locale, listingKey) }, { label: typeLabel }]}
+          />
           <div className="mt-6 lg:grid lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-8">
               <h1 className="text-h1 text-pretty text-ink">{insight.title[locale]}</h1>

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, locales, type Locale } from "@/lib/i18n";
 import { href } from "@/lib/paths";
 import { pageMetadata } from "@/lib/metadata";
-import { projectsPage as c } from "@/content/pages";
 import { t } from "@/content/messages";
+import { breadcrumbTrail, projectCrumbLabel } from "@/lib/breadcrumbs";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { projects } from "@/content/projects";
 import { getProjectForPublic, listPublishedArticles, listPublishedProjects } from "@/lib/cms/repository";
 import { insightRouteKey } from "@/lib/insight-channel";
@@ -65,16 +65,11 @@ export default async function ProjectDetailPage({ params }: Params) {
     <article>
       <header className="bg-paper">
         <Container className="pt-12 pb-10 md:pt-16 md:pb-12">
-          <nav aria-label={m.breadcrumb} className="label">
-            <Link href={href(locale, "projects")} className="hover:text-ink">
-              {c.meta.title[locale]}
-            </Link>
-            <span aria-hidden="true" className="mx-2">
-              /
-            </span>
-            <span className="text-ink-2">{project.type[locale]}</span>
-          </nav>
-          <div className="mt-6 max-w-4xl">
+          <Breadcrumbs
+            label={m.breadcrumb}
+            items={breadcrumbTrail(locale, "project", projectCrumbLabel(locale, project.slug, project.title[locale]))}
+          />
+          <div className="mt-5 max-w-4xl">
             {tags.length ? <ProjectTags tags={tags} /> : null}
             <h1 className={tags.length ? "mt-5 text-h1 text-pretty text-ink" : "text-h1 text-pretty text-ink"}>{project.title[locale]}</h1>
             <p className="mt-6 max-w-[62ch] text-lead text-ink-2">{project.standfirst[locale]}</p>

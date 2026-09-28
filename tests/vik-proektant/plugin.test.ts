@@ -62,7 +62,7 @@ describe("vik proektant site wiring", () => {
     expect(toolsFor("bg")[0]?.id).toBe("vik-proektant");
     expect(toolsFor("bg")[0]?.image).toBe("/tools/vik-proektant-card.jpg");
     expect(toolsFor("en")[0]?.image).toBe("/tools/vik-proektant-card.jpg");
-    expect(toolsFor("en")[0]?.href).toBe("/en/vik-proektant/compare");
+    expect(toolsFor("en")[0]?.href).toBe("/en/vik-proektant");
     expect(isNavItemActive("/bg/vik-proektant/compare", "tools", "/bg/tools")).toBe(true);
     expect(isNavItemActive("/bg/vik-designer", "tools", "/bg/tools")).toBe(true);
   });

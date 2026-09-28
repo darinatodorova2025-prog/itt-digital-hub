@@ -80,56 +80,57 @@ export function exampleById(id: string): ComparisonExample | undefined {
 
 export const aiAct = {
   meta: {
-    title: { bg: "Акт за изкуствения интелект", en: "AI Act Assistant" },
+    title: { bg: "AI Act Assistant", en: "AI Act Assistant" },
     description: {
-      bg: "Специализиран асистент за Акта за изкуствения интелект: нормативен текст, роли и приложимост, включително при проектантска работа.",
-      en: "A specialist assistant for the Artificial Intelligence Act: the regulation, roles and applicability, including design practice.",
+      bg: "От регламента към конкретния работен случай: текстът на AI Act, професионален контекст и ясни граници.",
+      en: "From the regulation to the actual working case: the AI Act text, professional context and clear boundaries.",
     },
   },
   compareMeta: {
-    title: { bg: "Сравнение · Акт за изкуствения интелект", en: "Comparison · AI Act Assistant" },
+    title: { bg: "Сравнение · AI Act Assistant", en: "Comparison · AI Act Assistant" },
     description: {
-      bg: "Един и същ въпрос и един и същ модел. Отдясно е специализираният асистент на ITT Digital Hub.",
-      en: "The same question and the same model. The right side is ITT Digital Hub's specialist assistant.",
+      bg: "Същият модел. Същият въпрос. Различен контекст.",
+      en: "The same model. The same question. A different context.",
     },
   },
   back: { bg: "Инструменти", en: "Tools" },
-  label: { bg: "Специализиран асистент", en: "Specialist assistant" },
-  heading: { bg: "Акт за изкуствения интелект", en: "AI Act Assistant" },
+  returnTo: { bg: "Към AI Act Assistant", en: "To AI Act Assistant" },
+  label: { bg: "Регулации · ИИ", en: "Regulation · AI" },
+  heading: { bg: "От регламента към конкретния работен случай.", en: "From the regulation to the working case." },
   lead: {
-    bg: "Регламентът е общ. Трудното е да се разбере какво означава за конкретната професионална дейност. От едната страна е обикновеният отговор. От другата е същият модел със заредения нормативен текст и професионален контекст от ITT Digital Hub.",
-    en: "The regulation is broad. The difficult part is what it means for a specific professional activity. One side is the ordinary answer. The other is the same model with the loaded legal text and professional context from ITT Digital Hub.",
+    bg: "AI Act е общ регламент. Реалният въпрос е какво означава той за конкретна организация, професионална роля, процес или система. Асистентът работи с текста на регламента и допълнителен професионален контекст, за да направи търсенето и първоначалното ориентиране по-практични.",
+    en: "The AI Act is a general regulation. The practical question is what it means for a specific organisation, professional role, process or system. The assistant works with the text of the regulation and additional professional context, so the first reading of a case is more useful.",
   },
   points: [
     {
-      label: { bg: "Какво добавяме.", en: "What we add." },
-      text: { bg: "Нормативен текст, роли, дати на прилагане и ясна граница между регламента и обяснението.", en: "The regulation, roles, application dates, and a clear line between the text and the explanation." },
+      label: { bg: "Източник.", en: "Source." },
+      text: { bg: "Отговорът се свързва с релевантните части от регламента.", en: "The answer is tied to the relevant parts of the regulation." },
     },
     {
-      label: { bg: "Какво не правим.", en: "What we do not do." },
-      text: { bg: "Не класифицираме система, когато решаващите факти липсват, и не допълваме липсващ член.", en: "We do not classify a system when the deciding facts are missing, and we do not fill in a missing article." },
+      label: { bg: "Граници.", en: "Boundaries." },
+      text: { bg: "Когато информацията не е достатъчна за надежден извод, това се посочва. Асистентът не класифицира система, когато решаващите факти липсват, и не допълва липсващ член.", en: "When the information is not enough for a reliable conclusion, that is said. The assistant does not classify a system when the deciding facts are missing, and it does not fill in a missing article." },
     },
   ],
   sections: [
     {
-      title: { bg: "За какво е", en: "What it is for" },
+      title: { bg: "Източник", en: "Source" },
       body: {
-        bg: "За въпроси дали регламентът засяга даден случай, коя правна роля може да е относима, кой член говори по темата и кои дати са в заредения текст. Подходящ е преди разговор с юрист.",
-        en: "For questions about whether the regulation affects a case, which legal role may be relevant, which article speaks to the topic, and which dates are in the loaded text. It is a bearing before speaking with counsel.",
+        bg: "Отговорът се свързва с релевантните части от регламента: член, роля или дата, когато те са в заредения текст.",
+        en: "The answer is connected to the relevant parts of the regulation: an article, a role or a date, when those are in the loaded text.",
       },
     },
     {
-      title: { bg: "Какво се специализира", en: "What specialization changes" },
+      title: { bg: "Контекст", en: "Context" },
       body: {
-        bg: "Моделът е същият. ITT Digital Hub добавя начина на работа, българския консолидиран текст и правилото да се каже, когато колекцията не съдържа даден член. Моделът не става по-умен. Става по-полезен, защото се опира на този текст.",
-        en: "The model is the same. ITT Digital Hub adds the working sequence, the Bulgarian consolidated text, and the rule to say when the collection does not contain an article. The model does not become smarter. It becomes more useful because it can rely on that text.",
+        bg: "Общото правило се разглежда спрямо конкретния въпрос и професионалната среда. Моделът може да е същият. Полезността идва от специализирания контекст и подбраната база от източници.",
+        en: "The general rule is read against the specific question and the professional setting. The model can be the same. The usefulness comes from the specialized context and the selected source collection.",
       },
     },
     {
-      title: { bg: "Граница", en: "Limit" },
+      title: { bg: "Граници", en: "Boundaries" },
       body: {
-        bg: "Асистентът помага да се разбере и анализира Актът за изкуствения интелект. Той не замества правна консултация, когато такава е необходима, и не определя сам професионалната отговорност за инвестиционен проект.",
-        en: "The assistant supports understanding and analysis of the Artificial Intelligence Act. It does not replace professional legal advice where that advice is required, and it does not by itself decide professional responsibility for an investment design.",
+        bg: "Когато информацията не е достатъчна за надежден извод, това трябва да бъде ясно посочено. Инструментът не представлява правен съвет и не замества професионална правна консултация.",
+        en: "When the information is not enough for a reliable conclusion, that should be stated clearly. The tool is not legal advice and does not replace professional legal counsel.",
       },
     },
   ],
@@ -137,18 +138,19 @@ export const aiAct = {
   audienceTitle: { bg: "При професионална работа", en: "In professional work" },
   audience: {
     bg: "Регламентът е общ. Тук примерите са за проектантски организации, инженери, инфраструктурни оператори, технически консултанти и смесени проектантски екипи. Професията не замества правния анализ.",
-    en: "The regulation is general. The examples here are for design organisations, engineers, infrastructure operators, technical consultants and mixed design teams. The profession does not replace the legal analysis.",
+    en: "The regulation is general. The examples here are for design organisations, engineers, infrastructure operators, technical consultants and mixed design teams. A profession does not replace the legal analysis.",
   },
   compareHint: {
-    bg: "Един въпрос към същия модел, със и без специализирания асистент.",
-    en: "One question to the same model, with and without the specialist assistant.",
+    bg: "Същият модел. Същият въпрос. Различен контекст.",
+    en: "The same model. The same question. A different context.",
   },
   compare: {
     back: { bg: "Инструменти", en: "Tools" },
-    heading: { bg: "Един въпрос.\nДва начина да разберете акта.", en: "One question.\nTwo ways to read the Act." },
+    returnTo: { bg: "Към AI Act Assistant", en: "To AI Act Assistant" },
+    heading: { bg: "Същият модел.\nСъщият въпрос. Различен контекст.", en: "The same model.\nThe same question. A different context." },
     lead: {
-      bg: "И двата отговора се генерират от един и същ модел по един и същ въпрос.",
-      en: "Both answers are generated by the same model from the same question.",
+      bg: "Сравнението показва как специализираният контекст и подбраната база от източници могат да променят полезността на отговора, без самият езиков модел непременно да бъде различен.",
+      en: "The comparison shows how specialized context and a selected source collection can change how useful the answer is, without the language model itself having to be different.",
     },
     leadPoints: [
       {
@@ -189,8 +191,8 @@ export const aiAct = {
     kindEngineering: { bg: "Професионален контекст", en: "Professional context" },
     kindNote: { bg: "Обяснение на ITT Digital Hub", en: "ITT Digital Hub explanation" },
     disclosure: {
-      bg: "Асистентът помага да се разбере и анализира Актът за изкуствения интелект. Той не замества правна консултация, когато такава е необходима.",
-      en: "The assistant supports understanding and analysis of the Artificial Intelligence Act. It does not replace professional legal advice where that advice is required.",
+      bg: "Инструментът не представлява правен съвет и не замества професионална правна консултация.",
+      en: "The tool is not legal advice and does not replace professional legal counsel.",
     },
     unfair: {
       bg: "Сравнението не е показано като равностойно, защото услугата не потвърди един и същ модел за двете страни.",

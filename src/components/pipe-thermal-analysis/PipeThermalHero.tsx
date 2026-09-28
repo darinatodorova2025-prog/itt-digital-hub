@@ -1,13 +1,14 @@
 import Image from "next/image";
 import type { Locale } from "@/lib/i18n";
-import { href } from "@/lib/paths";
 import { pipeThermalAnalysis as copy } from "@/content/pipe-thermal-analysis";
-import { BackLink } from "@/components/ui/BackLink";
+import { t } from "@/content/messages";
+import { breadcrumbTrail } from "@/lib/breadcrumbs";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export function PipeThermalHero({ locale }: { locale: Locale }) {
   return (
     <div>
-      <BackLink href={href(locale, "tools")}>{copy.back[locale]}</BackLink>
+      <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "pipe")} />
       <div className="pta-hero">
         <header className="pta-hero-copy">
           <p className="label">{copy.label[locale]}</p>
