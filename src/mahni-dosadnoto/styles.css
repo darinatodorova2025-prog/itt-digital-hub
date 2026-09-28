@@ -2251,6 +2251,19 @@
   font-size: 1rem;
 }
 
+.md-ops-prepare {
+  margin-top: 1.6rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--md-line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.md-ops-prepare p {
+  margin: 0.35rem 0 0;
+  color: var(--md-ink-2);
+}
+
 .md-ops-demo {
   margin-top: 1.6rem;
   padding: 1rem 1.05rem;

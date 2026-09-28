@@ -108,6 +108,17 @@ export async function mdCloseEvent() {
   await mdTransitionPhase("CLOSED");
 }
 
+export async function mdPrepareNextEvent(isDemo: boolean) {
+  await assertAdmin();
+  const store = getMahniStore();
+  const campaign = await store.ensureCampaign();
+  if (campaign.phase !== "CLOSED") throw new Error("not_closed");
+  await store.prepareNextCampaign({ isDemo });
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
+}
+
 export async function mdToggleRecentIdeas(show: boolean) {
   await assertAdmin();
   const store = getMahniStore();

@@ -203,3 +203,35 @@ describe("mahni-dosadnoto ranking", () => {
     expect(overlapCount(["a", "b", "c"], ["a", "x", "c"])).toBe(2);
   });
 });
+
+describe("mahni next campaign", () => {
+  beforeEach(() => resetMemoryStoreForTests());
+
+  it("archives a closed run and opens a clean draft the old session cannot enter", async () => {
+    const store = resetMemoryStoreForTests();
+    const closed = await store.ensureCampaign();
+    await store.transitionPhase("COLLECTING");
+    await store.registerParticipant(
+      { firstName: "Old", lastName: "Run", organization: "Org", role: "Eng", email: "old@example.test", marketingConsent: false },
+      "old-token",
+    );
+    await store.submitIdea("old-token", "Historical idea", null);
+    closed.phase = "CLOSED";
+
+    const next = await store.prepareNextCampaign({ isDemo: true });
+    expect(next.phase).toBe("DRAFT");
+    expect(next.isDemo).toBe(true);
+    expect(next.id).not.toBe(closed.id);
+    expect(store.archived.some((row) => row.id === closed.id)).toBe(true);
+    expect((await store.listParticipantsAdmin()).length).toBe(0);
+    expect((await store.listIdeasAdmin()).length).toBe(0);
+    expect((await store.getPublicLiveSnapshot()).stats).toMatchObject({ participants: 0, ideas: 0, votes: 0 });
+    expect((await store.getParticipantContext("old-token")).participant).toBeNull();
+
+    await store.transitionPhase("COLLECTING");
+    await expect(store.submitIdea("old-token", "Must not land in the new run", null)).rejects.toThrow("unauthorized");
+    expect((await store.listIdeasAdmin()).length).toBe(0);
+    expect([...store.ideas.values()].some((idea) => idea.campaignId === closed.id && idea.body === "Historical idea")).toBe(true);
+    await expect(store.prepareNextCampaign({ isDemo: false })).rejects.toThrow("not_closed");
+  });
+});

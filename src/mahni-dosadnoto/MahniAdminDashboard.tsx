@@ -13,6 +13,7 @@ import {
   mdAdminSnapshot,
   mdCloseCollection,
   mdCloseEvent,
+  mdPrepareNextEvent,
   mdCloseVoting,
   mdExportCsv,
   mdOpenVoting,
@@ -57,7 +58,7 @@ export function MahniAdminDashboard({ initial }: Props) {
   const [snapshot, setSnapshot] = useState(initial);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [confirm, setConfirm] = useState<ActionId | "seed" | "reset" | null>(null);
+  const [confirm, setConfirm] = useState<ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real" | null>(null);
   const [query, setQuery] = useState("");
   const [csv, setCsv] = useState("");
   const campaign = snapshot.campaign;
@@ -98,7 +99,7 @@ export function MahniAdminDashboard({ initial }: Props) {
   );
   const liveRank = [...snapshot.live.themes].sort((a, b) => b.voteCount - a.voteCount || a.title.localeCompare(b.title, "bg"));
 
-  async function execute(id: ActionId | "seed" | "reset") {
+  async function execute(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real") {
     setBusy(id);
     setError("");
     setConfirm(null);
@@ -112,7 +113,7 @@ export function MahniAdminDashboard({ initial }: Props) {
     }
   }
 
-  function ask(id: ActionId | "seed" | "reset") {
+  function ask(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real") {
     if (needsConfirm(id)) setConfirm(id);
     else void execute(id);
   }
@@ -454,6 +455,22 @@ export function MahniAdminDashboard({ initial }: Props) {
         </div>
       </section>
 
+      {campaign.phase === "CLOSED" ? (
+        <section className="md-ops-prepare" id="ops-prepare">
+          <p className="md-ops-kicker">След затворено събитие</p>
+          <h2>Подготви ново събитие</h2>
+          <p>Затвореното събитие и данните му остават запазени. Новото започва празно и чака старт.</p>
+          <div className="md-ops-demo-actions">
+            <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("prepare-rehearsal")}>
+              Репетиция
+            </button>
+            <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("prepare-real")}>
+              Реално събитие
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       <section className="md-ops-demo" id="ops-demo">
         <p className="md-ops-kicker">Не е част от живото събитие</p>
         <h2>Демо / репетиция</h2>
@@ -506,7 +523,7 @@ const ACTION_LABEL: Record<ActionId, string> = {
   closed: "Приключи събитието",
 };
 
-const actionRunners: Record<ActionId | "seed" | "reset", () => Promise<void>> = {
+const actionRunners: Record<ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real", () => Promise<void>> = {
   collect: () => mdStartCollecting(),
   "close-collect": () => mdCloseCollection(),
   analysis: () => mdRunAnalysis(),
@@ -519,14 +536,29 @@ const actionRunners: Record<ActionId | "seed" | "reset", () => Promise<void>> = 
   closed: () => mdCloseEvent(),
   seed: () => mdSeedDemo(),
   reset: () => mdResetDemo(),
+  "prepare-rehearsal": () => mdPrepareNextEvent(true),
+  "prepare-real": () => mdPrepareNextEvent(false),
 };
 
-function needsConfirm(id: ActionId | "seed" | "reset"): boolean {
-  return id === "closed" || id === "seed" || id === "reset" || id === "close-collect" || id === "close-vote" || id === "final";
+function needsConfirm(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real"): boolean {
+  return (
+    id === "closed" ||
+    id === "seed" ||
+    id === "reset" ||
+    id === "close-collect" ||
+    id === "close-vote" ||
+    id === "final" ||
+    id === "prepare-rehearsal" ||
+    id === "prepare-real"
+  );
 }
 
-function confirmCopy(id: ActionId | "seed" | "reset"): string {
+function confirmCopy(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real"): string {
   switch (id) {
+    case "prepare-rehearsal":
+      return "Ще се отвори нова празна репетиция. Затвореното събитие остава запазено и няма да бъде изтрито.";
+    case "prepare-real":
+      return "Ще се отвори ново празно реално събитие. Затвореното събитие остава запазено и няма да бъде изтрито.";
     case "seed":
       return "Ще бъдат добавени демо участници и идеи, а фазата ще стане „Споделяме“.";
     case "reset":

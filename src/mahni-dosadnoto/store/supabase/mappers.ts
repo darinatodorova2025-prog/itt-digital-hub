@@ -177,6 +177,7 @@ export function mapPostgresError(error: { message?: string; code?: string }): st
   if (msg.includes("vote_limit")) return "vote_limit";
   if (msg.includes("voting_closed")) return "not_voting";
   if (msg.includes("unauthorized")) return "unauthorized";
+  if (msg.includes("not_closed")) return "not_closed";
   if (msg.includes("invalid_theme")) return "invalid_theme";
   if (msg.includes("invalid_transition")) return "invalid_transition";
   if (error.code === "23505") return "duplicate";

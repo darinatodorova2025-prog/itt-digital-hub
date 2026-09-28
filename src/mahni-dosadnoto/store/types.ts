@@ -45,6 +45,8 @@ export type ParticipantContext = {
 export interface MahniStore {
   ensureCampaign(): Promise<EventCampaign>;
   getCampaign(): Promise<EventCampaign | null>;
+  /** Archive the closed current campaign and open a clean DRAFT with the public slug. */
+  prepareNextCampaign(options: { isDemo: boolean }): Promise<EventCampaign>;
 
   registerParticipant(input: RegistrationInput, sessionToken: string, isDemo?: boolean): Promise<{ participant: Participant; recovered: boolean }>;
   resolveParticipant(sessionToken: string): Promise<Participant | null>;

@@ -84,11 +84,22 @@ export class MemoryMahniStore implements MahniStore {
     return this.campaign;
   }
 
+  /** Closed campaigns kept in memory so a new run does not erase them. */
+  archived: EventCampaign[] = [];
+
   private resolveSession(token: string): Participant | null {
     const hash = hashSessionToken(token);
     const row = this.sessions.get(hash);
     if (!row || row.expiresAt < Date.now()) return null;
     return this.participants.get(row.participantId) ?? null;
+  }
+
+  /** A session from a previous campaign must not act as a participant of the current one. */
+  private currentParticipant(token: string): Participant | null {
+    if (!this.campaign) return null;
+    const participant = this.resolveSession(token);
+    if (!participant || participant.campaignId !== this.campaign.id) return null;
+    return participant;
   }
 
   private bindSession(token: string, participantId: string) {
@@ -143,7 +154,7 @@ export class MemoryMahniStore implements MahniStore {
   async submitIdea(sessionToken: string, body: string, frequency: string | null, idempotencyKey?: string) {
     const campaign = this.campaignOrThrow();
     if (!ideasAllowed(campaign.phase)) throw new Error("not_collecting");
-    const participant = this.resolveSession(sessionToken);
+    const participant = this.currentParticipant(sessionToken);
     if (!participant) throw new Error("unauthorized");
     if (idempotencyKey) {
       const key = `idea:${participant.id}:${idempotencyKey}`;
@@ -183,9 +194,10 @@ export class MemoryMahniStore implements MahniStore {
     this.maybeAutoCloseVoting();
     const campaign = this.campaignOrThrow();
     if (!votingAllowed(campaign.phase, campaign.votingEndsAt)) throw new Error("not_voting");
-    const participant = this.resolveSession(sessionToken);
+    const participant = this.currentParticipant(sessionToken);
     if (!participant) throw new Error("unauthorized");
-    if (!this.themes.has(themeId)) throw new Error("invalid_theme");
+    const theme = this.themes.get(themeId);
+    if (!theme || theme.campaignId !== campaign.id) throw new Error("invalid_theme");
     const existingForTheme = this.votesForParticipant(participant.id).find((v) => v.themeId === themeId);
     if (existingForTheme) return { vote: existingForTheme, votesUsed: this.votesForParticipant(participant.id).length, duplicate: true };
     const used = this.votesForParticipant(participant.id).length;
@@ -213,7 +225,7 @@ export class MemoryMahniStore implements MahniStore {
   async setInterest(sessionToken: string, themeId: string) {
     const campaign = this.campaignOrThrow();
     if (!interestAllowed(campaign.phase)) throw new Error("not_allowed");
-    const participant = this.resolveSession(sessionToken);
+    const participant = this.currentParticipant(sessionToken);
     if (!participant) throw new Error("unauthorized");
     if (!this.themes.has(themeId)) throw new Error("invalid_theme");
     const key = `${participant.id}:${themeId}`;
@@ -234,7 +246,7 @@ export class MemoryMahniStore implements MahniStore {
   async requestFollowup(sessionToken: string, themeId: string) {
     const campaign = this.campaignOrThrow();
     if (!followupAllowed(campaign.phase)) throw new Error("not_allowed");
-    const participant = this.resolveSession(sessionToken);
+    const participant = this.currentParticipant(sessionToken);
     if (!participant) throw new Error("unauthorized");
     if (!this.themes.has(themeId)) throw new Error("invalid_theme");
     const row: FollowupRequest = {
@@ -250,7 +262,7 @@ export class MemoryMahniStore implements MahniStore {
   }
 
   async getParticipantContext(sessionToken: string | null): Promise<ParticipantContext> {
-    const participant = sessionToken ? this.resolveSession(sessionToken) : null;
+    const participant = sessionToken ? this.currentParticipant(sessionToken) : null;
     if (!participant) {
       return { participant: null, ideaCount: 0, votesUsed: 0, votedThemeIds: [], interestThemeIds: [], followupThemeIds: [] };
     }
@@ -266,8 +278,11 @@ export class MemoryMahniStore implements MahniStore {
   }
 
   private orgCounts() {
+    const campaign = this.campaignOrThrow();
     const orgs = new Set<string>();
-    for (const p of this.participants.values()) orgs.add(normalizeOrg(p.organization));
+    for (const p of this.participants.values()) {
+      if (p.campaignId === campaign.id) orgs.add(normalizeOrg(p.organization));
+    }
     return orgs.size;
   }
 
@@ -284,7 +299,8 @@ export class MemoryMahniStore implements MahniStore {
       if (!interestByTheme.has(sig.themeId)) interestByTheme.set(sig.themeId, new Set());
       interestByTheme.get(sig.themeId)!.add(normalizeOrg(sig.organization));
     }
-    return [...this.themes.values()].map((theme) => ({
+    const campaign = this.campaignOrThrow();
+    return [...this.themes.values()].filter((theme) => theme.campaignId === campaign.id).map((theme) => ({
       theme,
       voteCount: voteCounts.get(theme.id) ?? 0,
       interestOrgCount: interestByTheme.get(theme.id)?.size ?? 0,
@@ -310,7 +326,8 @@ export class MemoryMahniStore implements MahniStore {
       .slice(0, 8)
       .map((i) => ({ body: i.body, createdAt: i.createdAt }));
     const voteCounts = this.themeVoteCounts();
-    const themes = [...this.themes.values()]
+    const campaignThemes = [...this.themes.values()].filter((theme) => theme.campaignId === campaign.id);
+    const themes = campaignThemes
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((t) => ({
         id: t.id,
@@ -331,7 +348,7 @@ export class MemoryMahniStore implements MahniStore {
     const juryPicks = [...this.juryVotes.values()];
     const aiAgg = aggregateAiJury(
       juryPicks.map((p) => ({ themeId: p.themeId, rank: p.rank })),
-      [...this.themes.values()],
+      campaignThemes,
     );
     const aiTop3 = aiAgg.slice(0, 3).map((r, idx) => ({
       rank: idx + 1,
@@ -343,7 +360,7 @@ export class MemoryMahniStore implements MahniStore {
     if (campaign.phase === "FINALIZING" && campaign.votingEndsAt) {
       countdownSeconds = Math.max(0, Math.ceil((Date.parse(campaign.votingEndsAt) - Date.now()) / 1000));
     }
-    const storedThemes = [...this.themes.values()];
+    const storedThemes = campaignThemes;
     const juryProgress = summarizeJuryProgress(await this.listJuryResults());
     const showResults = campaign.phase === "RESULTS" || campaign.phase === "CLOSED";
     return {
@@ -351,10 +368,10 @@ export class MemoryMahniStore implements MahniStore {
       title: campaign.title,
       showRecentIdeas: campaign.showRecentIdeas,
       stats: {
-        participants: this.participants.size,
+        participants: [...this.participants.values()].filter((p) => p.campaignId === campaign.id).length,
         organizations: this.orgCounts(),
         ideas: ideaList.length,
-        votes: this.votes.size,
+        votes: [...this.votes.values()].filter((v) => v.campaignId === campaign.id).length,
       },
       recentIdeas: campaign.showRecentIdeas && campaign.phase === "COLLECTING" ? recent : [],
       analysisStage: campaign.phase === "ANALYZING" ? this.analysisStage : null,
@@ -435,8 +452,12 @@ export class MemoryMahniStore implements MahniStore {
     const ideaIds = new Set([...this.ideas.values()].filter((i) => i.campaignId === campaign.id).map((i) => i.id));
     const valid = validateClusteringAgainstIdeas(output, ideaIds);
     if (!valid.ok) throw new Error(valid.reason);
-    this.themes.clear();
-    this.themeLinks.clear();
+    for (const [id, theme] of [...this.themes]) {
+      if (theme.campaignId === campaign.id) {
+        this.themes.delete(id);
+        this.themeLinks.delete(id);
+      }
+    }
     let order = 0;
     for (const theme of output.themes) {
       const orgs = new Set<string>();
@@ -545,7 +566,8 @@ export class MemoryMahniStore implements MahniStore {
   }
 
   async listThemes() {
-    return [...this.themes.values()].sort((a, b) => a.sortOrder - b.sortOrder);
+    const campaign = await this.ensureCampaign();
+    return [...this.themes.values()].filter((theme) => theme.campaignId === campaign.id).sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
   async listThemeIdeaLinks(themeId: string) {
@@ -553,11 +575,13 @@ export class MemoryMahniStore implements MahniStore {
   }
 
   async listIdeasAdmin() {
-    return [...this.ideas.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const campaign = await this.ensureCampaign();
+    return [...this.ideas.values()].filter((idea) => idea.campaignId === campaign.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async listParticipantsAdmin() {
-    return [...this.participants.values()].map((p) => ({
+    const campaign = await this.ensureCampaign();
+    return [...this.participants.values()].filter((p) => p.campaignId === campaign.id).map((p) => ({
       ...p,
       ideaCount: [...this.ideas.values()].filter((i) => i.participantId === p.id).length,
       followupCount: [...this.followups.values()].filter((f) => f.participantId === p.id).length,
@@ -565,22 +589,49 @@ export class MemoryMahniStore implements MahniStore {
   }
 
   async listVotesAdmin() {
-    return [...this.votes.values()];
+    const campaign = await this.ensureCampaign();
+    return [...this.votes.values()].filter((vote) => vote.campaignId === campaign.id);
   }
 
   async listFollowupsAdmin() {
-    return [...this.followups.values()];
+    const campaign = await this.ensureCampaign();
+    return [...this.followups.values()].filter((row) => row.campaignId === campaign.id);
   }
 
   async listJuryResults() {
-    return [...this.juryRuns.values()].map((run) => ({
+    const campaign = await this.ensureCampaign();
+    return [...this.juryRuns.values()].filter((run) => run.campaignId === campaign.id).map((run) => ({
       ...run,
       picks: [...this.juryVotes.values()].filter((v) => v.juryRunId === run.id),
     }));
   }
 
   async listAnalysisRunsAdmin() {
-    return [...this.analysisRuns.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const campaign = await this.ensureCampaign();
+    return [...this.analysisRuns.values()]
+      .filter((run) => run.campaignId === campaign.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async prepareNextCampaign(options: { isDemo: boolean }): Promise<EventCampaign> {
+    const current = await this.ensureCampaign();
+    if (current.phase !== "CLOSED") throw new Error("not_closed");
+    const archived: EventCampaign = { ...current, slug: `${current.slug}--${current.id.slice(0, 8)}` };
+    this.archived.push(archived);
+    const t = nowIso();
+    this.campaign = {
+      id: randomUUID(),
+      slug: current.slug,
+      title: current.title,
+      phase: "DRAFT",
+      showRecentIdeas: true,
+      votingEndsAt: null,
+      humanResultLockedAt: null,
+      isDemo: options.isDemo,
+      createdAt: t,
+      updatedAt: t,
+    };
+    return this.campaign;
   }
 
   async exportCsv() {

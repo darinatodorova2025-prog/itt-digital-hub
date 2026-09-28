@@ -89,6 +89,18 @@ export class SupabaseMahniStore implements MahniStore {
     return this.loadCampaignRow();
   }
 
+  async prepareNextCampaign(options: { isDemo: boolean }): Promise<EventCampaign> {
+    const sb = client();
+    const { data, error } = await sb.rpc("md_prepare_next_campaign", {
+      p_slug: this.campaignSlug,
+      p_is_demo: options.isDemo,
+    });
+    if (error) throwMapped(error);
+    this.campaignCache = null;
+    this.campaignCache = mapCampaign(data as never);
+    return this.campaignCache;
+  }
+
   async getCampaign(): Promise<EventCampaign | null> {
     try {
       return await this.loadCampaignRow();
@@ -231,7 +243,7 @@ export class SupabaseMahniStore implements MahniStore {
     const campaign = await this.ensureCampaign();
     if (!interestAllowed(campaign.phase)) throw new Error("not_allowed");
     const participant = await this.resolveParticipant(sessionToken);
-    if (!participant) throw new Error("unauthorized");
+    if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
     const sb = client();
     const { error } = await sb.from("md_interest_signals").upsert(
       {
@@ -250,7 +262,7 @@ export class SupabaseMahniStore implements MahniStore {
     const campaign = await this.ensureCampaign();
     if (!followupAllowed(campaign.phase)) throw new Error("not_allowed");
     const participant = await this.resolveParticipant(sessionToken);
-    if (!participant) throw new Error("unauthorized");
+    if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
     const sb = client();
     const { data, error } = await sb
       .from("md_followup_requests")
@@ -271,7 +283,8 @@ export class SupabaseMahniStore implements MahniStore {
       return { participant: null, ideaCount: 0, votesUsed: 0, votedThemeIds: [], interestThemeIds: [], followupThemeIds: [] };
     }
     const participant = await this.resolveParticipant(sessionToken);
-    if (!participant) {
+    const campaign = await this.ensureCampaign();
+    if (!participant || participant.campaignId !== campaign.id) {
       return { participant: null, ideaCount: 0, votesUsed: 0, votedThemeIds: [], interestThemeIds: [], followupThemeIds: [] };
     }
     const sb = client();
