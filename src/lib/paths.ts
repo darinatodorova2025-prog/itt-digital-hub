@@ -17,7 +17,8 @@ export type RouteKey =
   | "settlement-analyzer"
   | "pipe-thermal-analysis"
   | "vik-designer"
-  | "vik-proektant";
+  | "vik-proektant"
+  | "mahni-dosadnoto";
 
 const segments: Record<RouteKey, string> = {
   home: "",
@@ -36,6 +37,7 @@ const segments: Record<RouteKey, string> = {
   "pipe-thermal-analysis": "pipe-thermal-analysis",
   "vik-designer": "vik-designer",
   "vik-proektant": "vik-proektant",
+  "mahni-dosadnoto": "mahni-dosadnoto",
 };
 
 export function href(locale: Locale, key: RouteKey, slug?: string): string {

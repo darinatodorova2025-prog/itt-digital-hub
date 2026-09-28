@@ -1,10 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/i18n";
 import { SiteHeader } from "./SiteHeader";
 import { SiteFooterGate } from "./SiteFooterGate";
 import { ResetWindowScroll } from "./ResetWindowScroll";
+
+function isConferencePath(pathname: string): boolean {
+  return /\/mahni-dosadnoto(?:\/|$)/.test(pathname);
+}
 
 export function SiteChrome({
   locale,
@@ -15,6 +20,9 @@ export function SiteChrome({
   skipLabel: string;
   children: ReactNode;
 }) {
+  const pathname = usePathname() ?? "";
+  const conference = isConferencePath(pathname);
+
   return (
     <>
       <a
@@ -23,11 +31,11 @@ export function SiteChrome({
       >
         {skipLabel}
       </a>
-      <SiteHeader locale={locale} />
-      <main id="main" className="min-w-0 w-full flex-1">
+      {conference ? null : <SiteHeader locale={locale} />}
+      <main id="main" className={conference ? "md-event-main min-w-0 w-full flex-1" : "min-w-0 w-full flex-1"}>
         {children}
       </main>
-      <SiteFooterGate locale={locale} />
+      {conference ? null : <SiteFooterGate locale={locale} />}
       <ResetWindowScroll />
     </>
   );

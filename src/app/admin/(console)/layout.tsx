@@ -13,6 +13,7 @@ const nav = [
   { href: "/admin/partners", label: "Partners" },
   { href: "/admin/media", label: "Media" },
   { href: "/admin/settings", label: "Settings" },
+  { href: "/admin/mahni-dosadnoto", label: "Махни досадното" },
 ];
 
 export default async function ConsoleLayout({ children }: { children: ReactNode }) {
