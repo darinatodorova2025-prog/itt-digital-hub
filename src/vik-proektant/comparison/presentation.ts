@@ -295,7 +295,7 @@ export function parseMarkdown(source: string, mode: "control" | "expert"): Markd
       blocks.push({ type: "code", text: code.join("\n") });
       continue;
     }
-    const math = true;
+    const math = mode === "expert";
     const table = readTable(lines, index);
     if (table) {
       if (mode === "expert") blocks.push(table.block);
