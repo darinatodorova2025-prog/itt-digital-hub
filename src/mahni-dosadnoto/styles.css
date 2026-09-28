@@ -1151,13 +1151,14 @@
 
 .md-scene-vote {
   background:
-    linear-gradient(90deg, rgba(4, 14, 49, 0.86) 0%, rgba(4, 14, 49, 0.6) 46%, rgba(4, 14, 49, 0.12) 100%),
+    linear-gradient(90deg, rgba(4, 14, 49, 0.88) 0%, rgba(4, 14, 49, 0.66) 38%, rgba(4, 14, 49, 0.28) 64%, rgba(4, 14, 49, 0.05) 100%),
     url("/event/mahni/river.webp") right center / cover no-repeat;
 }
 
 .md-scene-result {
   background:
-    linear-gradient(90deg, rgba(4, 14, 49, 0.72) 0%, rgba(4, 14, 49, 0.5) 42%, rgba(4, 14, 49, 0.18) 78%, rgba(4, 14, 49, 0.3) 100%),
+    linear-gradient(90deg, rgba(4, 14, 49, 0.74) 0%, rgba(4, 14, 49, 0.52) 42%, rgba(4, 14, 49, 0.2) 74%, rgba(4, 14, 49, 0.34) 100%),
+    linear-gradient(180deg, rgba(4, 14, 49, 0.5) 0%, rgba(4, 14, 49, 0) 30%, rgba(4, 14, 49, 0) 62%, rgba(4, 14, 49, 0.55) 100%),
     url("/event/mahni/aerial.webp") center 40% / cover no-repeat;
 }
 
@@ -1265,16 +1266,16 @@
 .md-live h1 {
   margin: 0;
   max-width: 16ch;
-  font-size: clamp(2.6rem, 4.6vw, 4.6rem);
+  font-size: clamp(3rem, 5.4vw, 5.6rem);
   line-height: 0.98;
   color: #fff;
 }
 
 .md-live-lead {
-  margin: 0.7rem 0 0;
+  margin: 0.9rem 0 0;
   max-width: 34rem;
-  color: rgba(247, 248, 253, 0.82);
-  font-size: clamp(1.15rem, 1.8vw, 1.55rem);
+  color: rgba(247, 248, 253, 0.84);
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
   line-height: 1.35;
 }
 
@@ -1289,14 +1290,14 @@
 
 .md-live-metrics {
   display: flex;
-  gap: clamp(1.2rem, 3vw, 2.6rem);
-  margin-top: 1.4rem;
+  gap: clamp(1.4rem, 3.4vw, 3.2rem);
+  margin-top: clamp(1.6rem, 3.4vh, 2.6rem);
 }
 
 .md-live-metrics strong,
 .md-live-vote-total strong {
   display: block;
-  font-size: clamp(2.6rem, 4.5vw, 4.2rem);
+  font-size: clamp(3.2rem, 5.6vw, 5.4rem);
   line-height: 0.9;
   font-variant-numeric: tabular-nums;
 }
@@ -1304,9 +1305,9 @@
 .md-live-metrics span,
 .md-live-vote-total span {
   display: block;
-  margin-top: 0.3rem;
-  color: rgba(247, 248, 253, 0.72);
-  font-size: 0.95rem;
+  margin-top: 0.45rem;
+  color: rgba(247, 248, 253, 0.74);
+  font-size: clamp(1rem, 1.3vw, 1.2rem);
 }
 
 .md-live-ideas {
@@ -1331,12 +1332,12 @@
 
 .md-qr {
   justify-self: end;
-  width: min(22rem, 34vh);
-  padding: 0.85rem 0.85rem 0.7rem;
-  border-radius: 18px;
+  width: min(26rem, 44vh);
+  padding: 1.15rem 1.15rem 0.95rem;
+  border-radius: 22px;
   background: #fff;
   color: var(--md-ink);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.34);
 }
 
 .md-qr img {
@@ -1346,9 +1347,9 @@
 }
 
 .md-qr p {
-  margin: 0.15rem 0 0.2rem;
+  margin: 0.4rem 0 0.2rem;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: clamp(1.05rem, 1.4vw, 1.25rem);
   font-weight: 650;
 }
 
@@ -1559,7 +1560,54 @@
 }
 
 .md-live-choice li {
-  align-items: start;
+  align-items: center;
+}
+
+/* Participant Top 3 as elevated dark photo cards — the official result dominates. */
+.md-live-choice:not(.is-quiet) li {
+  grid-template-columns: 7.5rem auto minmax(0, 1fr);
+  gap: 1.1rem;
+  padding: 0.85rem 1.1rem 0.85rem 0.85rem;
+  border: 1px solid rgba(247, 248, 253, 0.16);
+  border-radius: 18px;
+  background: rgba(7, 20, 51, 0.55);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+}
+
+.md-live-choice:not(.is-quiet) li.is-shared {
+  border-color: rgba(174, 191, 255, 0.5);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+}
+
+.md-live-choice-photo {
+  position: relative;
+  width: 7.5rem;
+  height: 5.4rem;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.md-live-choice-img {
+  object-fit: cover;
+}
+
+.md-live-choice-copy {
+  display: block;
+}
+
+.md-live-shared-badge {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--md-signal);
+  color: #fff;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .md-live-choice b {

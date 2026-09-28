@@ -16,6 +16,9 @@ import { LiveRail } from "@/mahni-dosadnoto/journey";
 import { ThemeEquation } from "@/mahni-dosadnoto/grouping";
 import { LensBoard } from "@/mahni-dosadnoto/lenses";
 
+/** Stable theme thumbnails for the participant Top 3 result cards. */
+const RESULT_THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-river.webp", "/event/mahni/thumb-aerial.webp"];
+
 export function MahniLiveScreen({ initialSnapshot }: { initialSnapshot: PublicLiveSnapshot | null }) {
   const [snapshot, setSnapshot] = useState<PublicLiveSnapshot | null>(initialSnapshot);
   const [compact, setCompact] = useState(false);
@@ -113,7 +116,6 @@ function LiveHeader({ stage, title = "Махни досадното" }: { stage?
 }
 
 function Collecting({ snapshot }: { snapshot: PublicLiveSnapshot }) {
-  const ideas = snapshot.showRecentIdeas ? snapshot.recentIdeas.slice(0, 3) : [];
   return (
     <div className="md-live-collect">
       <div>
@@ -124,13 +126,6 @@ function Collecting({ snapshot }: { snapshot: PublicLiveSnapshot }) {
           <Metric value={snapshot.stats.organizations} label="организации" />
           <Metric value={snapshot.stats.ideas} label="идеи" />
         </div>
-        {ideas.length > 0 ? (
-          <ul className="md-live-ideas">
-            {ideas.map((idea, index) => (
-              <li key={`${idea.createdAt}-${index}`}>{idea.body}</li>
-            ))}
-          </ul>
-        ) : null}
       </div>
       <div className="md-qr">
         <Image src="/event/mahni-dosadnoto-qr.svg" alt="Код за включване в Махни досадното" width={512} height={540} priority unoptimized />
@@ -257,10 +252,16 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
         <section>
           <h2>Изборът на участниците</h2>
           <ol className="md-live-choice">
-            {snapshot.humanTop3.map((row) => (
+            {snapshot.humanTop3.map((row, index) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
+                <span className="md-live-choice-photo" aria-hidden="true">
+                  <Image src={RESULT_THUMBS[index % RESULT_THUMBS.length]!} alt="" fill sizes="9rem" className="md-live-choice-img" />
+                </span>
                 <b>{String(row.rank).padStart(2, "0")}</b>
-                <span>{row.title}</span>
+                <span className="md-live-choice-copy">
+                  {row.title}
+                  {aiIds.has(row.id) ? <em className="md-live-shared-badge">Общ приоритет</em> : null}
+                </span>
               </li>
             ))}
           </ol>
