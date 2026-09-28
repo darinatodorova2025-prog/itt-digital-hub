@@ -26,11 +26,9 @@ A successful response whose model id is neither the requested id nor a dated sna
 
 ## Control
 
-Instruction, exactly:
+The control request has no `instructions` field. The model receives only the user prompt.
 
-> Answer the user's question helpfully and accurately using your general model capabilities. No external ViK-specific tools or ITT domain knowledge are available.
-
-Control has no `tools` array, no skill file, and no corpus text. The instruction does not tell the model to be generic, vague, or less capable.
+Control has no `tools` array, no skill file, and no corpus text. Nothing in the request tells the model to be generic, vague, or less capable.
 
 If a control response nevertheless contains an MCP tool call, that side is treated as a failure and is not shown.
 
