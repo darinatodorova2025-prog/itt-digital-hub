@@ -36,6 +36,9 @@ export const contactEmail = "office@ittdigitalhub.org";
 
 export const contactPhones = ["+359 895 581 911", "+359 899 811 455"] as const;
 
+/** Second footer phone. Set to true when it should be public again. */
+export const showSecondaryContactPhone = false;
+
 export interface NavItem {
   key: RouteKey;
   label: L;

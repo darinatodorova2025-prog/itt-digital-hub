@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { track } from "@vercel/analytics";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
-import { comparisonExamples, vikProektant as copy, type ExampleId } from "@/content/vik-proektant";
+import { comparisonExamples, customScenarioGuide, scenarioGuides, vikProektant as copy, type ExampleId } from "@/content/vik-proektant";
 import type { PublicCalculation, PublicSource, ToolKind } from "@/vik-proektant/comparison/presentation";
+import { comparisonBand, isAnswerComparison, type AnswerComparison } from "@/vik-proektant/comparison/score";
 import { AnswerMarkdown } from "@/components/vik-proektant/AnswerMarkdown";
 import { Button } from "@/components/ui/ButtonLink";
 
@@ -26,6 +27,8 @@ type ExpertResult =
     }
   | { ok: false; error: ErrorCode };
 
+type EvaluationState = null | { status: "loading" } | { status: "unavailable" } | { status: "ready"; comparison: AnswerComparison };
+
 type Payload = {
   retryAfterMs?: number;
   fair: boolean;
@@ -40,7 +43,7 @@ type Payload = {
   error?: ErrorCode;
 };
 
-export function CompareLab({ locale }: { locale: Locale }) {
+export function CompareLab({ locale, modelLabel }: { locale: Locale; modelLabel: string }) {
   const text = copy.compare;
   const [prompt, setPrompt] = useState(comparisonExamples[0]?.prompt[locale] ?? "");
   const [exampleId, setExampleId] = useState<ExampleId | null>(comparisonExamples[0]?.id ?? null);
@@ -48,7 +51,9 @@ export function CompareLab({ locale }: { locale: Locale }) {
   const [formError, setFormError] = useState<ErrorCode | null>(null);
   const [retryAfterMs, setRetryAfterMs] = useState<number | null>(null);
   const [result, setResult] = useState<Payload | null>(null);
+  const [evaluation, setEvaluation] = useState<EvaluationState>(null);
   const fieldRef = useRef<HTMLTextAreaElement>(null);
+  const evaluationGeneration = useRef(0);
 
   useEffect(() => {
     const node = fieldRef.current;
@@ -57,12 +62,20 @@ export function CompareLab({ locale }: { locale: Locale }) {
     node.style.height = `${Math.min(node.scrollHeight, 220)}px`;
   }, [prompt]);
 
+  function dropComparison() {
+    evaluationGeneration.current += 1;
+    setEvaluation(null);
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    const generation = evaluationGeneration.current + 1;
+    evaluationGeneration.current = generation;
     setPending(true);
     setFormError(null);
     setRetryAfterMs(null);
     setResult(null);
+    setEvaluation(null);
     const selected = exampleId && comparisonExamples.some((item) => item.id === exampleId && item.prompt[locale] === prompt) ? exampleId : null;
     track(selected ? "selected_example_prompt" : "custom_prompt_used", selected ? { example: selected } : {});
     track("comparison_started", { example: selected ?? "custom" });
@@ -85,11 +98,38 @@ export function CompareLab({ locale }: { locale: Locale }) {
       if (body.expert.ok && body.summary.retrievalUsed) track("expert_used_retrieval", { sources: body.summary.sourceCount });
       if (body.expert.ok && body.summary.calculationPerformed) track("expert_used_calculation", {});
       track("comparison_completed", { fair: body.fair });
+      if (body.control.ok && body.expert.ok) {
+        setPending(false);
+        await evaluateAnswers(generation, prompt, body.control.text, body.expert.text);
+        return;
+      }
     } catch {
       setFormError("upstream");
       track("comparison_completed", { status: "failed" });
     } finally {
-      setPending(false);
+      if (evaluationGeneration.current === generation) setPending(false);
+    }
+  }
+
+  async function evaluateAnswers(generation: number, question: string, answerA: string, answerB: string) {
+    if (evaluationGeneration.current !== generation) return;
+    setEvaluation({ status: "loading" });
+    try {
+      const response = await fetch("/api/vik-proektant/compare/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, answerA, answerB }),
+      });
+      if (evaluationGeneration.current !== generation) return;
+      const body = (await response.json()) as unknown;
+      if (!response.ok || !isAnswerComparison(body)) {
+        setEvaluation({ status: "unavailable" });
+        return;
+      }
+      setEvaluation({ status: "ready", comparison: body });
+    } catch {
+      if (evaluationGeneration.current !== generation) return;
+      setEvaluation({ status: "unavailable" });
     }
   }
 
@@ -106,7 +146,9 @@ export function CompareLab({ locale }: { locale: Locale }) {
           maxLength={4000}
           rows={2}
           onChange={(event) => {
-            setPrompt(event.target.value);
+            const next = event.target.value;
+            if (next !== prompt) dropComparison();
+            setPrompt(next);
             setExampleId(null);
           }}
           placeholder={text.promptPlaceholder[locale]}
@@ -123,8 +165,10 @@ export function CompareLab({ locale }: { locale: Locale }) {
                   type="button"
                   aria-pressed={selected}
                   onClick={() => {
+                    const nextPrompt = example.prompt[locale];
+                    if (example.id !== exampleId || nextPrompt !== prompt) dropComparison();
                     setExampleId(example.id);
-                    setPrompt(example.prompt[locale]);
+                    setPrompt(nextPrompt);
                   }}
                   className={cn(
                     "relative min-h-11 rounded-xl border px-3 py-2 text-left text-small text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal",
@@ -152,11 +196,17 @@ export function CompareLab({ locale }: { locale: Locale }) {
             })}
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-4">
-          <Button type="submit" variant="primary" arrow disabled={pending || prompt.trim().length < 2}>
-            {pending ? text.pending[locale] : text.submit[locale]}
-          </Button>
-          {pending ? <ThinkingDots /> : null}
+        <div className="mt-4 flex flex-col items-start gap-4 lg:flex-row lg:items-start lg:gap-10">
+          <div className="flex shrink-0 items-center gap-4">
+            <Button type="submit" variant="primary" arrow disabled={pending || prompt.trim().length < 2}>
+              {pending ? text.pending[locale] : text.submit[locale]}
+            </Button>
+            {pending ? <ThinkingDots /> : null}
+          </div>
+          <div className="flex min-w-0 flex-col items-start gap-4 md:flex-row md:items-start md:gap-10">
+            <ScenarioGuide locale={locale} exampleId={exampleId} />
+            <ComparisonPanel locale={locale} evaluation={evaluation} />
+          </div>
         </div>
         {formError ? (
           <p role="status" className="mt-3 max-w-[62ch] rounded-xl border border-line bg-paper px-4 py-3 text-small text-ink">
@@ -167,7 +217,9 @@ export function CompareLab({ locale }: { locale: Locale }) {
 
       {result && !result.fair ? <p className="mt-4 text-small text-ink-2">{text.unfair[locale]}</p> : null}
 
-      <p className="mt-5 border-t border-line pt-4 text-meta text-ink-3">{text.fairness[locale]}</p>
+      <p className="mt-5 border-t border-line pt-4 text-meta text-ink-3">
+        {text.fairnessModel[locale]} · {modelLabel} · {text.fairnessQuestion[locale]}
+      </p>
       <div className="mt-3 grid min-h-[22rem] items-start gap-3 lg:min-h-[24rem] lg:grid-cols-2" aria-busy={pending}>
         <ResultCard locale={locale} title={text.controlTitle[locale]} note={text.controlNote[locale]} pending={pending} pendingLabel={text.controlWaiting[locale]}>
           {!pending && result?.control.ok ? <AnswerMarkdown text={result.control.text} mode="control" /> : null}
@@ -178,7 +230,77 @@ export function CompareLab({ locale }: { locale: Locale }) {
           {!pending && result && !result.expert.ok ? <p>{text.errors[result.expert.error][locale]}</p> : null}
         </ResultCard>
       </div>
-      <p className="mt-4 max-w-[65ch] text-meta text-ink-3">{text.disclosure[locale]}</p>
+      <p className="mt-4 text-meta text-ink-3">{text.disclosure[locale]}</p>
+    </div>
+  );
+}
+
+function ScenarioGuide({ locale, exampleId }: { locale: Locale; exampleId: ExampleId | null }) {
+  const text = copy.compare;
+  const guide = exampleId ? scenarioGuides[exampleId] : customScenarioGuide;
+  const heading = guide.heading?.[locale] ?? text.guideHeading[locale];
+  return (
+    <aside className="min-w-0 md:max-w-[18rem] md:shrink-0" aria-live="polite">
+      <p className="text-meta font-medium text-ink-2">{heading}</p>
+      <ul className="mt-1 space-y-0.5 text-meta leading-snug text-ink-3">
+        {guide.points.slice(0, 3).map((point) => (
+          <li key={point.en}>{point[locale]}</li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
+function ComparisonPanel({ locale, evaluation }: { locale: Locale; evaluation: EvaluationState }) {
+  const text = copy.compare;
+  if (!evaluation) return null;
+  return (
+    <section className="w-full min-w-0 md:w-[22rem] md:shrink-0" aria-live="polite">
+      <h2 className="text-meta font-medium text-ink-2">{text.comparisonHeading[locale]}</h2>
+      {evaluation.status === "loading" ? (
+        <p role="status" className="mt-1 text-meta text-ink-3">
+          {text.comparing[locale]}
+        </p>
+      ) : null}
+      {evaluation.status === "unavailable" ? (
+        <p role="status" className="mt-1 text-meta text-ink-3">
+          {text.comparisonUnavailable[locale]}
+        </p>
+      ) : null}
+      {evaluation.status === "ready" ? (
+        <div className="mt-1.5 space-y-1.5 transition-opacity duration-300">
+          <ScoreRail locale={locale} label={text.criteria.grounding[locale]} score={evaluation.comparison.grounding.score} />
+          <ScoreRail locale={locale} label={text.criteria.discipline[locale]} score={evaluation.comparison.discipline.score} />
+          <ScoreRail locale={locale} label={text.criteria.usefulness[locale]} score={evaluation.comparison.usefulness.score} />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ScoreRail({ locale, label, score }: { locale: Locale; label: string; score: number }) {
+  const text = copy.compare;
+  const band = comparisonBand(score);
+  const interpretation = text.bands[band][locale];
+  const position = Math.min(100, Math.max(0, (score / 4) * 100));
+  return (
+    <div className="grid grid-cols-[minmax(6.5rem,9.5rem)_minmax(0,1fr)] items-center gap-3" title={interpretation}>
+      <span className="text-meta leading-tight text-ink-2">{label}</span>
+      <div className="relative h-4" role="img" aria-label={`${label}: ${interpretation}`}>
+        <div
+          className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full"
+          style={{
+            background:
+              "linear-gradient(90deg, #c94a42 0%, #d4654a 18%, #e6c04a 46%, #e6c04a 54%, #3f9670 82%, #1e6b58 100%)",
+          }}
+        />
+        <span aria-hidden="true" className="absolute top-1/2 left-1/2 z-[1] h-4 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink" />
+        <span
+          className="absolute top-1/2 z-[2] size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-ink"
+          style={{ left: `${position}%` }}
+        />
+        <span className="sr-only">{interpretation}</span>
+      </div>
     </div>
   );
 }

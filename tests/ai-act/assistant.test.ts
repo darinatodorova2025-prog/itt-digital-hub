@@ -281,8 +281,8 @@ describe("AI Act public routing", () => {
     expect(href("bg", "ai-act", "compare")).toBe("/bg/ai-act/compare");
     expect(href("en", "ai-act", "compare")).toBe("/en/ai-act/compare");
     expect(href("bg", "ai-act")).not.toContain("v2");
-    expect(toolsFor("bg").find((tool) => tool.id === "ai-act-assistant")?.href).toBe("/bg/ai-act");
-    expect(toolsFor("en").find((tool) => tool.id === "ai-act-assistant")?.href).toBe("/en/ai-act");
+    expect(toolsFor("bg").find((tool) => tool.id === "ai-act-assistant")?.href).toBe("/bg/ai-act/compare");
+    expect(toolsFor("en").find((tool) => tool.id === "ai-act-assistant")?.href).toBe("/en/ai-act/compare");
     expect(toolsFor("bg").filter((tool) => tool.href?.includes("ai-act"))).toHaveLength(1);
     expect(readFileSync("src/app/[locale]/ai-act-agent/page.tsx", "utf8")).toContain("EntryExperience");
     expect(readFileSync("src/app/sitemap.ts", "utf8")).not.toContain("ai-act-agent");

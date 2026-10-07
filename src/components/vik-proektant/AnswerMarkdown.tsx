@@ -205,6 +205,9 @@ function parseAtom(tokens: FormulaToken[], cursor: { index: number }): ReactNode
     if (token.name === "text" || token.name === "mathrm" || token.name === "textrm") {
       return <span className="font-sans text-[0.92em]">{parseAtom(tokens, cursor)}</span>;
     }
+    if (token.name === "boxed" || token.name === "fbox") {
+      return <span className="mx-0.5 border border-current px-1">{parseAtom(tokens, cursor)}</span>;
+    }
     if (token.name === "left" || token.name === "right") return null;
     return formulaSymbol(token.name);
   }
@@ -252,6 +255,13 @@ function formulaSymbol(name: string): string {
     pm: "±",
     infty: "∞",
     quad: " ",
+    Rightarrow: "⇒",
+    rightarrow: "→",
+    Longrightarrow: "→",
+    implies: "⇒",
+    Leftarrow: "⇐",
+    leftarrow: "←",
+    to: "→",
   };
-  return symbols[name] ?? name;
+  return symbols[name] ?? "";
 }

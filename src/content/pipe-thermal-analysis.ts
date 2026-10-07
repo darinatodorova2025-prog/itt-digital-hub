@@ -10,7 +10,7 @@ export const pipeThermalAnalysis = {
   },
   label: { bg: "Инженерство · Изчисления", en: "Tool" } satisfies L,
   back: { bg: "Инструменти", en: "Tools" } satisfies L,
-  heading: { bg: "Как условията влияят върху изстиването на водата.", en: "Pipe Thermal Analysis" } satisfies L,
+  heading: { bg: "Топлинен анализ на изолирана тръба", en: "Pipe Thermal Analysis" } satisfies L,
   lead: {
     bg: "Вижте как дебитът, изолацията, температурата и външните условия влияят върху изстиването на водата и риска от замръзване.",
     en: "See how flow, insulation, temperature and external conditions affect how the water cools and when freezing risk appears.",
@@ -158,15 +158,6 @@ export const pipeThermalAnalysis = {
   context: {
     bg: "Инструментът описва изстиването на добре смесена вода в един метър изолирана PE тръба. Топлинното съпротивление включва вътрешна конвекция, проводимост през стената и изолацията и външна конвекция. Температурата следва T(t) = T_out + (T0 − T_out) · exp(−t / τ). Замръзването след 0 °C не се моделира; оценката за пълно замръзване е долна граница при постоянно UA.",
     en: "The tool describes cooling of well-mixed water in one metre of insulated PE pipe. Thermal resistance includes internal convection, conduction through the wall and insulation, and external convection. Temperature follows T(t) = T_out + (T0 − T_out) · exp(−t / τ). Freezing after 0 °C is not modelled; the full-freeze estimate is a lower bound at constant UA.",
-  } satisfies L,
-  storyTitle: { bg: "От инженерен модел към цифров инструмент", en: "From an engineering model to a digital tool" } satisfies L,
-  story: {
-    bg: "Този инструмент показва как съществуващ инженерен модел и изчислителен процес могат да бъдат превърнати в достъпно цифрово приложение, без да се губи логиката зад тях.",
-    en: "This tool shows how an existing engineering model and calculation workflow can become an accessible digital application without losing the logic behind them.",
-  } satisfies L,
-  disclaimer: {
-    bg: "Резултатите са ориентировъчни и не заместват проектно изчисление за конкретен обект. Зависят от въведените параметри и от топлинния модел със съсредоточени параметри.",
-    en: "Results depend on the entered parameters and on the lumped thermal model. They do not replace a design check for a specific installation.",
   } satisfies L,
   invalidSummary: {
     bg: "Коригирайте отбелязаните полета, за да видите резултатите.",

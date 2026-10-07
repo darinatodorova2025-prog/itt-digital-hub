@@ -41,8 +41,8 @@ export default async function AiActComparePage({ params }: Params) {
     <div>
       <section className="hero-atmosphere -mt-[5.5rem] text-on-dark" data-surface="dark">
         <Container className="pt-24 pb-12 md:pt-28 md:pb-14">
-          <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "ai-act-compare")} tone="dark" />
-          <ParentReturn href={href(locale, "ai-act")} tone="dark" className="mt-2">
+          <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "ai-act")} tone="dark" />
+          <ParentReturn href={href(locale, "tools")} tone="dark" className="mt-2">
             {text.returnTo[locale]}
           </ParentReturn>
           <h1 className="mt-4 max-w-[22ch] whitespace-pre-line text-h1 text-on-dark md:max-w-[28ch]">{text.heading[locale]}</h1>

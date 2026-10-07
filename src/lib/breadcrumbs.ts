@@ -12,7 +12,6 @@ export type CrumbId =
   | "contact"
   | "privacy"
   | "vik"
-  | "vik-compare"
   | "ai-act"
   | "ai-act-compare"
   | "settlement"
@@ -38,13 +37,12 @@ const nodes: Record<Exclude<CrumbId, "project">, CrumbNode> = {
   vik: {
     label: { bg: "ВиК Проектант", en: "Water & Sewerage Designer" },
     parent: "tools",
-    route: { key: "vik-proektant" },
+    route: { key: "vik-proektant", slug: "compare" },
   },
-  "vik-compare": { label: { bg: "Сравнение", en: "Compare" }, parent: "vik" },
   "ai-act": {
     label: { bg: "AI Act Assistant", en: "AI Act Assistant" },
     parent: "tools",
-    route: { key: "ai-act" },
+    route: { key: "ai-act", slug: "compare" },
   },
   "ai-act-compare": { label: { bg: "Сравнение", en: "Compare" }, parent: "ai-act" },
   settlement: {

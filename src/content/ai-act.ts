@@ -146,8 +146,8 @@ export const aiAct = {
   },
   compare: {
     back: { bg: "Инструменти", en: "Tools" },
-    returnTo: { bg: "Към AI Act Assistant", en: "To AI Act Assistant" },
-    heading: { bg: "Същият модел.\nСъщият въпрос. Различен контекст.", en: "The same model.\nThe same question. A different context." },
+    returnTo: { bg: "Към Инструменти", en: "To Tools" },
+    heading: { bg: "EU AI Act ВиК Асистент", en: "EU AI Act Water & Sewerage Assistant" },
     lead: {
       bg: "Сравнението показва как специализираният контекст и подбраната база от източници могат да променят полезността на отговора, без самият езиков модел непременно да бъде различен.",
       en: "The comparison shows how specialized context and a selected source collection can change how useful the answer is, without the language model itself having to be different.",

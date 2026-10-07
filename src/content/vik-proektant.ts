@@ -69,6 +69,68 @@ export function exampleById(id: string): ComparisonExample | undefined {
   return comparisonExamples.find((example) => example.id === id);
 }
 
+export type ScenarioGuide = {
+  heading?: Record<Locale, string>;
+  points: Array<Record<Locale, string>>;
+};
+
+export const scenarioGuides: Record<ExampleId, ScenarioGuide> = {
+  "missing-information": {
+    points: [
+      { bg: "Разпознава, че данните не са достатъчни", en: "Recognises that the data is not enough" },
+      { bg: "Не избира решение „на око“", en: "Does not choose a solution by eye" },
+      { bg: "Иска точно необходимите уточнения", en: "Asks only for the clarifications that are needed" },
+    ],
+  },
+  "source-requirement": {
+    points: [
+      { bg: "Търси нормативна опора", en: "Looks for a regulatory basis" },
+      { bg: "Свързва извода с конкретния източник", en: "Ties the conclusion to the specific source" },
+      { bg: "Не допълва липсващо правило", en: "Does not fill in a missing rule" },
+    ],
+  },
+  calculation: {
+    points: [
+      { bg: "Подрежда входните данни", en: "Sets out the input data" },
+      { bg: "Показва логиката на изчислението", en: "Shows the logic of the calculation" },
+      { bg: "Посочва допусканията и резултата", en: "States the assumptions and the result" },
+    ],
+  },
+  "design-reasoning": {
+    points: [
+      { bg: "Подрежда задачата професионално", en: "Structures the task professionally" },
+      { bg: "Разделя данни, проверки и избор", en: "Separates the data, the checks and the choice" },
+      { bg: "Предлага ясен следващ инженерен ход", en: "Proposes a clear next engineering step" },
+    ],
+  },
+  ambiguous: {
+    points: [
+      { bg: "Разпознава повече от едно тълкуване", en: "Recognises more than one reading" },
+      { bg: "Уточнява какво реално се пита", en: "Clarifies what is actually being asked" },
+      { bg: "Не дава прибързан окончателен извод", en: "Does not jump to a final conclusion" },
+    ],
+  },
+  "unsupported-rule": {
+    points: [
+      { bg: "Не приема твърдението без проверка", en: "Does not accept the claim without checking it" },
+      { bg: "Търси реална нормативна опора", en: "Looks for a real regulatory basis" },
+      { bg: "Коригира твърдението, ако такава липсва", en: "Corrects the claim when that basis is missing" },
+    ],
+  },
+};
+
+export const customScenarioGuide: ScenarioGuide = {
+  heading: {
+    bg: "При свободен въпрос следим за:",
+    en: "For an open question, look for:",
+  },
+  points: [
+    { bg: "Ясни допускания", en: "Clear assumptions" },
+    { bg: "Проверима обосновка", en: "Reasoning that can be checked" },
+    { bg: "Практически следващ ход", en: "A practical next step" },
+  ],
+};
+
 export const vikProektant = {
   meta: {
     title: { bg: "ВиК Проектант", en: "Water & Sewerage Designer" },
@@ -175,11 +237,27 @@ export const vikProektant = {
   },
   compare: {
     back: { bg: "Инструменти", en: "Tools" },
-    returnTo: { bg: "Към ВиК Проектант", en: "To Water & Sewerage Designer" },
-    heading: { bg: "От въпроса до проверимия ход.", en: "From the question to a step you can check." },
+    returnTo: { bg: "Към Инструменти", en: "To Tools" },
+    heading: { bg: "От въпроса до проверимия резултат.", en: "From the question to a result you can check." },
     lead: {
-      bg: "Асистент за ВиК проектанти, който следва професионална последователност: изходни данни, нормативна справка, изчисление и ясни допускания. Когато липсва информация, пита. Когато използва нормативен източник, го посочва. Когато трябва да се получи число, показва как е получено.",
-      en: "An assistant for water and sewerage designers that follows a professional sequence: the input data, the regulatory source, the calculation and clear assumptions. It asks when information is missing, cites a source when one is used, and shows how a number was obtained.",
+      before: {
+        bg: "Асистент за ВиК проектанти, който следва професионална последователност: ",
+        en: "An assistant for water and sewerage designers that follows a professional sequence: ",
+      },
+      terms: [
+        { bg: "изходни данни", en: "the input data" },
+        { bg: "нормативна справка", en: "the regulatory source" },
+        { bg: "изчисление", en: "the calculation" },
+        { bg: "ясни допускания", en: "clear assumptions" },
+      ],
+      between: { bg: ", ", en: ", " },
+      lastBetween: { bg: " и ", en: " and " },
+      after: { bg: ".", en: "." },
+      when: [
+        { bg: "Когато липсва информация, пита.", en: "When information is missing, it asks." },
+        { bg: "Когато използва нормативен източник, го посочва.", en: "When a regulatory source is used, it cites it." },
+        { bg: "Когато трябва да се получи число, показва как е получено.", en: "When a number is required, it shows how it was obtained." },
+      ],
     },
     leadPoints: [
       {
@@ -197,11 +275,26 @@ export const vikProektant = {
       en: "Write one question about water supply, sewerage or sizing.",
     },
     examples: { bg: "Примерни случаи", en: "Example cases" },
-    fairness: { bg: "Един и същ модел · Един и същ въпрос", en: "Same model · Same question" },
+    guideHeading: { bg: "Какво следим в отговора", en: "What to look for" },
+    comparisonHeading: { bg: "Сравнение", en: "Comparison" },
+    comparing: { bg: "Сравняваме отговорите...", en: "Comparing the answers..." },
+    comparisonUnavailable: { bg: "Сравнението не е налично", en: "Comparison unavailable" },
+    criteria: {
+      grounding: { bg: "Обоснованост", en: "Grounding" },
+      discipline: { bg: "Инженерна дисциплина", en: "Engineering discipline" },
+      usefulness: { bg: "Практическа полезност", en: "Practical usefulness" },
+    },
+    bands: {
+      weaker: { bg: "По-слаб", en: "Weaker" },
+      neutral: { bg: "Без съществена разлика", en: "No material difference" },
+      better: { bg: "По-добър", en: "Better" },
+    },
+    fairnessModel: { bg: "Един и същ модел", en: "Same model" },
+    fairnessQuestion: { bg: "Един и същ въпрос", en: "Same question" },
     submit: { bg: "Сравни отговорите", en: "Compare the answers" },
     pending: { bg: "Сравнението тече", en: "Comparison in progress" },
-    controlTitle: { bg: "Езиков модел", en: "Standard model" },
-    expertTitle: { bg: "ВиК Асистент от ITT Digital Hub", en: "Water and sewerage assistant from ITT Digital Hub" },
+    controlTitle: { bg: "Чист ИИ модел", en: "Plain AI model" },
+    expertTitle: { bg: "ВиК Асистент", en: "Water and sewerage assistant" },
     controlNote: { bg: "Без специализирана ВиК база", en: "Without the specialized water and sewerage collection" },
     expertNote: { bg: "Със специализирана ВиК база и инструкции.", en: "With a specialized water and sewerage collection and instructions." },
     controlWaiting: { bg: "Генерира отговор…", en: "Generating an answer…" },

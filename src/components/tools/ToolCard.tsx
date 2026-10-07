@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ToolItem } from "@/content/tools";
 import { ArrowRight } from "@/components/ui/Icons";
+import { BetaBadge } from "@/components/ui/BetaBadge";
 import { cn } from "@/lib/cn";
 
 function Cover({ src, alt }: { src: string; alt: string }) {
@@ -26,7 +27,10 @@ export function ToolCard({ tool, openLabel, tone = "paper" }: { tool: ToolItem; 
         <Cover src={tool.image} alt={tool.imageAlt} />
       </div>
       <div className="flex flex-1 flex-col px-6 py-5 md:px-7 md:py-6">
-        <p className={dark ? "label-dark" : "label"}>{tool.category}</p>
+        <p className={cn(dark ? "label-dark" : "label", tool.beta && "flex flex-wrap items-center gap-x-2 gap-y-1")}>
+          {tool.beta ? <span>{tool.category}</span> : tool.category}
+          {tool.beta ? <BetaBadge size="compact" /> : null}
+        </p>
         <h2 className={cn("mt-2 text-h3 text-pretty", dark ? "text-on-dark" : "text-ink")}>{tool.title}</h2>
         <p className={cn("mt-2 line-clamp-3 min-h-[4.5em] text-small", dark ? "text-on-dark-muted" : "text-ink-2")}>{tool.description}</p>
         <p className="mt-auto pt-5">

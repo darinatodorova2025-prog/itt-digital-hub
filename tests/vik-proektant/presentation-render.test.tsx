@@ -42,6 +42,16 @@ describe("answer markdown rendering", () => {
     expect(control).not.toContain("<table");
   });
 
+  it("draws arrows and boxed results instead of printing the command names", () => {
+    const source = "\\[ Q=vA \\Rightarrow D=\\sqrt{\\frac{4Q}{\\pi v}} \\approx \\boxed{123{,}6}\\ \\mathrm{mm} \\]";
+    const html = renderToStaticMarkup(<AnswerMarkdown text={source} mode="expert" />);
+    expect(html).toContain("⇒");
+    expect(html).toContain(">1</span><span>2</span><span>3</span>");
+    expect(html).toContain("border");
+    expect(html).not.toContain("Rightarrow");
+    expect(html).not.toContain("boxed");
+  });
+
   it("does not turn a formula command into a script or link", () => {
     const html = renderToStaticMarkup(<AnswerMarkdown text={"\\(\\href{javascript:alert(1)}{x}\\)"} mode="expert" />);
     expect(html.toLowerCase()).not.toContain("<script");

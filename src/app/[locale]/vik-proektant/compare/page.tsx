@@ -9,6 +9,7 @@ import { Container } from "@/components/layout/Container";
 import { Breadcrumbs, ParentReturn } from "@/components/layout/Breadcrumbs";
 import { CompareLab } from "@/components/vik-proektant/CompareLab";
 import { AssistantScope } from "@/components/vik-proektant/AssistantScope";
+import { comparisonModelLabel } from "@/vik-proektant/comparison/config";
 import { chatGptDestination } from "@/vik-proektant/publication";
 
 type Params = { params: Promise<{ locale: string }> };
@@ -44,15 +45,29 @@ export default async function VikComparePage({ params }: Params) {
     <div>
       <section className="hero-atmosphere -mt-[5.5rem] text-on-dark" data-surface="dark">
         <Container className="pt-24 pb-12 md:pt-28 md:pb-14">
-          <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "vik-compare")} tone="dark" />
-          <ParentReturn href={href(locale, "vik-proektant")} tone="dark" className="mt-2">
+          <Breadcrumbs label={t(locale).breadcrumb} items={breadcrumbTrail(locale, "vik")} tone="dark" />
+          <ParentReturn href={href(locale, "tools")} tone="dark" className="mt-2">
             {text.returnTo[locale]}
           </ParentReturn>
-          <h1 className="mt-4 max-w-[22ch] whitespace-pre-line text-h1 text-on-dark md:max-w-[28ch]">{text.heading[locale]}</h1>
-          <p className="mt-3 max-w-[68ch] text-body text-on-dark-muted">{text.lead[locale]}</p>
-          <ul className="mt-3 grid list-disc gap-x-10 gap-y-1.5 pl-5 text-small text-on-dark-muted md:grid-cols-2">
+          <h1 className="mt-4 whitespace-pre-line text-h1 text-on-dark">{text.heading[locale]}</h1>
+          <p className="mt-3 max-w-[68ch] text-body text-on-dark-muted">
+            {text.lead.before[locale]}
+            {text.lead.terms.map((term, index) => (
+              <span key={term.en}>
+                {index === 0 ? null : index === text.lead.terms.length - 1 ? text.lead.lastBetween[locale] : text.lead.between[locale]}
+                <span className="font-normal text-on-dark">{term[locale]}</span>
+              </span>
+            ))}
+            {text.lead.after[locale]}
+          </p>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-body text-on-dark-muted">
+            {text.lead.when.map((line) => (
+              <li key={line.en}>{line[locale]}</li>
+            ))}
+          </ul>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-small text-on-dark-muted">
             {text.leadPoints.map((point) => (
-              <li key={point.label.en} className="text-pretty">
+              <li key={point.label.en}>
                 <strong className="font-medium text-on-dark">{point.label[locale]}</strong> {point.text[locale]}
               </li>
             ))}
@@ -62,7 +77,7 @@ export default async function VikComparePage({ params }: Params) {
       </section>
       <div className="bg-paper">
         <Container className="relative z-10 -mt-8 pb-16 md:-mt-10 md:pb-24">
-          <CompareLab locale={locale} />
+          <CompareLab locale={locale} modelLabel={comparisonModelLabel()} />
         </Container>
       </div>
     </div>

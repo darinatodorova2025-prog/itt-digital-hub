@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/i18n";
 import { homeHashHref, isHomePath, primaryNavHref } from "@/lib/home-nav";
-import { contactPhones, footerNav, site } from "@/content/site";
+import { contactPhones, footerNav, showSecondaryContactPhone, site } from "@/content/site";
 import { t } from "@/content/messages";
 import { ContactEmailLink } from "@/components/contact/ContactEmailLink";
 import { Container } from "./Container";
@@ -71,8 +71,12 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               <ContactEmailLink tone="on-dark" />
               <br />
               <PhoneLink phone={contactPhones[0]} />
-              <br />
-              <PhoneLink phone={contactPhones[1]} />
+              {showSecondaryContactPhone ? (
+                <>
+                  <br />
+                  <PhoneLink phone={contactPhones[1]} />
+                </>
+              ) : null}
             </p>
           </div>
         </div>

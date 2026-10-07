@@ -40,17 +40,10 @@ export default async function PipeThermalAnalysisPage({ params }: Params) {
           <PipeThermalWorkspace locale={locale} />
         </div>
 
-        <section className="mt-4 grid gap-4 md:mt-5 md:grid-cols-2">
-          <article className="rounded-[1.25rem] bg-white p-5 md:p-6">
-            <h2 className="text-h4 text-ink">{copy.contextTitle[locale]}</h2>
+        <article className="mt-4 rounded-[1.25rem] bg-white p-5 md:mt-5 md:p-6">
+          <h2 className="text-h4 text-ink">{copy.contextTitle[locale]}</h2>
             <p className="mt-3 text-small text-ink-2">{copy.context[locale]}</p>
-          </article>
-          <article className="rounded-[1.25rem] bg-white p-5 md:p-6">
-            <h2 className="text-h4 text-ink">{copy.storyTitle[locale]}</h2>
-            <p className="mt-3 text-small text-ink-2">{copy.story[locale]}</p>
-            <p className="mt-4 text-meta text-ink-3">{copy.disclaimer[locale]}</p>
-          </article>
-        </section>
+        </article>
       </Container>
     </div>
   );

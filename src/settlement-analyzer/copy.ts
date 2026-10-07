@@ -9,6 +9,10 @@ import type {
 
 export const settlementAnalyzer = {
   name: { bg: "Предпроектен ВиК анализ", en: "Preliminary Water Infrastructure Analysis" } satisfies L,
+  intro: {
+    bg: "Начална пространствена картина на населено място преди подробен ВиК проект: застрояване, улици и релеф.",
+    en: "An initial spatial picture of a settlement before detailed water-infrastructure design: development, streets and terrain.",
+  } satisfies L,
   tagline: { bg: "Начална пространствена подготовка", en: "Initial spatial preparation" } satisfies L,
   metaDescription: {
     bg: "Предварителна пространствена картина на населено място преди подробен ВиК проект.",

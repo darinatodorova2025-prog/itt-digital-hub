@@ -11,6 +11,7 @@ export function GET(): Response {
     service: "vik-proektant-comparison",
     modelConfigured: comparisonModel().length > 0,
     openAiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
+    openRouterConfigured: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
     mcpUrl: publicMcpUrl(),
     documents: health.documents,
     chunks: health.chunks,

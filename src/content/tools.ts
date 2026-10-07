@@ -12,6 +12,7 @@ type ToolSource = {
   hrefKey?: "ai-act" | "ai-act-agent" | "settlement-analyzer" | "pipe-thermal-analysis" | "vik-designer" | "vik-proektant";
   status?: L;
   external?: boolean;
+  beta?: boolean;
   /** Kept in source, omitted from the public catalogue. */
   hidden?: boolean;
   /** Extra path segment, so a card can open a nested page directly. */
@@ -28,6 +29,7 @@ export type ToolItem = {
   href?: string;
   status?: string;
   external?: boolean;
+  beta?: boolean;
 };
 
 const catalog: ToolSource[] = [
@@ -45,6 +47,7 @@ const catalog: ToolSource[] = [
       en: "Water & Sewerage Designer illustration: a regulation, water pipes and a sewer manhole.",
     },
     hrefKey: "vik-proektant",
+    hrefSlug: "compare",
   },
   {
     id: "pipe-thermal-analysis",
@@ -75,6 +78,7 @@ const catalog: ToolSource[] = [
       en: "AI Act Assistant interface with starter questions and an input field.",
     },
     hrefKey: "ai-act",
+    hrefSlug: "compare",
   },
   {
     id: "settlement-analyzer",
@@ -90,6 +94,7 @@ const catalog: ToolSource[] = [
       en: "Settlement Analyzer: map and spatial results.",
     },
     hrefKey: "settlement-analyzer",
+    beta: true,
   },
   {
     id: "vik-designer",
@@ -120,5 +125,6 @@ export function toolsFor(locale: Locale): ToolItem[] {
     href: item.hrefKey ? href(locale, item.hrefKey, item.hrefSlug) : undefined,
     status: item.status?.[locale],
     external: item.external,
+    beta: item.beta,
   }));
 }

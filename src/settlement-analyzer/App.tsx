@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ComponentType } from 're
 import { CircleHelp, Download, Play, RotateCcw, TriangleAlert } from 'lucide-react'
 import type { FeatureCollection } from 'geojson'
 import type { Locale } from '@/lib/i18n'
+import { BetaBadge } from '@/components/ui/BetaBadge'
 import { ProductHeader } from './ProductHeader'
 import { sa } from './copy'
 import { APP_CONFIG } from './config'
@@ -472,6 +473,13 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       />
 
       <section className="command-bar" aria-label={copy.commandBar}>
+        <header className="command-intro">
+          <h1>
+            {copy.name}
+            <BetaBadge className="ml-2.5 align-middle" />
+          </h1>
+          <p>{copy.intro}</p>
+        </header>
         <SearchPanel
           locale={locale}
           query={query}

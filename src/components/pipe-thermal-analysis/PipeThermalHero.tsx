@@ -12,9 +12,9 @@ export function PipeThermalHero({ locale }: { locale: Locale }) {
       <div className="pta-hero">
         <header className="pta-hero-copy">
           <p className="label">{copy.label[locale]}</p>
-          <h1 className="mt-1.5 text-h1 text-pretty">{copy.heading[locale]}</h1>
+          <h1 className="pta-hero-title mt-1.5">{copy.heading[locale]}</h1>
           <p className="mt-2 max-w-[36rem] text-body text-ink-2">{copy.lead[locale]}</p>
-          <p className="mt-1.5 text-small text-ink-3">{copy.support[locale]}</p>
+          <p className="mt-1.5 max-w-[34rem] text-small text-ink-3">{copy.support[locale]}</p>
         </header>
         <div className="pta-hero-visual">
           <Image
