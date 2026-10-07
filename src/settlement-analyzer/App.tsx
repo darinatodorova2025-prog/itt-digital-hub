@@ -1,10 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react'
+import { useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { CircleHelp, Download, Play, RotateCcw, TriangleAlert } from 'lucide-react'
 import type { FeatureCollection } from 'geojson'
 import type { Locale } from '@/lib/i18n'
 import { BetaBadge } from '@/components/ui/BetaBadge'
+import type { AnalysisAttemptContext, AnalysisOutcome } from './beta/types'
 import { ProductHeader } from './ProductHeader'
 import { sa } from './copy'
 import { APP_CONFIG } from './config'
@@ -64,10 +65,13 @@ interface AppProps {
   analysisCount?: number
   onAnalysisStarted?: (isSecond: boolean) => void
   onAnalysisCompleted?: (result: AnalysisResult) => void
+  onAnalysisSettled?: (outcome: AnalysisOutcome) => void | Promise<void>
+  onBeforeAnalysis?: (attempt: AnalysisAttemptContext) => Promise<{ proceed: boolean; clientRunId?: string; message?: string }>
   onFeatureUsed?: (featureName: string) => void
+  feedbackSlot?: ReactNode
 }
 
-function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, onAnalysisCompleted, onFeatureUsed }: AppProps) {
+function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, onAnalysisCompleted, onAnalysisSettled, onBeforeAnalysis, onFeatureUsed, feedbackSlot }: AppProps) {
   const copy = sa(locale)
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SettlementResult[]>([])
@@ -94,6 +98,10 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   const [networkOpen, setNetworkOpen] = useState(false)
   const analysisAbort = useRef<AbortController | null>(null)
   const downloadAbort = useRef<AbortController | null>(null)
+  const runLock = useRef(false)
+  const activeRunId = useRef<string | null>(null)
+  const activeRunStarted = useRef(0)
+  const abortReason = useRef<'timeout' | 'cancel' | null>(null)
   const polygonRequest = useRef<{ key: string; promise: Promise<GeoJSON.Geometry | undefined> } | null>(null)
   const infoButtonRef = useRef<HTMLButtonElement | null>(null)
   const infoCloseRef = useRef<HTMLButtonElement | null>(null)
@@ -279,13 +287,63 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
     setDownloadProgress(null)
   }
 
+  const settleActive = (status: 'failure' | 'cancelled', errorCode: string, errorCategory: string) => {
+    const clientRunId = activeRunId.current
+    if (!clientRunId) return
+    activeRunId.current = null
+    void onAnalysisSettled?.({
+      clientRunId,
+      status,
+      errorCode,
+      errorCategory,
+      durationMs: Date.now() - activeRunStarted.current,
+    })
+  }
+
   const runAnalysis = async () => {
-    if (!selected) return
+    if (!selected || runLock.current) return
+    runLock.current = true
+    let timeout = 0
+    try {
+    let clientRunId: string | undefined
+    if (onBeforeAnalysis) {
+      try {
+        const gate = await onBeforeAnalysis({
+          settlementKey: selected.ekatte || `${selected.osmType}:${selected.osmId}`,
+          settlementName: selected.name,
+          municipality: selected.municipality,
+          region: selected.region,
+          ekatte: selected.ekatte ?? null,
+          lat: selected.lat,
+          lon: selected.lon,
+          mode,
+          layers: visible,
+          dataSource: catalogHas(packCatalog, selected.ekatte) ? 'pack' : 'live',
+        })
+        if (!gate.proceed) {
+          if (gate.message) setAnalysisError(gate.message)
+          return
+        }
+        clientRunId = gate.clientRunId
+      } catch {
+        setAnalysisError(locale === 'bg'
+          ? 'Пробният анализ не може да започне, защото лимитът за Beta временно не може да се провери. Опитайте отново.'
+          : 'The trial analysis cannot start because the Beta limit cannot be checked right now. Please try again.')
+        return
+      }
+    }
     onAnalysisStarted?.(analysisCount >= 1)
+    if (activeRunId.current) settleActive('cancelled', 'replaced', 'cancelled')
+    abortReason.current = null
     analysisAbort.current?.abort()
     const controller = new AbortController()
     analysisAbort.current = controller
-    const timeout = window.setTimeout(() => controller.abort(), APP_CONFIG.overpass.overallTimeoutMs)
+    activeRunId.current = clientRunId ?? null
+    activeRunStarted.current = Date.now()
+    timeout = window.setTimeout(() => {
+      abortReason.current = 'timeout'
+      controller.abort()
+    }, APP_CONFIG.overpass.overallTimeoutMs)
     setAnalysisError(null)
     setLastFailure(null)
     setResult(null)
@@ -343,27 +401,58 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       await new Promise((resolve) => window.setTimeout(resolve, 80))
       if (analysisAbort.current !== controller) return
       setStage('complete')
+      const runId = activeRunId.current
+      activeRunId.current = null
+      if (runId) {
+        try {
+          await onAnalysisSettled?.({
+            clientRunId: runId,
+            status: 'success',
+            durationMs: Date.now() - activeRunStarted.current,
+            summary: {
+              areaKm2: Number(analysis.analysisAreaKm2.toFixed(3)),
+              buildings: analysis.buildingMetrics.total,
+              roadLengthKm: Number(analysis.roadMetrics.lengthKm.toFixed(2)),
+              confidence: analysis.confidence.level,
+              profile: analysis.profile,
+              boundaryReason: analysis.boundaryReason,
+              warnings: analysis.warnings,
+              dataSource: analysis.dataSource,
+            },
+          })
+        } catch {
+          /* The result stays visible if telemetry fails. The reserved run expires server-side. */
+        }
+      }
     } catch (error) {
       if (analysisAbort.current !== controller) return
-      if (error instanceof GeodataTooLargeError) {
+      const tooLarge = error instanceof GeodataTooLargeError
+      const aborted = controller.signal.aborted
+      const timedOut = abortReason.current === 'timeout'
+      if (tooLarge) {
         setAnalysisError(copy.settlementTooLarge)
         setStage('idle')
         setLastFailure('analysis')
-        return
+      } else {
+        const detail = aborted || error instanceof GeodataUnavailableError
+          ? (ownerMode && error instanceof GeodataUnavailableError ? `${copy.geodataUnavailable} ${error.sources}` : copy.geodataUnavailable)
+          : copy.analysisUnexpected
+        setAnalysisError(detail)
+        setStage('idle')
+        setLastFailure('analysis')
       }
-      const aborted = controller.signal.aborted
-      const detail = aborted || error instanceof GeodataUnavailableError
-        ? (ownerMode && error instanceof GeodataUnavailableError ? `${copy.geodataUnavailable} ${error.sources}` : copy.geodataUnavailable)
-        : copy.analysisUnexpected
-      setAnalysisError(detail)
-      setStage('idle')
-      setLastFailure('analysis')
+      settleActive('failure', tooLarge ? 'too_large' : timedOut ? 'timeout' : aborted ? 'aborted' : 'unexpected', tooLarge ? 'rejected' : timedOut ? 'timeout' : 'upstream')
     } finally {
       window.clearTimeout(timeout)
+    }
+    } finally {
+      runLock.current = false
     }
   }
 
   const newAnalysis = () => {
+    if (activeRunId.current) settleActive('cancelled', 'cancelled', 'cancelled')
+    abortReason.current = 'cancel'
     analysisAbort.current?.abort()
     analysisAbort.current = null
     downloadAbort.current?.abort()
@@ -448,6 +537,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
         locale={locale}
         ownerMode={ownerMode}
         onNewAnalysis={result ? newAnalysis : undefined}
+        feedbackSlot={feedbackSlot}
         infoSlot={(
           <>
             <button

@@ -10,6 +10,7 @@ import App from '../App'
 import type { AnalysisResult } from '../types'
 import { RegistrationGate } from './RegistrationGate'
 import { trackEvent } from './tracking'
+import { useBetaChrome } from '../beta/BetaChrome'
 
 export type BootstrapState = {
   registered: boolean
@@ -35,6 +36,7 @@ export default function ConferenceExperience({
   testRegistration?: boolean
 }) {
   const copy = sa(locale)
+  const beta = useBetaChrome(locale, serverOwnerMode, !testRegistration)
   const [state, setState] = useState<BootstrapState>(initial)
   const [ownerDiagnostics, setOwnerDiagnostics] = useState('')
 
@@ -109,8 +111,12 @@ export default function ConferenceExperience({
         analysisCount={state.analysisCount}
         onAnalysisStarted={handleAnalysisStarted}
         onAnalysisCompleted={handleAnalysisCompleted}
+        onBeforeAnalysis={beta.beforeAnalysis}
+        onAnalysisSettled={beta.onSettled}
+        feedbackSlot={beta.feedbackSlot}
         onFeatureUsed={(featureName) => void trackEvent('feature_used', { featureName })}
       />
+      {beta.dialogs}
       {state.ownerMode && ownerDiagnostics ? (
         <div className="owner-diagnostics" role="status">
           <span>{ownerDiagnostics}</span>

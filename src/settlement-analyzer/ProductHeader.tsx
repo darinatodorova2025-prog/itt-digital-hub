@@ -14,11 +14,13 @@ export function ProductHeader({
   ownerMode,
   onNewAnalysis,
   infoSlot,
+  feedbackSlot,
 }: {
   locale: Locale;
   ownerMode?: boolean;
   onNewAnalysis?: () => void;
   infoSlot?: ReactNode;
+  feedbackSlot?: ReactNode;
 }) {
   const copy = sa(locale);
   return (
@@ -37,6 +39,7 @@ export function ProductHeader({
             {copy.newAnalysis}
           </button>
         ) : null}
+        {feedbackSlot}
         {infoSlot}
       </div>
     </header>
