@@ -500,7 +500,6 @@ function EventHeader({ stage, showTitle }: { stage: StoryStage | null; showTitle
       <div className="md-bar-brand">
         <EventLockup height={28} />
       </div>
-      {showTitle && !stage ? <p className="md-bar-event md-bar-event-right">Махни досадното</p> : null}
       {showTitle && stage ? <p className="md-bar-event">Махни досадното</p> : null}
       {stage ? <ParticipantStage stage={stage} /> : null}
       {stage ? <StageProgress stage={stage} /> : null}
@@ -511,7 +510,6 @@ function EventHeader({ stage, showTitle }: { stage: StoryStage | null; showTitle
 function Welcome({ onStart }: { onStart: () => void }) {
   return (
     <section className="md-reveal md-welcome">
-      <h1 className="md-display md-welcome-event">Махни досадното</h1>
       <div className="md-photo">
         <Image
           src="/event/mahni/welcome.webp"
@@ -522,7 +520,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
           priority
         />
       </div>
-      <h2 className="md-question md-display">Какво ви губи време?</h2>
+      <h1 className="md-question md-display">Какво ви губи време?</h1>
       <p className="md-support">Споделете реални проблеми и повтарящо се търкане от работата ви.</p>
       <ol className="md-facts">
         <li>

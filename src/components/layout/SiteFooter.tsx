@@ -4,13 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/i18n";
 import { homeHashHref, isHomePath, primaryNavHref } from "@/lib/home-nav";
-import { contactPhones, footerNav, showSecondaryContactPhone, site } from "@/content/site";
+import { href } from "@/lib/paths";
+import { contactPhones, footerMahniSurfaces, footerPrivacy, footerProducts, primaryNav, showSecondaryContactPhone, site } from "@/content/site";
 import { t } from "@/content/messages";
 import { ContactEmailLink } from "@/components/contact/ContactEmailLink";
 import { Container } from "./Container";
 import { Logo } from "./Logo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { scrollToHomeHash } from "./useHomeSectionSpy";
+
+const footerLinkClass =
+  "text-on-dark-muted transition-colors duration-150 hover:text-on-dark hover:underline hover:decoration-amber hover:underline-offset-[4px]";
+
+const footerQuietLinkClass =
+  "text-[0.75rem] leading-snug text-[color-mix(in_srgb,var(--color-on-dark-muted)_38%,transparent)] transition-colors duration-150 hover:text-on-dark-muted hover:underline hover:decoration-amber/70 hover:underline-offset-[4px]";
 
 function PhoneLink({ phone }: { phone: string }) {
   return (
@@ -34,32 +41,55 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     <footer className="w-full min-w-0 bg-marine text-on-dark" data-surface="dark">
       <Container className="py-14 md:py-16">
         <div className="grid gap-10 md:grid-cols-12">
-          <div className="md:col-span-5">
+          <div className="md:col-span-4">
             <Logo locale={locale} tone="on-dark" layout="full" />
             <p className="mt-6 max-w-sm text-small text-on-dark-muted">{site.descriptor[locale]}</p>
           </div>
 
-          <nav aria-label={m.footerNav} className="md:col-span-3">
-            <ul className="grid gap-2.5 text-small">
-              {footerNav.map((item) => {
-                const hashHref = homeHashHref(locale, item.key);
-                const to = primaryNavHref(locale, item.key);
-                return (
-                <li key={item.key}>
-                  <Link
-                    href={to}
-                    scroll={!hashHref}
-                    onClick={(e) => {
-                      if (onHome && hashHref && scrollToHomeHash(hashHref)) e.preventDefault();
-                    }}
-                    className="text-on-dark-muted transition-colors duration-150 hover:text-on-dark hover:underline hover:decoration-amber hover:underline-offset-[4px]"
-                  >
-                    {item.label[locale]}
+          <nav aria-label={m.footerNav} className="md:col-span-4">
+            <div className="grid grid-cols-2 gap-x-6">
+              <ul className="grid content-start gap-2.5 text-small">
+                {primaryNav.map((item) => {
+                  const hashHref = homeHashHref(locale, item.key);
+                  const to = primaryNavHref(locale, item.key);
+                  return (
+                    <li key={item.key}>
+                      <Link
+                        href={to}
+                        scroll={!hashHref}
+                        onClick={(e) => {
+                          if (onHome && hashHref && scrollToHomeHash(hashHref)) e.preventDefault();
+                        }}
+                        className={footerLinkClass}
+                      >
+                        {item.label[locale]}
+                      </Link>
+                    </li>
+                  );
+                })}
+                <li>
+                  <Link href={href(locale, footerPrivacy.key)} className={footerLinkClass}>
+                    {footerPrivacy.label[locale]}
                   </Link>
                 </li>
-                );
-              })}
-            </ul>
+              </ul>
+              <ul className="grid content-start gap-2.5 text-small">
+                {footerProducts.map((item) => (
+                  <li key={item.id}>
+                    <Link href={href(item.locale ?? locale, item.key, item.slug)} className={footerLinkClass}>
+                      {item.label[locale]}
+                    </Link>
+                  </li>
+                ))}
+                {footerMahniSurfaces.map((item) => (
+                  <li key={item.id}>
+                    <Link href={item.href} className={footerQuietLinkClass}>
+                      {item.label[locale]}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </nav>
 
           <div className="md:col-span-4">

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { toolsFor } from "../src/content/tools";
 import { toolsPage } from "../src/content/pages";
-import { primaryNav } from "../src/content/site";
+import { footerMahniSurfaces, footerProducts, primaryNav } from "../src/content/site";
+import { href } from "../src/lib/paths";
 
 describe("tools catalogue", () => {
   it("places Tools immediately before About in primary nav", () => {
@@ -42,6 +43,26 @@ describe("tools catalogue", () => {
       expect(analyzer?.external).toBeUndefined();
       expect(JSON.stringify(analyzer)).not.toMatch(/analizator-naseleni-mesta/i);
     }
+  });
+
+  it("lists each public tool and the game as compact footer links", () => {
+    expect(footerProducts.map((item) => item.label.bg)).toEqual([
+      "ВиК Проектант",
+      "Топлинен анализ",
+      "AI Act",
+      "ВиК анализ",
+    ]);
+    expect(footerProducts.map((item) => href(item.locale ?? "bg", item.key, item.slug))).toEqual([
+      "/bg/vik-proektant/compare",
+      "/bg/pipe-thermal-analysis",
+      "/bg/ai-act/compare",
+      "/bg/settlement-analyzer",
+    ]);
+    expect(footerMahniSurfaces.map((item) => [item.label.bg, item.href])).toEqual([
+      ["Телефон", "/bg/mahni-dosadnoto"],
+      ["Лайв екран", "/bg/mahni-dosadnoto/live"],
+      ["Админ", "/admin/mahni-dosadnoto"],
+    ]);
   });
 
   it("uses the specified document titles", () => {

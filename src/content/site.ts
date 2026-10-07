@@ -1,4 +1,4 @@
-import type { L } from "@/lib/i18n";
+import type { L, Locale } from "@/lib/i18n";
 import type { RouteKey } from "@/lib/paths";
 
 export const site = {
@@ -53,4 +53,30 @@ export const primaryNav: NavItem[] = [
   { key: "work-with-us", label: { bg: "Контакт", en: "Contact" } },
 ];
 
-export const footerNav: NavItem[] = [...primaryNav, { key: "privacy", label: { bg: "Поверителност", en: "Privacy" } }];
+export const footerPrivacy: NavItem = { key: "privacy", label: { bg: "Поверителност", en: "Privacy" } };
+
+export const footerNav: NavItem[] = [...primaryNav, footerPrivacy];
+
+/** Compact footer links for each public tool. The game surfaces sit underneath, quieter. */
+export interface FooterProductLink {
+  id: string;
+  label: L;
+  key: RouteKey;
+  slug?: string;
+  /** The game exists only in Bulgarian. */
+  locale?: Locale;
+}
+
+export const footerProducts: FooterProductLink[] = [
+  { id: "vik-proektant", label: { bg: "ВиК Проектант", en: "Water & sewerage" }, key: "vik-proektant", slug: "compare" },
+  { id: "pipe-thermal", label: { bg: "Топлинен анализ", en: "Pipe thermal" }, key: "pipe-thermal-analysis" },
+  { id: "ai-act", label: { bg: "AI Act", en: "AI Act" }, key: "ai-act", slug: "compare" },
+  { id: "settlement", label: { bg: "ВиК анализ", en: "Settlement analysis" }, key: "settlement-analyzer" },
+];
+
+/** Quiet entry points for the game. Visible only if you look for them. */
+export const footerMahniSurfaces: { id: string; label: L; href: string }[] = [
+  { id: "phone", label: { bg: "Телефон", en: "Phone" }, href: "/bg/mahni-dosadnoto" },
+  { id: "live", label: { bg: "Лайв екран", en: "Live screen" }, href: "/bg/mahni-dosadnoto/live" },
+  { id: "admin", label: { bg: "Админ", en: "Admin" }, href: "/admin/mahni-dosadnoto" },
+];
