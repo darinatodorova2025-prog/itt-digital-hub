@@ -476,7 +476,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
         <header className="command-intro">
           <h1>
             {copy.name}
-            <BetaBadge className="ml-2.5 align-middle" />
+            <BetaBadge className="beta-badge ml-2.5 align-middle" />
           </h1>
           <p>{copy.intro}</p>
         </header>
