@@ -461,7 +461,7 @@ export class SupabaseMahniStore implements MahniStore {
       voteCounts.set(id, (voteCounts.get(id) ?? 0) + 1);
     }
 
-    const themes = (themeRows ?? []).map((row) => mapTheme(row));
+    const themes = await this.withAuditReviews(campaign.id, (themeRows ?? []).map((row) => mapTheme(row)));
     const interestByTheme = new Map<string, Set<string>>();
     for (const sig of interestRows ?? []) {
       const tid = String(sig.theme_id);
@@ -489,7 +489,9 @@ export class SupabaseMahniStore implements MahniStore {
       countdownSeconds = Math.max(0, Math.ceil((Date.parse(campaign.votingEndsAt) - Date.now()) / 1000));
     }
 
-    const showThemes = ["VOTING", "FINALIZING", "RESULTS", "CLOSED"].includes(campaign.phase);
+    const showThemes =
+      ["VOTING", "FINALIZING", "RESULTS", "CLOSED"].includes(campaign.phase) ||
+      (campaign.phase === "ANALYZING" && votingTransitionAllowed(themes).ok);
     const showResults = campaign.phase === "RESULTS" || campaign.phase === "CLOSED";
 
     const { data: latestRun } = await sb

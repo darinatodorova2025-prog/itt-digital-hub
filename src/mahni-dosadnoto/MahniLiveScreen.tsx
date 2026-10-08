@@ -18,7 +18,7 @@ import { LensBoard } from "@/mahni-dosadnoto/lenses";
 import { AudienceReviewCard } from "@/mahni-dosadnoto/CombiningReview";
 import { toPublicReviewCard, type LiveReviewItem } from "@/mahni-dosadnoto/review";
 import { REVIEW_PREVIEW_ITEMS, REVIEW_PREVIEW_KEY } from "@/mahni-dosadnoto/review-preview";
-import { mdApproveAudienceTheme, mdSplitAudienceTheme } from "@/app/admin/(console)/mahni-dosadnoto/actions";
+import { mdApproveAudienceTheme, mdOpenVoting, mdSplitAudienceTheme } from "@/app/admin/(console)/mahni-dosadnoto/actions";
 
 /** Stable theme thumbnails for the participant Top 3 result cards. */
 const RESULT_THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-river.webp", "/event/mahni/thumb-aerial.webp"];
@@ -112,13 +112,29 @@ export function MahniLiveScreen({
   }) : null;
   const card = realReview ?? previewCard;
   const showReview = card !== null;
+  const finalThemes = snapshot.themes.filter((theme) => !theme.isAiWildcard);
+  const showFinals = !preview && snapshot.phase === "ANALYZING" && !realReview && finalThemes.length > 0;
 
   return (
-    <div className={`md-live ${sceneClass(showReview ? "ANALYZING" : snapshot.phase)}`}>
-      {quiet && !showReview ? null : <LiveHeader stage={stage} />}
-      <div className={showReview && !paused ? "md-live-body is-review" : "md-live-body"}>
+    <div className={`md-live ${sceneClass(showReview || showFinals ? "ANALYZING" : snapshot.phase)}`}>
+      {quiet && !showReview && !showFinals ? null : <LiveHeader stage={stage} />}
+      <div className={(showReview || showFinals) && !paused ? "md-live-body is-review" : "md-live-body"}>
         {paused ? <PauseHold /> : null}
-        {paused ? null : showReview && card ? (
+        {paused ? null : showFinals ? (
+          <FinalThemes
+            themes={finalThemes}
+            operator={operator}
+            onBusy={(busy) => {
+              pausePoll.current = busy;
+            }}
+            onDone={async () => {
+              const res = await fetch("/api/mahni-dosadnoto/live", { cache: "no-store" });
+              const data = await res.json();
+              setSnapshot(data.snapshot ?? null);
+            }}
+          />
+        ) : null}
+        {paused || showFinals ? null : showReview && card ? (
           <>
             <AudienceReviewCard card={card} notice={realReview ? undefined : "Локален преглед. Живото събитие не се променя."} />
             {operator && realReview ? (
@@ -137,7 +153,7 @@ export function MahniLiveScreen({
           </>
         ) : null}
         {paused || showReview ? null : snapshot.phase === "COLLECTING" ? <Collecting snapshot={snapshot} /> : null}
-        {paused || showReview ? null : snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
+        {paused || showReview || showFinals ? null : snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
         {paused || showReview ? null : snapshot.phase === "VOTING" ? <Voting snapshot={snapshot} limit={compact ? 4 : 5} /> : null}
         {paused || showReview ? null : snapshot.phase === "FINALIZING" ? <Countdown snapshot={snapshot} /> : null}
         {paused || showReview ? null : snapshot.phase === "AI_JURY" ? <Jury snapshot={snapshot} /> : null}
@@ -145,6 +161,59 @@ export function MahniLiveScreen({
         {paused || showReview ? null : snapshot.phase === "DRAFT" ? <Holding /> : null}
       </div>
     </div>
+  );
+}
+
+function FinalThemes({
+  themes,
+  operator,
+  onBusy,
+  onDone,
+}: {
+  themes: PublicLiveSnapshot["themes"];
+  operator: boolean;
+  onBusy: (busy: boolean) => void;
+  onDone: () => Promise<void>;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function start() {
+    setError("");
+    setPending(true);
+    onBusy(true);
+    try {
+      await mdOpenVoting();
+      await onDone();
+    } catch {
+      setError("Гласуването не беше пуснато.");
+    } finally {
+      onBusy(false);
+      setPending(false);
+    }
+  }
+
+  return (
+    <section className="md-audience md-final-themes" aria-label="Крайни теми">
+      <h2>Крайни теми</h2>
+      <ol>
+        {themes.map((theme, index) => (
+          <li key={theme.id}>
+            <b>{String(index + 1).padStart(2, "0")}</b>
+            <span>{theme.title}</span>
+          </li>
+        ))}
+      </ol>
+      {operator ? (
+        <div className="md-audience-actions">
+          <button type="button" className="md-ops-btn" disabled={pending} aria-busy={pending} onClick={() => void start()}>
+            {pending ? <span className="md-ops-spin" aria-hidden="true" /> : null}
+            ОДОБРЕНО ОТ ЗАЛАТА
+          </button>
+          {error ? <p className="md-audience-error">{error}</p> : null}
+        </div>
+      ) : null}
+    </section>
   );
 }
 

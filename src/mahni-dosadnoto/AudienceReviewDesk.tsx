@@ -54,7 +54,7 @@ export function AudienceReviewDesk({
       <h2>Преглед от залата</h2>
       {real.length > 0 ? <p className="md-ops-note">Одобрени {approved} от {real.length}</p> : null}
       {real.length > 0 && approved < real.length ? (
-        <p className="md-ops-note">Одобрете темите една по една. След последната се отключва „Отвори избора“.</p>
+        <p className="md-ops-note">Одобрете темите една по една. След последната екранът показва списъка и пуска гласуването.</p>
       ) : null}
       {current ? (
         <article className="md-ops-panel">

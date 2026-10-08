@@ -1678,6 +1678,37 @@
   line-height: 1.25;
 }
 
+.md-final-themes h2 {
+  margin: 0;
+}
+
+.md-final-themes ol {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.md-final-themes li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: #fff;
+  font-size: clamp(1.45rem, 2.1vw, 2.05rem);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.md-final-themes b {
+  color: #c5d0ff;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
 .md-audience-actions {
   display: flex;
   flex-wrap: wrap;

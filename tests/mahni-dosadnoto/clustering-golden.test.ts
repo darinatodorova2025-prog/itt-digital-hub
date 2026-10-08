@@ -243,6 +243,11 @@ describe("mahni clustering golden rehearsal", () => {
     for (const theme of await store.listThemes()) {
       if (!theme.isAiWildcard && theme.reviewStatus === "review_ready") await store.approveAudienceTheme(theme.id);
     }
+    const ready = await store.getPublicLiveSnapshot();
+    expect(ready.phase).toBe("ANALYZING");
+    expect(ready.review).toBeNull();
+    expect(ready.themes.length).toBeGreaterThan(0);
+    expect(ready.themes.every((theme) => !theme.isAiWildcard)).toBe(true);
     await store.transitionPhase("VOTING");
     const ballot = (await store.listThemes()).filter((theme) => theme.reviewStatus === "approved" && !theme.isAiWildcard);
     const covered = new Set(ballot.flatMap((theme) => theme.sourceIdeas?.map((source) => source.id) ?? []));

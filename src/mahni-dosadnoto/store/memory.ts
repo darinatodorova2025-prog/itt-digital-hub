@@ -384,6 +384,7 @@ export class MemoryMahniStore implements MahniStore {
     const storedThemes = campaignThemes;
     const juryProgress = summarizeJuryProgress(await this.listJuryResults());
     const showResults = campaign.phase === "RESULTS" || campaign.phase === "CLOSED";
+    const finalsReady = campaign.phase === "ANALYZING" && votingTransitionAllowed(campaignThemes).ok;
     return {
       phase: campaign.phase,
       paused: campaign.paused === true,
@@ -397,7 +398,7 @@ export class MemoryMahniStore implements MahniStore {
       },
       recentIdeas: campaign.showRecentIdeas && campaign.phase === "COLLECTING" ? recent : [],
       analysisStage: campaign.phase === "ANALYZING" ? this.analysisStage : null,
-      themes: campaign.phase === "VOTING" || campaign.phase === "FINALIZING" || campaign.phase === "RESULTS" || campaign.phase === "CLOSED" ? themes : [],
+      themes: campaign.phase === "VOTING" || campaign.phase === "FINALIZING" || campaign.phase === "RESULTS" || campaign.phase === "CLOSED" || finalsReady ? themes : [],
       votingEndsAt: campaign.votingEndsAt,
       countdownSeconds,
       humanTop3: showResults ? humanTop3 : [],
