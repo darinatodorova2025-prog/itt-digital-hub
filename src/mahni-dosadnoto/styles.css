@@ -1337,8 +1337,8 @@
 
 .md-scene-vote {
   background:
-    linear-gradient(90deg, rgba(4, 14, 49, 0.88) 0%, rgba(4, 14, 49, 0.66) 38%, rgba(4, 14, 49, 0.28) 64%, rgba(4, 14, 49, 0.05) 100%),
-    url("/event/mahni/river.webp") right center / cover no-repeat;
+    linear-gradient(90deg, rgba(4, 14, 49, 0.9) 0%, rgba(4, 14, 49, 0.72) 28%, rgba(4, 14, 49, 0.34) 52%, rgba(4, 14, 49, 0.08) 72%, rgba(4, 14, 49, 0) 86%),
+    url("/event/mahni/voting.webp") center / cover no-repeat;
 }
 
 .md-scene-result {
@@ -1920,6 +1920,21 @@
   }
 }
 
+.md-live-voting {
+  width: min(44rem, 56vw);
+  padding: clamp(1.15rem, 2.2vh, 1.7rem) clamp(1.15rem, 1.8vw, 1.6rem) clamp(1rem, 1.8vh, 1.4rem);
+  border: 1px solid rgba(247, 248, 253, 0.18);
+  border-radius: 22px;
+  background: rgba(4, 14, 49, 0.58);
+  box-shadow: 0 22px 48px rgba(4, 14, 49, 0.28);
+  backdrop-filter: blur(10px);
+}
+
+.md-live-voting h1 {
+  max-width: none;
+  font-size: clamp(2.4rem, 4vw, 3.6rem);
+}
+
 .md-live-voting-head {
   display: flex;
   align-items: flex-end;
@@ -1932,7 +1947,7 @@
   padding: 0;
   display: grid;
   gap: 0.7rem;
-  max-width: 62rem;
+  max-width: none;
 }
 
 .md-live-bars li {
@@ -1950,19 +1965,23 @@
 .md-live-bars b {
   font-family: var(--md-serif);
   font-size: 1.25rem;
-  font-weight: 500;
-  color: rgba(247, 248, 253, 0.7);
+  font-weight: 650;
+  color: #d5defa;
 }
 
 .md-live-bars strong {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #fff;
   text-align: right;
 }
 
 .md-live-bar-copy em {
   display: block;
   font-style: normal;
-  font-size: clamp(1.05rem, 1.6vw, 1.45rem);
+  font-weight: 700;
+  color: #fff;
+  font-size: clamp(1.15rem, 1.6vw, 1.5rem);
   line-height: 1.25;
 }
 

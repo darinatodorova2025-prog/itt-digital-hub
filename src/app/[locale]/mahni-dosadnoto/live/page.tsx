@@ -17,7 +17,7 @@ function sceneImageFor(phase: EventPhase): string | null {
     case "ANALYZING":
       return "/event/mahni/grouping.webp";
     case "VOTING":
-      return "/event/mahni/river.webp";
+      return "/event/mahni/voting.webp";
     case "RESULTS":
     case "CLOSED":
       return "/event/mahni/aerial.webp";
