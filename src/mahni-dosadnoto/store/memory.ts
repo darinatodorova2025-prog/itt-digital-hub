@@ -25,7 +25,7 @@ import {
   interestAllowed,
   votingAllowed,
 } from "../state-machine";
-import { assertJuryCompleteForResults, publicJuryLenses, summarizeJuryProgress } from "../jury-status";
+import { publicJuryLenses, summarizeJuryProgress } from "../jury-status";
 import { hashSessionToken } from "../session-crypto";
 import { PARTICIPANT_SESSION_MS } from "../session-lifetime";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validation";
@@ -349,7 +349,7 @@ export class MemoryMahniStore implements MahniStore {
     if (!campaign || campaign.phase !== "FINALIZING" || !campaign.votingEndsAt) return;
     if (Date.parse(campaign.votingEndsAt) > Date.now()) return;
     if (!campaign.humanResultLockedAt) campaign.humanResultLockedAt = nowIso();
-    campaign.phase = "AI_JURY";
+    campaign.phase = "RESULTS";
     campaign.updatedAt = nowIso();
   }
 
@@ -437,10 +437,6 @@ export class MemoryMahniStore implements MahniStore {
   async transitionPhase(to: EventPhase, options?: { votingEndsAt?: string | null }) {
     const campaign = this.campaignOrThrow();
     assertTransition(campaign.phase, to);
-    if (to === "RESULTS") {
-      const runs = await this.listJuryResults();
-      assertJuryCompleteForResults(summarizeJuryProgress(runs));
-    }
     if (to === "VOTING") {
       const ready = votingTransitionAllowed([...this.themes.values()].filter((theme) => theme.campaignId === campaign.id));
       if (!ready.ok) throw new Error(ready.reason);

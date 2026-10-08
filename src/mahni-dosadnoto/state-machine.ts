@@ -6,7 +6,7 @@ const TRANSITIONS: Record<EventPhase, EventPhase[]> = {
   COLLECTING: ["ANALYZING"],
   ANALYZING: ["VOTING"],
   VOTING: ["FINALIZING"],
-  FINALIZING: ["AI_JURY"],
+  FINALIZING: ["AI_JURY", "RESULTS"],
   AI_JURY: ["RESULTS"],
   RESULTS: ["CLOSED"],
   CLOSED: [],

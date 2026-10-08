@@ -169,7 +169,7 @@
 .md-progress {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.35rem;
   margin-top: 0.15rem;
 }

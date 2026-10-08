@@ -14,7 +14,6 @@ import { EventLockup } from "@/mahni-dosadnoto/brand";
 import { ConvergeIcon } from "@/mahni-dosadnoto/icons";
 import { LiveRail } from "@/mahni-dosadnoto/journey";
 import { ThemeEquation } from "@/mahni-dosadnoto/grouping";
-import { LensBoard } from "@/mahni-dosadnoto/lenses";
 import { AudienceReviewCard } from "@/mahni-dosadnoto/CombiningReview";
 import { toPublicReviewCard, type LiveReviewItem } from "@/mahni-dosadnoto/review";
 import { REVIEW_PREVIEW_ITEMS, REVIEW_PREVIEW_KEY } from "@/mahni-dosadnoto/review-preview";
@@ -157,8 +156,7 @@ export function MahniLiveScreen({
         {paused || showReview || showFinals ? null : snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
         {paused || showReview ? null : snapshot.phase === "VOTING" ? <Voting snapshot={snapshot} limit={compact ? 4 : 5} /> : null}
         {paused || showReview ? null : snapshot.phase === "FINALIZING" ? <Countdown snapshot={snapshot} /> : null}
-        {paused || showReview ? null : snapshot.phase === "AI_JURY" ? <Jury snapshot={snapshot} /> : null}
-        {paused || showReview ? null : snapshot.phase === "RESULTS" || snapshot.phase === "CLOSED" ? <Results snapshot={snapshot} /> : null}
+        {paused || showReview ? null : snapshot.phase === "AI_JURY" || snapshot.phase === "RESULTS" || snapshot.phase === "CLOSED" ? <Results snapshot={snapshot} /> : null}
         {paused || showReview ? null : snapshot.phase === "DRAFT" ? <Holding /> : null}
       </div>
     </div>
@@ -280,9 +278,8 @@ function sceneClass(phase: PublicLiveSnapshot["phase"]): string {
       return "md-scene-vote";
     case "RESULTS":
     case "CLOSED":
-      return "md-scene-result";
     case "AI_JURY":
-      return "md-scene-jury";
+      return "md-scene-result";
     case "DRAFT":
       return "md-scene-hold";
     case "COLLECTING":
@@ -416,18 +413,6 @@ function Countdown({ snapshot }: { snapshot: PublicLiveSnapshot }) {
         </svg>
         <p className="md-clock md-display">{formatClock(shown)}</p>
       </div>
-    </div>
-  );
-}
-
-function Jury({ snapshot }: { snapshot: PublicLiveSnapshot }) {
-  const lenses = snapshot.juryLenses ?? [];
-  const done = lenses.length > 0 && lenses.every((lens) => lens.status === "succeeded");
-  return (
-    <div className="md-live-jury">
-      <h1 className="md-display">{done ? "Вторият поглед е готов." : "Хората вече гласуваха."}</h1>
-      <p className="md-live-lead md-display">{done ? "Трите гледни точки са готови." : "Сега ИИ разглежда темите независимо."}</p>
-      <LensBoard lenses={snapshot.juryLenses} />
     </div>
   );
 }

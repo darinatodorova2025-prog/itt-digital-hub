@@ -58,7 +58,6 @@ function viewFor(ctx: Context): View {
     case "FINALIZING":
       return "finalizing";
     case "AI_JURY":
-      return "jury";
     case "RESULTS":
     case "CLOSED":
       return "results";
@@ -507,7 +506,7 @@ export function MahniParticipantApp({
               );
             })}
           </ul>
-          <p className="md-next">След гласуването ИИ разглежда същите теми независимо.</p>
+          <p className="md-next">След гласуването показваме резултата.</p>
         </section>
       ) : null}
 
@@ -515,7 +514,7 @@ export function MahniParticipantApp({
         <section className="md-reveal md-finalizing">
           <h1 className="md-display">{countdown !== null && countdown <= 30 ? "Последни 30 секунди" : "Последни секунди"}</h1>
           <p className="md-clock md-display">{formatClock(countdown)}</p>
-          <p className="md-support">Изборът на участниците се запазва. След това ИИ разглежда темите независимо.</p>
+          <p className="md-support">Изборът на участниците се запазва. След това показваме резултата.</p>
         </section>
       ) : null}
 
@@ -782,7 +781,7 @@ function ResultsView({
       <header className="md-result-hero">
         <h1 className="md-display">Какво излезе напред</h1>
         <p className="md-result-intro">
-          Участниците определиха най-важните теми. ИИ дава независим втори поглед върху същите теми.
+          Участниците определиха най-важните теми.
         </p>
         <div className="md-result-hero-photo" aria-hidden="true">
           <Image src="/event/mahni/aerial.webp" alt="" fill sizes="(max-width: 840px) 100vw, 1088px" className="md-result-hero-img" />

@@ -4,13 +4,13 @@ import { StageGlyph } from "@/mahni-dosadnoto/icons";
 
 export function ParticipantStage({ stage }: { stage: StoryStage }) {
   return (
-    <div className="md-stage-chip" aria-label={`Стъпка ${stage.n} от 5: ${stage.label}`}>
+    <div className="md-stage-chip" aria-label={`Стъпка ${stage.n} от ${STORY.length}: ${stage.label}`}>
       <span className="md-stage-icon">
-        <StageGlyph stage={stage.n} size={18} />
+        <StageGlyph stage={stage.n === 4 ? 5 : stage.n} size={18} />
       </span>
       <span>
         <span className="md-stage-index">
-          {String(stage.n).padStart(2, "0")} / 05
+          {String(stage.n).padStart(2, "0")} / {String(STORY.length).padStart(2, "0")}
         </span>
         <strong>{stage.rail}</strong>
       </span>
@@ -51,7 +51,7 @@ export function AdminRail({ stage }: { stage: StoryStage | null }) {
         const state = !stage ? undefined : item.n < stage.n ? "is-done" : item.n === stage.n ? "is-current" : undefined;
         return (
           <li key={item.n} className={state}>
-            <StageGlyph stage={item.n} size={16} />
+            <StageGlyph stage={item.n === 4 ? 5 : item.n} size={16} />
             <span>
               <b>{item.n}</b> {item.rail}
             </span>

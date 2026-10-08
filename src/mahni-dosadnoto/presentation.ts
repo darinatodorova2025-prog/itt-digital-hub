@@ -1,7 +1,7 @@
 import type { EventPhase, JudgeType } from "@/mahni-dosadnoto/types";
 
 export type StoryStage = {
-  n: 1 | 2 | 3 | 4 | 5;
+  n: 1 | 2 | 3 | 4;
   label: string;
   rail: string;
 };
@@ -10,8 +10,7 @@ export const STORY = [
   { n: 1, label: "Споделяме", rail: "Споделяме" },
   { n: 2, label: "Подреждаме", rail: "Подреждаме" },
   { n: 3, label: "Гласуваме", rail: "Гласуваме" },
-  { n: 4, label: "Втори поглед", rail: "Втори поглед" },
-  { n: 5, label: "От резултат към действие", rail: "Резултат" },
+  { n: 4, label: "От резултат към действие", rail: "Резултат" },
 ] as const satisfies readonly StoryStage[];
 
 export const LENS_COPY: Record<JudgeType, { title: string; detail: string }> = {
@@ -41,7 +40,7 @@ export function votesRemainingLabel(remaining: number): string {
   return `Остават ви ${remaining} гласа`;
 }
 
-const [share, arrange, choose, secondView, result] = STORY;
+const [share, arrange, choose, result] = STORY;
 
 export function storyForPhase(phase: EventPhase): StoryStage | null {
   switch (phase) {
@@ -53,7 +52,6 @@ export function storyForPhase(phase: EventPhase): StoryStage | null {
     case "FINALIZING":
       return choose;
     case "AI_JURY":
-      return secondView;
     case "RESULTS":
     case "CLOSED":
       return result;
@@ -75,7 +73,6 @@ export function operatorPhaseTitle(phase: EventPhase): string {
     case "FINALIZING":
       return "Последни секунди";
     case "AI_JURY":
-      return "Втори поглед";
     case "RESULTS":
       return "Резултати";
     case "CLOSED":
@@ -94,9 +91,9 @@ export function operatorPhaseNote(phase: EventPhase): string {
     case "VOTING":
       return "Участниците определят кои теми заслужават внимание.";
     case "FINALIZING":
-      return "Гласуването приключва. Изборът на участниците се запазва.";
+      return "Гласуването приключва. След това показваме резултата.";
     case "AI_JURY":
-      return "ИИ разглежда същите теми независимо.";
+      return "Резултатът се показва.";
     case "RESULTS":
       return "Резултатът е показан. Официалният избор е на участниците.";
     case "CLOSED":

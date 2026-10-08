@@ -124,7 +124,7 @@ export function MahniAdminDashboard({ initial }: Props) {
 
   const analysisFailed = !analysisReady && !analysisRunning && latestAnalysis?.status === "failed";
   const votingReady = votingTransitionAllowed(snapshot.themes).ok;
-  const primary = recommendedAction(campaign.phase, analysisReady, analysisRunning, analysisFailed, jury, snapshot.counts.ideas, votingReady);
+  const primary = recommendedAction(campaign.phase, analysisReady, analysisRunning, analysisFailed, snapshot.counts.ideas, votingReady);
   const active = campaign.phase !== "DRAFT" && campaign.phase !== "CLOSED";
   const stage = storyForPhase(campaign.phase);
   const voteById = new Map(snapshot.live.themes.map((theme) => [theme.id, theme.voteCount]));
@@ -280,11 +280,11 @@ export function MahniAdminDashboard({ initial }: Props) {
 
       <AdminRail stage={stage} />
 
-      {advancedActions(campaign.phase, primary?.id ?? null, jury).length > 0 ? (
+      {advancedActions(campaign.phase, primary?.id ?? null).length > 0 ? (
         <details className="md-ops-advanced">
           <summary>Други действия</summary>
           <div className="md-ops-advanced-row">
-            {advancedActions(campaign.phase, primary?.id ?? null, jury).map((id) => (
+            {advancedActions(campaign.phase, primary?.id ?? null).map((id) => (
             <OpsButton key={id} id={id} busy={busy} onClick={() => ask(id)}>
               {ACTION_LABEL[id]}
             </OpsButton>
@@ -673,7 +673,7 @@ const ACTION_LABEL: Record<ActionId, string> = {
   analysis: "Подреждане на идеите",
   vote: "Отвори избора",
   final: "Последни секунди",
-  "close-vote": "Затвори гласуването",
+  "close-vote": "Покажи резултата",
   jury: "Стартирай втория поглед",
   "retry-jury": "Повтори неуспешните",
   results: "Покажи резултата",
@@ -765,7 +765,6 @@ function recommendedAction(
   analysisReady: boolean,
   analysisRunning: boolean,
   analysisFailed: boolean,
-  jury: JuryProgress,
   ideaCount: number,
   votingReady: boolean,
 ): { id: ActionId; label: string; disabled?: boolean } | null {
@@ -783,13 +782,9 @@ function recommendedAction(
     case "VOTING":
       return { id: "final", label: ACTION_LABEL.final };
     case "FINALIZING":
-      return { id: "close-vote", label: ACTION_LABEL["close-vote"] };
+      return { id: "close-vote", label: "Покажи резултата" };
     case "AI_JURY":
-      if (jury.complete) return { id: "results", label: ACTION_LABEL.results };
-      if (jury.succeeded > 0 || jury.judges.some((judge) => judge.status === "failed" || judge.status === "running")) {
-        return { id: "retry-jury", label: ACTION_LABEL["retry-jury"] };
-      }
-      return { id: "jury", label: ACTION_LABEL.jury };
+      return { id: "results", label: ACTION_LABEL.results };
     case "RESULTS":
       return { id: "closed", label: ACTION_LABEL.closed };
     default:
@@ -797,12 +792,10 @@ function recommendedAction(
   }
 }
 
-function advancedActions(phase: EventPhase, primaryId: ActionId | null, jury: JuryProgress): ActionId[] {
+function advancedActions(phase: EventPhase, primaryId: ActionId | null): ActionId[] {
   const pool: ActionId[] = [];
   if (phase === "ANALYZING" && primaryId !== "analysis") pool.push("analysis");
   if (phase === "VOTING") pool.push("close-vote");
-  if (phase === "AI_JURY" && primaryId !== "jury") pool.push("jury");
-  if (phase === "AI_JURY" && !jury.complete && primaryId !== "retry-jury") pool.push("retry-jury");
   if (phase === "RESULTS") pool.push("closed");
   return pool.filter((id) => id !== primaryId);
 }

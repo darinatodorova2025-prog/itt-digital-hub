@@ -28,7 +28,7 @@ import {
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../../validation";
 import { validateClusteringAgainstIdeas } from "../../validation";
 import { aggregateAiJury, overlapCount, rankHumanThemes } from "../../tie-break";
-import { assertJuryCompleteForResults, publicJuryLenses, summarizeJuryProgress } from "../../jury-status";
+import { publicJuryLenses, summarizeJuryProgress } from "../../jury-status";
 import { clusteringCommitTheme, clusteringCommitWildcard, hydrateThemeTrace } from "../../ai/formulation";
 import { draftsFromThemes, currentPublicReview, extractSources, mergeDrafts, type ReviewDraft } from "../../review";
 import { publicExcerpt } from "../../public-excerpt";
@@ -189,13 +189,25 @@ export class SupabaseMahniStore implements MahniStore {
     }
     // The finalizing RPC locks the campaign row. Skip it unless that phase can advance,
     // so admin reads are not a chain of row locks.
-    if ((data as { phase?: string }).phase !== "FINALIZING") {
+    if ((data as { phase?: string }).phase !== "FINALIZING" && (data as { phase?: string }).phase !== "AI_JURY") {
       this.campaignCache = await this.withOperatorPause(mapCampaign(data as never));
       return this.campaignCache;
     }
-    await sb.rpc("md_maybe_advance_finalizing", { p_campaign_id: data.id });
+    if ((data as { phase?: string }).phase === "FINALIZING") {
+      await sb.rpc("md_maybe_advance_finalizing", { p_campaign_id: data.id });
+    }
     const { data: refreshed } = await sb.from("md_event_campaigns").select("*").eq("id", data.id).single();
-    this.campaignCache = await this.withOperatorPause(mapCampaign((refreshed ?? data) as never));
+    const current = (refreshed ?? data) as { id: string; phase?: string };
+    if (current.phase === "AI_JURY") {
+      const { data: revealed } = await sb.rpc("md_transition_phase", {
+        p_slug: this.campaignSlug,
+        p_to: "RESULTS",
+        p_voting_ends_at: null,
+      });
+      this.campaignCache = await this.withOperatorPause(mapCampaign((revealed ?? current) as never));
+      return this.campaignCache;
+    }
+    this.campaignCache = await this.withOperatorPause(mapCampaign(current as never));
     return this.campaignCache;
   }
 
@@ -620,10 +632,6 @@ export class SupabaseMahniStore implements MahniStore {
   async transitionPhase(to: EventPhase, options?: { votingEndsAt?: string | null }) {
     const campaign = await this.ensureCampaign();
     assertTransition(campaign.phase, to);
-    if (to === "RESULTS") {
-      const runs = await this.listJuryResults();
-      assertJuryCompleteForResults(summarizeJuryProgress(runs));
-    }
     if (to === "VOTING") {
       const ready = votingTransitionAllowed(await this.listThemes());
       if (!ready.ok) throw new Error(ready.reason);

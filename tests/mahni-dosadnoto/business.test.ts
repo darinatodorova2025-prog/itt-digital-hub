@@ -126,11 +126,12 @@ describe("mahni-dosadnoto store", () => {
     expect(next.isDemo).toBe(true);
   });
 
-  it("blocks RESULTS when jury is incomplete", async () => {
+  it("shows results without the second look", async () => {
     const store = resetMemoryStoreForTests();
     await store.ensureCampaign();
     store.campaign!.phase = "AI_JURY";
-    await expect(store.transitionPhase("RESULTS")).rejects.toThrow("jury_incomplete");
+    await store.transitionPhase("RESULTS");
+    expect((await store.getCampaign())?.phase).toBe("RESULTS");
   });
 
   it("keeps interest unique per theme", async () => {

@@ -69,8 +69,19 @@ export async function mdCloseVoting() {
   await assertAdmin();
   const store = getMahniStore();
   await store.lockHumanResult();
-  await store.transitionPhase("AI_JURY");
+  let campaign = await store.ensureCampaign();
+  if (campaign.phase === "VOTING") {
+    campaign = await store.transitionPhase("FINALIZING", { votingEndsAt: new Date().toISOString() });
+  }
+  if (campaign.phase === "FINALIZING") {
+    campaign = await store.transitionPhase("AI_JURY");
+  }
+  if (campaign.phase === "AI_JURY") {
+    await store.transitionPhase("RESULTS");
+  }
   revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
 }
 
 export async function mdRunAnalysis() {
@@ -166,10 +177,6 @@ export async function mdRetryJury(judges?: JudgeType[]) {
 export async function mdRevealResults() {
   await assertAdmin();
   const store = getMahniStore();
-  const progress = summarizeJuryProgress(await store.listJuryResults());
-  if (!progress.complete) {
-    throw new Error(`jury_incomplete (${progress.succeeded}/${progress.total} AI judges complete)`);
-  }
   await store.transitionPhase("RESULTS");
   revalidatePath("/admin/mahni-dosadnoto");
   revalidatePath("/bg/mahni-dosadnoto");
