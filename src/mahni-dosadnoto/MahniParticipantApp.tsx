@@ -343,7 +343,7 @@ export function MahniParticipantApp({
           >
             + Имам още една
           </button>
-          <p className="md-next">Когато споделянето приключи, ще съберем и обобщим темите всички заедно.</p>
+          <p className="md-next">Когато споделянето приключи, ще съберем и обобщим темите.</p>
         </section>
       ) : null}
 
