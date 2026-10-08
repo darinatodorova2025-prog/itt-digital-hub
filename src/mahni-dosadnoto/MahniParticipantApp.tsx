@@ -758,7 +758,6 @@ function ResultsView({
   onFollowup: (themeId: string, title: string) => void;
 }) {
   const aiIds = new Set(snapshot.aiTop3.map((row) => row.id));
-  const humanIds = new Set(snapshot.humanTop3.map((row) => row.id));
   const shared = snapshot.humanTop3.filter((row) => aiIds.has(row.id));
   const headline = sharedPriorityHeadline(shared.length);
   const body = sharedPriorityBody(shared.length);
@@ -804,17 +803,6 @@ function ResultsView({
             ))}
           </ol>
         </section>
-        <section className="md-result-secondary">
-          <h2 className="md-result-secondary-title">Независим поглед от ИИ</h2>
-          <ol className="md-rank is-quiet">
-            {snapshot.aiTop3.map((row) => (
-              <li key={row.id} className={humanIds.has(row.id) ? "is-shared" : undefined}>
-                <b>{String(row.rank).padStart(2, "0")}</b>
-                <span>{row.title}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
       </div>
       {headline && body ? (
         <aside className="md-shared">
@@ -825,7 +813,6 @@ function ResultsView({
           </div>
         </aside>
       ) : null}
-      <p className="md-official">Официалният резултат е изборът на участниците.</p>
 
       <div className="md-action">
         <h2>От резултат към действие</h2>
