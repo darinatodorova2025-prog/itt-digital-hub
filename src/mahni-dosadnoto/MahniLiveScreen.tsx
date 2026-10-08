@@ -17,7 +17,7 @@ import { ThemeEquation } from "@/mahni-dosadnoto/grouping";
 import { AudienceReviewCard } from "@/mahni-dosadnoto/CombiningReview";
 import { toPublicReviewCard, type LiveReviewItem } from "@/mahni-dosadnoto/review";
 import { REVIEW_PREVIEW_ITEMS, REVIEW_PREVIEW_KEY } from "@/mahni-dosadnoto/review-preview";
-import { mdApproveAudienceTheme, mdOpenVoting, mdSplitAudienceTheme } from "@/app/admin/(console)/mahni-dosadnoto/actions";
+import { mdApproveAudienceTheme, mdCloseVoting, mdOpenVoting, mdSplitAudienceTheme } from "@/app/admin/(console)/mahni-dosadnoto/actions";
 
 /** Stable theme thumbnails for the participant Top 3 result cards. */
 const RESULT_THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-river.webp", "/event/mahni/thumb-aerial.webp"];
@@ -154,8 +154,35 @@ export function MahniLiveScreen({
         ) : null}
         {paused || showReview ? null : snapshot.phase === "COLLECTING" ? <Collecting snapshot={snapshot} /> : null}
         {paused || showReview || showFinals ? null : snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
-        {paused || showReview ? null : snapshot.phase === "VOTING" ? <Voting snapshot={snapshot} limit={compact ? 4 : 5} /> : null}
-        {paused || showReview ? null : snapshot.phase === "FINALIZING" ? <Countdown snapshot={snapshot} /> : null}
+        {paused || showReview ? null : snapshot.phase === "VOTING" ? (
+          <Voting
+            snapshot={snapshot}
+            limit={compact ? 4 : 5}
+            operator={operator}
+            onBusy={(busy) => {
+              pausePoll.current = busy;
+            }}
+            onDone={async () => {
+              const res = await fetch("/api/mahni-dosadnoto/live", { cache: "no-store" });
+              const data = await res.json();
+              setSnapshot(data.snapshot ?? null);
+            }}
+          />
+        ) : null}
+        {paused || showReview ? null : snapshot.phase === "FINALIZING" ? (
+          <Countdown
+            snapshot={snapshot}
+            operator={operator}
+            onBusy={(busy) => {
+              pausePoll.current = busy;
+            }}
+            onDone={async () => {
+              const res = await fetch("/api/mahni-dosadnoto/live", { cache: "no-store" });
+              const data = await res.json();
+              setSnapshot(data.snapshot ?? null);
+            }}
+          />
+        ) : null}
         {paused || showReview ? null : snapshot.phase === "AI_JURY" || snapshot.phase === "RESULTS" || snapshot.phase === "CLOSED" ? <Results snapshot={snapshot} /> : null}
         {paused || showReview ? null : snapshot.phase === "DRAFT" ? <Holding /> : null}
       </div>
@@ -352,7 +379,55 @@ function Analyzing({ snapshot }: { snapshot: PublicLiveSnapshot }) {
   );
 }
 
-function Voting({ snapshot, limit }: { snapshot: PublicLiveSnapshot; limit: number }) {
+function ResultButton({
+  onBusy,
+  onDone,
+}: {
+  onBusy: (busy: boolean) => void;
+  onDone: () => Promise<void>;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function show() {
+    setError("");
+    setPending(true);
+    onBusy(true);
+    try {
+      await mdCloseVoting();
+      await onDone();
+    } catch {
+      setError("Резултатът не беше показан.");
+    } finally {
+      onBusy(false);
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="md-audience-actions">
+      <button type="button" className="md-ops-btn" disabled={pending} aria-busy={pending} onClick={() => void show()}>
+        {pending ? <span className="md-ops-spin" aria-hidden="true" /> : null}
+        Резултат
+      </button>
+      {error ? <p className="md-audience-error">{error}</p> : null}
+    </div>
+  );
+}
+
+function Voting({
+  snapshot,
+  limit,
+  operator,
+  onBusy,
+  onDone,
+}: {
+  snapshot: PublicLiveSnapshot;
+  limit: number;
+  operator: boolean;
+  onBusy: (busy: boolean) => void;
+  onDone: () => Promise<void>;
+}) {
   const board = [...snapshot.themes]
     .sort((a, b) => b.voteCount - a.voteCount || a.title.localeCompare(b.title, "bg"))
     .slice(0, limit);
@@ -382,11 +457,22 @@ function Voting({ snapshot, limit }: { snapshot: PublicLiveSnapshot; limit: numb
           </li>
         ))}
       </ol>
+      {operator ? <ResultButton onBusy={onBusy} onDone={onDone} /> : null}
     </div>
   );
 }
 
-function Countdown({ snapshot }: { snapshot: PublicLiveSnapshot }) {
+function Countdown({
+  snapshot,
+  operator,
+  onBusy,
+  onDone,
+}: {
+  snapshot: PublicLiveSnapshot;
+  operator: boolean;
+  onBusy: (busy: boolean) => void;
+  onDone: () => Promise<void>;
+}) {
   const seconds = useCountdown(snapshot.countdownSeconds, true);
   const shown = seconds ?? snapshot.countdownSeconds ?? 0;
   const [basis] = useState(() => Math.max(shown, 1));
@@ -413,6 +499,7 @@ function Countdown({ snapshot }: { snapshot: PublicLiveSnapshot }) {
         </svg>
         <p className="md-clock md-display">{formatClock(shown)}</p>
       </div>
+      {operator ? <ResultButton onBusy={onBusy} onDone={onDone} /> : null}
     </div>
   );
 }

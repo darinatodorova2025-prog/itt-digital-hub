@@ -71,7 +71,7 @@ export async function mdCloseVoting() {
   await store.lockHumanResult();
   let campaign = await store.ensureCampaign();
   if (campaign.phase === "VOTING") {
-    campaign = await store.transitionPhase("FINALIZING", { votingEndsAt: new Date().toISOString() });
+    campaign = await store.transitionPhase("FINALIZING", { votingEndsAt: new Date(Date.now() + 60_000).toISOString() });
   }
   if (campaign.phase === "FINALIZING") {
     campaign = await store.transitionPhase("AI_JURY");
