@@ -14,7 +14,7 @@ describe("mahni presentation narrative", () => {
   it("maps internal phases onto the five-stage story", () => {
     expect(storyForPhase("COLLECTING")?.n).toBe(1);
     expect(storyForPhase("ANALYZING")?.label).toBe("Подреждаме");
-    expect(storyForPhase("FINALIZING")?.label).toBe("Избираме");
+    expect(storyForPhase("FINALIZING")?.label).toBe("Гласуваме");
     expect(storyForPhase("AI_JURY")?.n).toBe(4);
     expect(storyForPhase("RESULTS")?.rail).toBe("Резултат");
     expect(storyForPhase("DRAFT")).toBeNull();

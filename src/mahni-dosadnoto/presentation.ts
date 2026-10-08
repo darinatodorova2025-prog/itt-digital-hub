@@ -9,7 +9,7 @@ export type StoryStage = {
 export const STORY = [
   { n: 1, label: "Споделяме", rail: "Споделяме" },
   { n: 2, label: "Подреждаме", rail: "Подреждаме" },
-  { n: 3, label: "Избираме", rail: "Избираме" },
+  { n: 3, label: "Гласуваме", rail: "Гласуваме" },
   { n: 4, label: "Втори поглед", rail: "Втори поглед" },
   { n: 5, label: "От резултат към действие", rail: "Резултат" },
 ] as const satisfies readonly StoryStage[];
@@ -71,7 +71,7 @@ export function operatorPhaseTitle(phase: EventPhase): string {
     case "ANALYZING":
       return "Подреждаме";
     case "VOTING":
-      return "Избираме";
+      return "Гласуваме";
     case "FINALIZING":
       return "Последни секунди";
     case "AI_JURY":
