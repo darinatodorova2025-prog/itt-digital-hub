@@ -1252,6 +1252,17 @@
   white-space: nowrap;
 }
 
+.md-live.md-scene-hold .md-live-hold.is-pause {
+  margin-top: clamp(5rem, 14vh, 9rem);
+}
+
+.md-live.md-scene-hold .md-live-hold.is-pause .md-live-lead {
+  margin-top: 2.6rem;
+  max-width: 36rem;
+  font-size: clamp(1.85rem, 2.6vw, 2.75rem);
+  line-height: 1.35;
+}
+
 .md-live.md-scene-hold .md-live-lead {
   max-width: 40rem;
   margin-top: 1.7rem;

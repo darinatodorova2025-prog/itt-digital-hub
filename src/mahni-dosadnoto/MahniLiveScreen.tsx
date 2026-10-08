@@ -355,9 +355,9 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
 
 function PauseHold() {
   return (
-    <div className="md-live-hold">
+    <div className="md-live-hold is-pause">
       <h1 className="md-display">Пауза</h1>
-      <p className="md-live-lead">Спираме за малко. След малко продължаваме заедно.</p>
+      <p className="md-live-lead">Спираме за момент. После продължаваме заедно.</p>
     </div>
   );
 }
