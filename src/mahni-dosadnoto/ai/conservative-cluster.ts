@@ -24,7 +24,12 @@ const looseText = z.preprocess((value) => {
 const clusterGroupSchema = z.object({
   ideaIds: z.array(z.string().min(1)).min(1),
   sharedProblem: looseText,
-  certain: z.boolean().optional(),
+  certain: z.preprocess((value) => {
+    if (value == null || value === "") return undefined;
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return value;
+  }, z.boolean().optional()),
 });
 
 const clusterSchema = z.union([

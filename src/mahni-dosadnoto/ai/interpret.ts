@@ -23,6 +23,16 @@ const looseText = z.preprocess((value) => {
   return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
 }, z.string().nullable());
 
+const domainTagList = z.preprocess((value) => {
+  if (value == null) return [];
+  const source = typeof value === "string" ? value.split(/[,;]/) : Array.isArray(value) ? value : [];
+  return source
+    .filter((tag): tag is string => typeof tag === "string")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0)
+    .slice(0, 8);
+}, z.array(z.string()));
+
 const interpretIdeaSchema = z
   .object({
     ideaId: z.string().min(1),
@@ -38,7 +48,7 @@ const interpretIdeaSchema = z
     explicitSolution: looseText.optional(),
     solution: looseText.optional(),
     frequency: looseText.optional(),
-    domainTags: z.array(z.string()).optional(),
+    domainTags: domainTagList.optional(),
   })
   .transform((value) => ({
     ideaId: value.ideaId,
@@ -58,6 +68,8 @@ const interpretSchema = z.union([
   z.object({ ideas: z.array(interpretIdeaSchema) }),
   z.array(interpretIdeaSchema).transform((ideas) => ({ ideas })),
 ]);
+
+export { interpretSchema };
 
 export const INTERPRET_SYSTEM = `СТЪПКА ИНТЕРПРЕТАЦИЯ
 Интерпретираш всяка идея ОТДЕЛНО за българска ВиК конференция.

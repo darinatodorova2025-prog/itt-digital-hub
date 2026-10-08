@@ -16,7 +16,7 @@ const synthesizedThemeSchema = z.object({
   ideaIds: z.array(z.string().min(1)).min(1),
   title: z.string().trim().min(3).max(200),
   description: z.string().trim().min(10).max(1200),
-  formulationNote: z.string().optional(),
+  formulationNote: z.preprocess((value) => (typeof value === "string" ? value : undefined), z.string().optional()),
 });
 
 const synthesizeSchema = z.union([
