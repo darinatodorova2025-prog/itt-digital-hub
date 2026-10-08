@@ -1240,7 +1240,7 @@
 .md-scene-hold {
   background:
     linear-gradient(90deg, rgba(4, 14, 49, 0.62) 0%, rgba(4, 14, 49, 0.34) 24%, rgba(4, 14, 49, 0.08) 46%, rgba(4, 14, 49, 0) 62%),
-    url("/event/mahni/hold-desk.webp") right center / cover no-repeat;
+    url("/event/mahni/planning.webp") right center / cover no-repeat;
 }
 
 .md-live.md-scene-hold .md-live-body {
@@ -1311,7 +1311,7 @@
   background:
     linear-gradient(180deg, rgba(4, 14, 49, 0.9) 0%, rgba(4, 14, 49, 0.68) 8%, rgba(4, 14, 49, 0.32) 18%, rgba(4, 14, 49, 0) 32%),
     linear-gradient(90deg, rgba(4, 14, 49, 0.62) 0%, rgba(4, 14, 49, 0.34) 24%, rgba(4, 14, 49, 0.08) 46%, rgba(4, 14, 49, 0) 62%),
-    url("/event/mahni/hold-desk.webp") right center / cover no-repeat;
+    url("/event/mahni/planning.webp") right center / cover no-repeat;
 }
 
 .md-live.md-scene-collect h1 {
@@ -1356,6 +1356,12 @@
 
 .md-scene-plain {
   background: #071433;
+}
+
+.md-scene-organize {
+  background:
+    linear-gradient(90deg, rgba(4, 14, 49, 0.82) 0%, rgba(4, 14, 49, 0.62) 32%, rgba(4, 14, 49, 0.22) 54%, rgba(4, 14, 49, 0) 70%),
+    url("/event/mahni/planning.webp") center / cover no-repeat;
 }
 
 .md-live-top {

@@ -133,7 +133,7 @@ export function MahniLiveScreen({
 function sceneClass(phase: PublicLiveSnapshot["phase"]): string {
   switch (phase) {
     case "ANALYZING":
-      return "md-scene-plain";
+      return "md-scene-organize";
     case "VOTING":
       return "md-scene-vote";
     case "RESULTS":
@@ -208,9 +208,6 @@ function Analyzing({ snapshot }: { snapshot: PublicLiveSnapshot }) {
         <h1 className="md-display">Събираме и подреждаме идеите</h1>
         <p className="md-live-lead">Много отделни наблюдения се превръщат в общи теми.</p>
         <ThemeEquation ideas={snapshot.stats.ideas} themes={snapshot.groupedThemeCount} extra={snapshot.wildcardCount} ready={ready} />
-      </div>
-      <div className="md-live-group-frame" aria-hidden="true">
-        <Image src="/event/mahni/grouping.webp" alt="" fill priority sizes="60vw" className="md-live-group-img" />
       </div>
     </div>
   );
