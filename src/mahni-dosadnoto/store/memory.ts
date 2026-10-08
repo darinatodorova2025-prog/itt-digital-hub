@@ -240,6 +240,22 @@ export class MemoryMahniStore implements MahniStore {
     return { vote, votesUsed: this.votesForParticipant(participant.id).length, duplicate: false };
   }
 
+  async retractVote(sessionToken: string, themeId: string) {
+    this.maybeAutoCloseVoting();
+    const campaign = this.campaignOrThrow();
+    if (!votingAllowed(campaign.phase, campaign.votingEndsAt)) throw new Error("not_voting");
+    if (campaign.paused) throw new Error("paused");
+    const participant = this.currentParticipant(sessionToken);
+    if (!participant) throw new Error("unauthorized");
+    const existing = this.votesForParticipant(participant.id).find((vote) => vote.themeId === themeId);
+    if (!existing) return { votesUsed: this.votesForParticipant(participant.id).length, removed: false };
+    this.votes.delete(existing.id);
+    for (const [key, id] of this.idempotency) {
+      if (id === existing.id) this.idempotency.delete(key);
+    }
+    return { votesUsed: this.votesForParticipant(participant.id).length, removed: true };
+  }
+
   async setInterest(sessionToken: string, themeId: string) {
     const campaign = this.campaignOrThrow();
     if (!interestAllowed(campaign.phase)) throw new Error("not_allowed");

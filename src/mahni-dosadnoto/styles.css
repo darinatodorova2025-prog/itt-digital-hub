@@ -702,6 +702,13 @@
   color: var(--md-signal);
 }
 
+.md-vote-hint {
+  margin: 0.35rem 0 0;
+  color: var(--md-ink-2);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
 .md-theme-list,
 .md-context-list,
 .md-lenses,

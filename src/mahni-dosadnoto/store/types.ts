@@ -62,6 +62,7 @@ export interface MahniStore {
   listParticipantIdeas(sessionToken: string): Promise<Idea[]>;
 
   castVote(sessionToken: string, themeId: string, idempotencyKey?: string): Promise<{ vote: Vote; votesUsed: number; duplicate: boolean }>;
+  retractVote(sessionToken: string, themeId: string): Promise<{ votesUsed: number; removed: boolean }>;
   setInterest(sessionToken: string, themeId: string): Promise<{ active: boolean }>;
   requestFollowup(sessionToken: string, themeId: string): Promise<FollowupRequest>;
 

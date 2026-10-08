@@ -23,6 +23,7 @@ import {
   followupAllowed,
   ideasAllowed,
   interestAllowed,
+  votingAllowed,
 } from "../../state-machine";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../../validation";
 import { validateClusteringAgainstIdeas } from "../../validation";
@@ -406,6 +407,31 @@ export class SupabaseMahniStore implements MahniStore {
       votesUsed: payload.votes_used,
       duplicate: Boolean(payload.duplicate),
     };
+  }
+
+  async retractVote(sessionToken: string, themeId: string) {
+    const campaign = await this.ensureCampaign();
+    if (!votingAllowed(campaign.phase, campaign.votingEndsAt)) throw new Error("not_voting");
+    if (campaign.paused) throw new Error("paused");
+    const participant = await this.resolveParticipant(sessionToken);
+    if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
+    const sb = client();
+    const { data: existing, error: findError } = await sb
+      .from("md_votes")
+      .select("id")
+      .eq("participant_id", participant.id)
+      .eq("theme_id", themeId)
+      .maybeSingle();
+    if (findError) throw new MahniStoreUnavailableError();
+    if (!existing) {
+      const { count } = await sb.from("md_votes").select("id", { count: "exact", head: true }).eq("participant_id", participant.id);
+      return { votesUsed: count ?? 0, removed: false };
+    }
+    const { error } = await sb.from("md_votes").delete().eq("id", existing.id);
+    if (error) throw new MahniStoreUnavailableError();
+    await sb.from("md_idempotency_keys").delete().eq("resource_id", existing.id);
+    const { count } = await sb.from("md_votes").select("id", { count: "exact", head: true }).eq("participant_id", participant.id);
+    return { votesUsed: count ?? 0, removed: true };
   }
 
   async setInterest(sessionToken: string, themeId: string) {

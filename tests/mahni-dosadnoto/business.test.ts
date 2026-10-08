@@ -93,6 +93,12 @@ describe("mahni-dosadnoto store", () => {
     await store.castVote("tok", themes[1]!.id);
     await store.castVote("tok", themes[2]!.id);
     await expect(store.castVote("tok", themes[3]!.id)).rejects.toThrow("vote_limit");
+    const removed = await store.retractVote("tok", themes[0]!.id);
+    expect(removed.removed).toBe(true);
+    expect(removed.votesUsed).toBe(2);
+    await store.castVote("tok", themes[3]!.id);
+    expect((await store.getParticipantContext("tok")).votedThemeIds).toContain(themes[3]!.id);
+    expect((await store.getParticipantContext("tok")).votedThemeIds).not.toContain(themes[0]!.id);
   });
 
   it("reopens sharing and pauses without walking the later phases", async () => {

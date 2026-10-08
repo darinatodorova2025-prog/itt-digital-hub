@@ -19,3 +19,19 @@ export async function POST(request: NextRequest) {
     return handleStoreError(error);
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const token = readSessionTokenFromRequest(request);
+  if (!token) return jsonError("unauthorized", 401);
+  if (!rateLimit(`md-vote:${clientIp(request)}`, 120, 60_000)) return jsonError("rate_limited", 429);
+  const body = await request.json().catch(() => null);
+  const parsed = voteSchema.pick({ themeId: true }).safeParse(body);
+  if (!parsed.success) return jsonError("invalid", 400);
+  try {
+    const store = getMahniStore();
+    const result = await store.retractVote(token, parsed.data.themeId);
+    return jsonOk({ votesUsed: result.votesUsed, votesRemaining: Math.max(0, 3 - result.votesUsed), removed: result.removed });
+  } catch (error) {
+    return handleStoreError(error);
+  }
+}

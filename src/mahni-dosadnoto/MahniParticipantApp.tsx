@@ -184,14 +184,16 @@ export function MahniParticipantApp({
   }
 
   async function vote(themeId: string) {
-    if (!ctx || ctx.votedThemeIds.includes(themeId) || ctx.votesRemaining <= 0) return;
+    if (!ctx) return;
+    const already = ctx.votedThemeIds.includes(themeId);
+    if (!already && ctx.votesRemaining <= 0) return;
     setError("");
     setPending(themeId);
     try {
       const res = await fetch("/api/mahni-dosadnoto/vote", {
-        method: "POST",
+        method: already ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ themeId, idempotencyKey: crypto.randomUUID() }),
+        body: JSON.stringify(already ? { themeId } : { themeId, idempotencyKey: crypto.randomUUID() }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -438,6 +440,7 @@ export function MahniParticipantApp({
         <section className="md-reveal">
           <h1 className="md-question md-display">Кои теми са най-важни?</h1>
           <p className="md-vote-left">{ctx.votesRemaining === 0 ? "Гласовете ви са използвани" : votesRemainingLabel(ctx.votesRemaining)}</p>
+          <p className="md-vote-hint">Натиснете отбелязания глас, за да го махнете и да го сложите на друга тема.</p>
           <ul className="md-theme-list">
             {(snapshot?.themes ?? []).map((theme, index) => {
               const voted = ctx.votedThemeIds.includes(theme.id);
@@ -465,8 +468,8 @@ export function MahniParticipantApp({
                       type="button"
                       className={voted ? "md-pick is-on" : "md-pick"}
                       aria-pressed={voted}
-                      aria-label={voted ? `Гласът за ${theme.title} е даден` : `Гласувай за ${theme.title}`}
-                      disabled={voted || ctx.votesRemaining <= 0 || pending === theme.id}
+                      aria-label={voted ? `Махни гласа за ${theme.title}` : `Гласувай за ${theme.title}`}
+                      disabled={(!voted && ctx.votesRemaining <= 0) || pending === theme.id}
                       onClick={() => void vote(theme.id)}
                     >
                       {voted ? <CheckIcon size={18} /> : <span className="md-pick-plus" aria-hidden="true">+</span>}
