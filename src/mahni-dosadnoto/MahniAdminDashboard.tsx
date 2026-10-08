@@ -185,11 +185,6 @@ export function MahniAdminDashboard({ initial }: Props) {
 
       <section className="md-ops-phase">
         <div className="md-ops-phase-copy">
-          {stage ? (
-            <span className="md-ops-phase-mark" aria-hidden="true">
-              <StageGlyph stage={stage.n} size={22} />
-            </span>
-          ) : null}
           <div>
             <p className="md-ops-kicker">Текуща фаза</p>
             <h2>{operatorPhaseTitle(campaign.phase)}</h2>
