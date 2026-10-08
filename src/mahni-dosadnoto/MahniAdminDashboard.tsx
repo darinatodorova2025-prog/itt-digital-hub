@@ -235,6 +235,7 @@ export function MahniAdminDashboard({ initial }: Props) {
             Нов старт · реално
           </OpsButton>
         </div>
+        {confirm && isOperatorConfirm(confirm) ? <ConfirmPanel confirm={confirm} busy={busy} onConfirm={() => void execute(confirm)} onCancel={() => setConfirm(null)} /> : null}
         {campaign.paused ? <p className="md-ops-note">Пауза. Залата и телефоните чакат. Фазата остава същата.</p> : null}
       </section>
 
@@ -276,18 +277,8 @@ export function MahniAdminDashboard({ initial }: Props) {
         </details>
       ) : null}
 
-      {confirm ? (
-        <div className="md-ops-confirm" role="alertdialog" aria-label="Потвърждение">
-          <p>{confirmCopy(confirm)}</p>
-          <div className="md-ops-confirm-actions">
-            <OpsButton id={confirm} busy={busy} tone="confirm" onClick={() => void execute(confirm)}>
-              Потвърди
-            </OpsButton>
-            <OpsButton id="cancel-confirm" busy="" onClick={() => setConfirm(null)}>
-              Отказ
-            </OpsButton>
-          </div>
-        </div>
+      {confirm && !isOperatorConfirm(confirm) ? (
+        <ConfirmPanel confirm={confirm} busy={busy} onConfirm={() => void execute(confirm)} onCancel={() => setConfirm(null)} />
       ) : null}
       {error ? <p className="md-ops-error">{error}</p> : null}
 
@@ -593,6 +584,36 @@ export function MahniAdminDashboard({ initial }: Props) {
         </OpsButton>
         {csv ? <textarea className="md-ops-csv" readOnly value={csv} /> : null}
       </section>
+    </div>
+  );
+}
+
+function isOperatorConfirm(id: ConfirmId): boolean {
+  return id === "reopen" || id === "stop" || id === "restart-rehearsal" || id === "restart-real";
+}
+
+function ConfirmPanel({
+  confirm,
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  confirm: ConfirmId;
+  busy: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="md-ops-confirm" role="alertdialog" aria-label="Потвърждение">
+      <p>{confirmCopy(confirm)}</p>
+      <div className="md-ops-confirm-actions">
+        <OpsButton id={confirm} busy={busy} tone="confirm" onClick={onConfirm}>
+          Потвърди
+        </OpsButton>
+        <OpsButton id="cancel-confirm" busy="" onClick={onCancel}>
+          Отказ
+        </OpsButton>
+      </div>
     </div>
   );
 }
