@@ -61,6 +61,10 @@
   transition: width 360ms ease;
 }
 
+.md-app:has(.md-welcome) {
+  padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
+}
+
 .md-app.is-results {
   width: min(100%, 68rem);
 }
@@ -350,16 +354,16 @@
 }
 
 .md-welcome .md-support {
-  margin-top: 1.35rem;
+  margin-top: 1rem;
 }
 
 .md-welcome .md-facts {
-  margin-top: 1.9rem;
-  gap: 1.3rem;
+  margin-top: 0.95rem;
+  gap: 0.95rem;
 }
 
 .md-welcome .md-btn {
-  margin-top: 2.15rem;
+  margin-top: 0.95rem;
 }
 
 .md-welcome.is-leaving {
