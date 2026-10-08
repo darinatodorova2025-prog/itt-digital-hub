@@ -8,5 +8,5 @@
     "height": 90
   },
   "format": "native-reference-layout",
-  "safeAreaNote": "Native content is arranged within a minimum 4 mm safe area."
+  "safeAreaNote": "Native content keeps a minimum 4 mm safe area, except the user-approved 3 mm bottom margin for back contacts."
 }

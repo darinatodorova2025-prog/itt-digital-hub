@@ -2,6 +2,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import QRCode from "qrcode";
 import content from "../config/content.json";
+import artwork from "../config/artwork.json";
 import qr from "../config/qr.json";
 import { full, print, slots, cropSegments, qrReady } from "./geometry.mjs";
 export type Side = "front" | "back";
@@ -190,7 +191,11 @@ export function Card({
     <article
       lang="bg"
       className={`card card-${side}`}
-      style={{ ...dimensions, "--safe": "4mm" } as CSSProperties}
+      style={{
+        ...dimensions,
+        "--safe": "4mm",
+        "--back-contact-drop": `${4 - artwork.backContactBottomSafeMm}mm`,
+      } as CSSProperties}
       data-side={side}
     >
       {side === "front" ? <FrontCard /> : <BackCard />}

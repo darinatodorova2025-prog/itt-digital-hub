@@ -246,7 +246,7 @@ ol {
 .back-hero .safe-content { padding-top: calc(var(--bleed) + var(--safe)); }
 .back-hero h1 {
   font-size: var(--back-heading); font-weight: 600; line-height: 1.08;
-  letter-spacing: -0.015em; margin-top: 0.5mm;
+  letter-spacing: -0.015em; margin-top: 2.5mm;
 }
 .back-title-line { display: block; }
 .back-title-accent { color: #002cff; }
@@ -267,7 +267,6 @@ ol {
   display: grid; grid-template-columns: 3mm 0.12mm 1fr;
   column-gap: 0.7mm; align-items: center;
   margin: 0 -0.7mm; padding: 0.28mm 0.7mm;
-  outline: 0.12mm solid #d5ddf6; border-radius: 1.2mm;
 }
 .question-checkbox {
   width: 3mm; height: 3mm;
@@ -287,6 +286,7 @@ ol {
 .cta p { font-size: 8.5pt; font-weight: 500; line-height: 1.1; color: #002cff; margin-top: 0.45mm; }
 .back-footer {
   margin-top: auto; padding-top: 0.5mm;
+  transform: translateY(var(--back-contact-drop));
   width: 100%;
   display: flex; flex-direction: column; align-items: flex-start; gap: 0.2mm;
   color: var(--muted);

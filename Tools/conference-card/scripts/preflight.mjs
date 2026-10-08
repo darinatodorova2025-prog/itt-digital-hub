@@ -29,6 +29,12 @@ const manifest = JSON.parse(
   await fs.readFile(path.join(out, "manifest.json"), "utf8"),
 );
 const content = await readJson("config/content.json");
+const artwork = await readJson("config/artwork.json");
+check(
+  "Approved back contact bottom margin: 3 mm",
+  artwork.backContactBottomSafeMm === 3 &&
+    Boolean(artwork.backContactBottomSafeEvidence),
+);
 const qr = await readJson("config/qr.json");
 const reference = await readJson("config/back-reference.json");
 const rasterBack = reference.format === "raster-reference";
@@ -107,12 +113,18 @@ for (const side of ["front", "back"]) {
   check(`${side}: no exported overlays`, !layout.guides);
   nativeCheck(`${side}: safe margin >=4 mm`, layout.safeMm >= 4);
   const bound = print.bleed + layout.safeMm;
+  const contactClasses = new Set(["back-website", "back-email", "back-phone"]);
+  const contactTexts = new Set([content.website, content.back.email, content.back.phone]);
+  const bottomBound = (isContact) =>
+    side === "back" && isContact
+      ? print.bleed + artwork.backContactBottomSafeMm
+      : bound;
   const unsafe = layout.items.filter(
     (i) =>
       i.box.x < bound - 0.03 ||
       i.box.y < bound - 0.03 ||
       i.box.x + i.box.width > full.width - bound + 0.03 ||
-      i.box.y + i.box.height > full.height - bound + 0.03,
+      i.box.y + i.box.height > full.height - bottomBound(contactClasses.has(i.className)) + 0.03,
   );
   nativeCheck(
     `${side}: all important content inside safe margin`,
@@ -134,7 +146,7 @@ for (const side of ["front", "back"]) {
       r.x < bound - 0.08 ||
       r.y < bound - 0.08 ||
       r.x + r.width > full.width - bound + 0.08 ||
-      r.y + r.height > full.height - bound + 0.08,
+      r.y + r.height > full.height - bottomBound(contactTexts.has(r.text.trim())) + 0.08,
   );
   nativeCheck(
     `${side}: rendered text ranges inside safe margin`,

@@ -56,7 +56,7 @@ For example, “make the front headline 10% larger” changes `--front-heading`;
 
 Both sides use one continuous navy gradient, native editable text and a real logo at the same position and size: 23 × 4.7917 mm at x/y 7 mm in bleed coordinates. The PNG's transparent top padding is compensated so the visible mark reaches the 4 mm safe boundary. Both headings are exactly 18 px (13.5 pt). The front retains the blank eyebrow row; its supporting line has been removed. A 23 mm QR sits beside the participation steps. The reward reads “TOP 3 идеи за автоматизиране” and “получават безплатен ИИ одит за организацията или лична консултация”, with the audit phrase in blue and semibold. Its body has 1.7 mm space above it. Only the website remains at the lowest safe front position.
 
-The back has six outlined checkbox rows and a light blue interpretation panel. The invitation is a separate block below this panel. The instruction has been removed. Back contacts stack website, office email and phone, aligned left in muted color at 7.5 pt with regular weight. Body/questions/interpretation are 8 pt; invitation 8.5 pt. Trim remains 65 × 90 mm, bleed 3 mm and safety at least 4 mm. QR destination, PDF export and imposition are unchanged. The original reference raster is not used in final artwork.
+The back has six outlined checkbox rows and a light blue interpretation panel. The invitation is a separate block below this panel. The instruction has been removed. Back contacts stack website, office email and phone, aligned left in muted color at 7.5 pt with regular weight. Body/questions/interpretation are 8 pt; invitation 8.5 pt. Trim remains 65 × 90 mm, bleed 3 mm and safety at least 4 mm, with the user-approved 3 mm bottom margin for back contacts. QR destination, PDF export and imposition are unchanged. The original reference raster is not used in final artwork.
 
 ## QR policy and assets
 
@@ -68,7 +68,7 @@ Official PNG lockups were copied without redrawing from `public/brand/`; effecti
 
 ## Geometry contract
 
-65 × 90 mm trim, 3 mm bleed, 71 × 96 mm MediaBox/BleedBox, centered TrimBox. A4 210 × 297 mm; bleed-slot top-left positions are (27,44.5), (112,44.5), (27,156.5), (112,156.5) mm. Important artwork has at least 4 mm safety on both sides. The artwork CSS variable is captured in the export and independently checked against the 4 mm minimum. Crop marks are 4 mm long, 1 mm beyond bleed, 0.25 pt thick.
+65 × 90 mm trim, 3 mm bleed, 71 × 96 mm MediaBox/BleedBox, centered TrimBox. A4 210 × 297 mm; bleed-slot top-left positions are (27,44.5), (112,44.5), (27,156.5), (112,156.5) mm. Important artwork has at least 4 mm safety on both sides, except the approved 3 mm bottom margin for back contacts in `config/artwork.json`. The artwork CSS variable is captured in the export and independently checked against the 4 mm minimum. Crop marks are 4 mm long, 1 mm beyond bleed, 0.25 pt thick.
 
 Coordinates are in top-left mm. Long-edge: `back.x = paper.width - front.x - full.width`, `back.y = front.y`. Short-edge: `back.y = paper.height - front.y - full.height`, `back.x = front.x`, artwork rotation 180°. Back offsets are added afterwards. Card graphics are never horizontally mirrored. All layouts and crop marks use this shared configuration. The proof IDs expose slot identity even when repeated artwork appears identical.
 
