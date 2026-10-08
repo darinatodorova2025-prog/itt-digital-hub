@@ -74,7 +74,7 @@ export function MahniAdminDashboard({ initial }: Props) {
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<ConfirmId | null>(null);
   const [query, setQuery] = useState("");
-  const [csv, setCsv] = useState("");
+  const [tab, setTab] = useState("ops-room");
   const campaign = snapshot.campaign;
   const jury = snapshot.juryProgress;
   const latestAnalysis = snapshot.analysisRuns[0] ?? null;
@@ -103,6 +103,23 @@ export function MahniAdminDashboard({ initial }: Props) {
     const id = window.setInterval(() => void refresh(), campaign.phase === "FINALIZING" ? 5000 : 8000);
     return () => window.clearInterval(id);
   }, [busy, confirm, campaign.phase]);
+
+  useEffect(() => {
+    const ids = ["ops-room", "ops-people", "ops-themes", "ops-orgs", "ops-export"];
+    const nodes = ids.map((id) => document.getElementById(id)).filter((node): node is HTMLElement => Boolean(node));
+    if (nodes.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (visible) setTab(visible.target.id);
+      },
+      { rootMargin: "-12% 0px -65% 0px", threshold: 0 },
+    );
+    for (const node of nodes) observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const analysisFailed = !analysisReady && !analysisRunning && latestAnalysis?.status === "failed";
   const votingReady = votingTransitionAllowed(snapshot.themes).ok;
@@ -175,11 +192,19 @@ export function MahniAdminDashboard({ initial }: Props) {
       </header>
 
       <nav className="md-ops-jump" aria-label="Секции на контролната зала">
-        <a href="#ops-room">Контролна зала</a>
-        <a href="#ops-people">Участници</a>
-        <a href="#ops-themes">Теми</a>
-        <a href="#ops-orgs">Организации</a>
-        <a href="#ops-export">Експорт</a>
+        {(
+          [
+            ["ops-room", "Контролна зала"],
+            ["ops-people", "Участници"],
+            ["ops-themes", "Теми"],
+            ["ops-orgs", "Организации"],
+            ["ops-export", "Експорт"],
+          ] as const
+        ).map(([id, label]) => (
+          <a key={id} href={`#${id}`} aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>
+            {label}
+          </a>
+        ))}
         <Link href="/bg">Към сайта</Link>
       </nav>
 
