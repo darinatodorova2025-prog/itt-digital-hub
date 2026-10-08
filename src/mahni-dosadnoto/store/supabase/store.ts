@@ -143,13 +143,37 @@ export class SupabaseMahniStore implements MahniStore {
     // The finalizing RPC locks the campaign row. Skip it unless that phase can advance,
     // so admin reads are not a chain of row locks.
     if ((data as { phase?: string }).phase !== "FINALIZING") {
-      this.campaignCache = mapCampaign(data as never);
+      this.campaignCache = await this.withOperatorPause(mapCampaign(data as never));
       return this.campaignCache;
     }
     await sb.rpc("md_maybe_advance_finalizing", { p_campaign_id: data.id });
     const { data: refreshed } = await sb.from("md_event_campaigns").select("*").eq("id", data.id).single();
-    this.campaignCache = mapCampaign((refreshed ?? data) as never);
+    this.campaignCache = await this.withOperatorPause(mapCampaign((refreshed ?? data) as never));
     return this.campaignCache;
+  }
+
+  private async withOperatorPause(campaign: EventCampaign): Promise<EventCampaign> {
+    const sb = client();
+    const { data, error } = await sb
+      .from("md_event_audit_log")
+      .select("action")
+      .eq("campaign_id", campaign.id)
+      .in("action", ["operator_pause", "operator_resume"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return campaign;
+    return { ...campaign, paused: String(data.action) === "operator_pause" };
+  }
+
+  private async writeOperatorPause(campaignId: string, paused: boolean) {
+    const sb = client();
+    const { error } = await sb.rpc("md_audit", {
+      p_campaign_id: campaignId,
+      p_action: paused ? "operator_pause" : "operator_resume",
+      p_detail: {},
+    });
+    if (error) throw new MahniStoreUnavailableError(error.message);
   }
 
   async ensureCampaign(): Promise<EventCampaign> {
@@ -575,19 +599,30 @@ export class SupabaseMahniStore implements MahniStore {
   }
 
   async setEventPaused(paused: boolean) {
-    return this.patchCampaign({ paused });
+    const campaign = await this.ensureCampaign();
+    await this.writeOperatorPause(campaign.id, paused);
+    this.campaignCache = { ...campaign, paused };
+    return this.campaignCache;
   }
 
   async reopenCollection() {
-    return this.patchCampaign({ phase: "COLLECTING", voting_ends_at: null, paused: false }, true);
+    const campaign = await this.patchCampaign({ phase: "COLLECTING", voting_ends_at: null }, true);
+    await this.writeOperatorPause(campaign.id, false);
+    this.campaignCache = { ...campaign, paused: false };
+    return this.campaignCache;
   }
 
   async stopEvent() {
-    return this.patchCampaign({ phase: "CLOSED", paused: false }, true);
+    const campaign = await this.patchCampaign({ phase: "CLOSED" }, true);
+    await this.writeOperatorPause(campaign.id, false);
+    this.campaignCache = { ...campaign, paused: false };
+    return this.campaignCache;
   }
 
   async restartEvent(options: { isDemo: boolean }) {
-    await this.patchCampaign({ phase: "CLOSED", paused: false }, true);
+    const current = await this.ensureCampaign();
+    await this.writeOperatorPause(current.id, false);
+    await this.patchCampaign({ phase: "CLOSED" }, true);
     return this.prepareNextCampaign(options);
   }
 
