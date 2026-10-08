@@ -514,7 +514,7 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
       <div className="md-live-result">
         <section>
           <ol className="md-live-choice">
-            {snapshot.humanTop3.map((row) => (
+            {snapshot.humanRanking.map((row) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
                 <b>{String(row.rank).padStart(2, "0")}</b>
                 <div className="md-live-choice-copy">

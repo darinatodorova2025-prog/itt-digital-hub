@@ -4,6 +4,14 @@ import type { PublicReviewCard } from "../review";
 import type { ResultCredit } from "../result-credits";
 import type { Idea, Participant, Theme, Vote, FollowupRequest, AnalysisRun, AiJuryRun, AiJuryVote } from "../types";
 
+export type PublicResultRow = {
+  rank: number;
+  id: string;
+  title: string;
+  isAiWildcard: boolean;
+  organizations: ResultCredit[];
+};
+
 export type PublicLiveSnapshot = {
   phase: EventPhase;
   paused: boolean;
@@ -23,7 +31,8 @@ export type PublicLiveSnapshot = {
   }>;
   votingEndsAt: string | null;
   countdownSeconds: number | null;
-  humanTop3: Array<{ rank: number; id: string; title: string; isAiWildcard: boolean; organizations: ResultCredit[] }>;
+  humanTop3: PublicResultRow[];
+  humanRanking: PublicResultRow[];
   aiTop3: Array<{ rank: number; id: string; title: string; isAiWildcard: boolean }>;
   overlap: number | null;
   groupedThemeCount: number;

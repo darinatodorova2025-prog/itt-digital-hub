@@ -377,7 +377,7 @@ export class MemoryMahniStore implements MahniStore {
         organizationCount: t.organizationCount,
       }));
     const ranked = rankHumanThemes(this.buildThemeScores().filter((row) => isVotingTheme(row.theme)));
-    const creditRows = ranked.slice(0, 3).flatMap((row) =>
+    const creditRows = ranked.flatMap((row) =>
       [...(this.themeLinks.get(row.theme.id) ?? [])].flatMap((ideaId) => {
         const idea = this.ideas.get(ideaId);
         const person = idea ? this.participants.get(idea.participantId) : undefined;
@@ -390,13 +390,14 @@ export class MemoryMahniStore implements MahniStore {
       }),
     );
     const credits = creditsByTheme(creditRows);
-    const humanTop3 = ranked.slice(0, 3).map((r, idx) => ({
+    const humanRanking = ranked.map((r, idx) => ({
       rank: idx + 1,
       id: r.theme.id,
       title: r.theme.title,
       isAiWildcard: r.theme.isAiWildcard,
       organizations: credits.get(r.theme.id) ?? [],
     }));
+    const humanTop3 = humanRanking.slice(0, 3);
     const juryPicks = [...this.juryVotes.values()];
     const aiAgg = aggregateAiJury(
       juryPicks.map((p) => ({ themeId: p.themeId, rank: p.rank })),
@@ -433,6 +434,7 @@ export class MemoryMahniStore implements MahniStore {
       votingEndsAt: campaign.votingEndsAt,
       countdownSeconds,
       humanTop3: showResults ? humanTop3 : [],
+      humanRanking: showResults ? humanRanking : [],
       aiTop3: showResults ? aiTop3 : [],
       overlap: showResults
         ? overlapCount(

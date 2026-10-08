@@ -557,13 +557,13 @@ export class SupabaseMahniStore implements MahniStore {
       })),
     );
     const showResults = campaign.phase === "RESULTS" || campaign.phase === "CLOSED";
-    const topIds = ranked.slice(0, 3).map((row) => row.theme.id);
+    const rankedIds = ranked.map((row) => row.theme.id);
     let credits = new Map<string, ResultCredit[]>();
-    if (showResults && topIds.length > 0) {
-      const { data: links } = await sb.from("md_theme_idea_links").select("theme_id, idea_id").in("theme_id", topIds);
+    if (showResults && rankedIds.length > 0) {
+      const { data: links } = await sb.from("md_theme_idea_links").select("theme_id, idea_id").in("theme_id", rankedIds);
       const pairs = (links ?? []).map((link) => ({ themeId: String(link.theme_id), ideaId: String(link.idea_id) }));
       const linkedThemes = new Set(pairs.map((pair) => pair.themeId));
-      for (const row of ranked.slice(0, 3)) {
+      for (const row of ranked) {
         if (linkedThemes.has(row.theme.id)) continue;
         for (const source of row.theme.sourceIdeas ?? []) pairs.push({ themeId: row.theme.id, ideaId: source.id });
       }
@@ -644,6 +644,15 @@ export class SupabaseMahniStore implements MahniStore {
       countdownSeconds,
       humanTop3: showResults
         ? ranked.slice(0, 3).map((r, idx) => ({
+            rank: idx + 1,
+            id: r.theme.id,
+            title: r.theme.title,
+            isAiWildcard: r.theme.isAiWildcard,
+            organizations: credits.get(r.theme.id) ?? [],
+          }))
+        : [],
+      humanRanking: showResults
+        ? ranked.map((r, idx) => ({
             rank: idx + 1,
             id: r.theme.id,
             title: r.theme.title,
