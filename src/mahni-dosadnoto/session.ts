@@ -3,6 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { hashSessionToken, newSessionToken } from "./session-crypto";
+import { PARTICIPANT_SESSION_SECONDS } from "./session-lifetime";
 
 export { hashSessionToken, newSessionToken };
 
@@ -14,7 +15,7 @@ export function cookieOptions() {
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 2,
+    maxAge: PARTICIPANT_SESSION_SECONDS,
   };
 }
 

@@ -14,7 +14,7 @@ import {
 import { useCountdown } from "@/mahni-dosadnoto/use-countdown";
 import type { PublicLiveSnapshot } from "@/mahni-dosadnoto/store/types";
 import type { ParticipantInitialContext } from "@/mahni-dosadnoto/server/initial-state";
-import { EventLockup } from "@/mahni-dosadnoto/brand";
+import { Logo } from "@/components/layout/Logo";
 import { CheckIcon, ConvergeIcon, PlaneIcon } from "@/mahni-dosadnoto/icons";
 import { ParticipantStage, StageProgress } from "@/mahni-dosadnoto/journey";
 import { GroupingDiagram, ThemeEquation } from "@/mahni-dosadnoto/grouping";
@@ -77,6 +77,7 @@ export function MahniParticipantApp({
   const [ctx, setCtx] = useState<Context | null>(initialContext);
   const [snapshot, setSnapshot] = useState<PublicLiveSnapshot | null>(initialSnapshot);
   const [entered, setEntered] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -251,9 +252,9 @@ export function MahniParticipantApp({
   if (!ctx) {
     return (
       <div className="md-app">
-        <EventHeader stage={null} showTitle={false} />
+        <EventHeader stage={null} showTitle={false} onBack={leaveGame} />
         <section className="md-reveal md-loading" aria-busy="true">
-          <EventLockup height={30} />
+          <Logo locale="bg" layout="compact" />
           <h1 className="md-display md-loading-title">Махни досадното</h1>
           <p className="md-support">Зареждаме събитието…</p>
           <span className="md-loading-dot" aria-hidden="true">
@@ -271,31 +272,46 @@ export function MahniParticipantApp({
     );
   }
 
-  const showWelcome = view === "register" && !entered;
+  const recognized = Boolean(ctx.participant);
+  const showingIntro = showIntro || (!recognized && view === "register" && !entered);
 
   return (
     <div className={view === "results" ? "md-app is-results" : "md-app"}>
-      <EventHeader stage={ctx.participant ? stage : null} showTitle />
+      <EventHeader
+        stage={showingIntro || !ctx.participant ? null : stage}
+        showTitle
+        showBack={!showingIntro}
+        onBack={() => {
+          setEntered(false);
+          setShowIntro(true);
+        }}
+      />
       {error ? (
         <p className="md-status is-error" role="status">
           {error}
         </p>
       ) : null}
 
-      {showWelcome ? <Welcome onStart={() => setEntered(true)} /> : null}
+      {showingIntro ? (
+        <Welcome
+          onStart={() => {
+            setShowIntro(false);
+            if (!recognized) setEntered(true);
+          }}
+        />
+      ) : null}
 
-      {ctx && view === "register" && entered ? (
+      {!showingIntro && !recognized && ctx && view === "register" && entered ? (
         <RegisterForm
           form={form}
           setForm={setForm}
           ready={Boolean(registerReady)}
           pending={pending === "register"}
           onSubmit={() => void register()}
-          onBack={() => setEntered(false)}
         />
       ) : null}
 
-      {ctx && view === "ideas" && justSent ? (
+      {!showingIntro && ctx && view === "ideas" && justSent ? (
         <section className="md-reveal md-confirm">
           <div className="md-confirm-art" aria-hidden="true">
             <PlaneIcon size={72} />
@@ -317,7 +333,7 @@ export function MahniParticipantApp({
         </section>
       ) : null}
 
-      {ctx && view === "ideas" && !justSent && stage ? (
+      {!showingIntro && ctx && view === "ideas" && !justSent && stage ? (
         <section className="md-reveal">
           <h1 className="md-question md-display">Какво ви губи време?</h1>
           <p className="md-support">
@@ -374,7 +390,7 @@ export function MahniParticipantApp({
         </section>
       ) : null}
 
-      {ctx && view === "analyzing" ? (
+      {!showingIntro && ctx && view === "analyzing" ? (
         <section className="md-reveal">
           <h1 className="md-question md-display">Събираме и подреждаме идеите</h1>
           <p className="md-support">Много отделни наблюдения се превръщат в общи теми.</p>
@@ -389,14 +405,14 @@ export function MahniParticipantApp({
         </section>
       ) : null}
 
-      {ctx && view === "waiting" ? (
+      {!showingIntro && ctx && view === "waiting" ? (
         <section className="md-reveal md-wait">
           <h1 className="md-display">Още не е отворено</h1>
           <p className="md-support">Останете наблизо. Когато споделянето започне, ще можете да опишете какво ви губи време.</p>
         </section>
       ) : null}
 
-      {ctx && view === "vote" ? (
+      {!showingIntro && ctx && view === "vote" ? (
         <section className="md-reveal">
           <h1 className="md-question md-display">Кои теми са най-важни?</h1>
           <p className="md-vote-left">{ctx.votesRemaining === 0 ? "Гласовете ви са използвани" : votesRemainingLabel(ctx.votesRemaining)}</p>
@@ -458,7 +474,7 @@ export function MahniParticipantApp({
         </section>
       ) : null}
 
-      {ctx && view === "finalizing" ? (
+      {!showingIntro && ctx && view === "finalizing" ? (
         <section className="md-reveal md-finalizing">
           <h1 className="md-display">{countdown !== null && countdown <= 30 ? "Последни 30 секунди" : "Последни секунди"}</h1>
           <p className="md-clock md-display">{formatClock(countdown)}</p>
@@ -466,7 +482,7 @@ export function MahniParticipantApp({
         </section>
       ) : null}
 
-      {ctx && view === "jury" ? (
+      {!showingIntro && ctx && view === "jury" ? (
         <section className="md-reveal">
           <h1 className="md-question md-display">
             {(snapshot?.juryLenses ?? []).length > 0 && (snapshot?.juryLenses ?? []).every((lens) => lens.status === "succeeded")
@@ -481,7 +497,7 @@ export function MahniParticipantApp({
         </section>
       ) : null}
 
-      {ctx && view === "results" && snapshot ? (
+      {!showingIntro && ctx && view === "results" && snapshot ? (
         <ResultsView
           snapshot={snapshot}
           followupThemeIds={ctx.followupThemeIds}
@@ -494,11 +510,41 @@ export function MahniParticipantApp({
   );
 }
 
-function EventHeader({ stage, showTitle }: { stage: StoryStage | null; showTitle: boolean }) {
+function leaveGame() {
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  window.location.assign("/bg");
+}
+
+function BackLink({ onBack }: { onBack: () => void }) {
+  return (
+    <button type="button" className="md-back-link" onClick={onBack}>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M10.5 3.5 6 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      Назад
+    </button>
+  );
+}
+
+function EventHeader({
+  stage,
+  showTitle,
+  showBack = true,
+  onBack,
+}: {
+  stage: StoryStage | null;
+  showTitle: boolean;
+  showBack?: boolean;
+  onBack: () => void;
+}) {
   return (
     <header className="md-bar">
       <div className="md-bar-brand">
-        <EventLockup height={28} />
+        <Logo locale="bg" layout="compact" />
+        {showBack ? <BackLink onBack={onBack} /> : null}
       </div>
       {showTitle && stage ? <p className="md-bar-event">Махни досадното</p> : null}
       {stage ? <ParticipantStage stage={stage} /> : null}
@@ -508,12 +554,21 @@ function EventHeader({ stage, showTitle }: { stage: StoryStage | null; showTitle
 }
 
 function Welcome({ onStart }: { onStart: () => void }) {
+  const [leaving, setLeaving] = useState(false);
+
+  function begin() {
+    if (leaving) return;
+    setLeaving(true);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(onStart, reduce ? 0 : 320);
+  }
+
   return (
-    <section className="md-reveal md-welcome">
+    <section className={leaving ? "md-reveal md-welcome is-leaving" : "md-reveal md-welcome"}>
       <div className="md-photo">
         <Image
-          src="/event/mahni/welcome.webp"
-          alt="Пречиствателни басейни, язовир и планина"
+          src="/event/mahni/plans.webp"
+          alt="Инженерни чертежи, линия и калкулатор на работна маса"
           fill
           sizes="(max-width: 840px) 100vw, 430px"
           className="md-photo-img"
@@ -521,32 +576,29 @@ function Welcome({ onStart }: { onStart: () => void }) {
         />
       </div>
       <h1 className="md-question md-display">Какво ви губи време?</h1>
-      <p className="md-support">Споделете реални проблеми и повтарящо се търкане от работата ви.</p>
+      <p className="md-support">Споделете нещо от ежедневната работа, което ви бави, повтаря се или просто може да се прави по-добре.</p>
       <ol className="md-facts">
         <li>
           <b>01</b>
           <span>
-            <strong>Споделяте идея.</strong> Описвате какво ви губи време или може да се прави по-добре.
+            <strong>Споделете проблем.</strong> Опишете накратко какво ви бави или ви отнема излишно време.
           </span>
         </li>
         <li>
           <b>02</b>
           <span>
-            <strong>Заедно избираме важните теми.</strong> Гласувате за проблемите, които си струва да се решат.
+            <strong>Избираме заедно.</strong> Гласувате за темите, които най-много си струва да решим.
           </span>
         </li>
         <li>
           <b>03</b>
           <span>
-            <strong>Резултатите водят до реален разговор.</strong> От резултат към действие.
+            <strong>От идея към действие.</strong> Организацията зад отличената идея получава безплатна консултация, за да разгледаме проблема заедно.
           </span>
         </li>
       </ol>
-      <button type="button" className="md-btn" onClick={onStart}>
-        Започваме
-      </button>
-      <button type="button" className="md-text-btn md-welcome-login" onClick={onStart}>
-        Вече участвате? Вход
+      <button type="button" className={leaving ? "md-btn is-pressed" : "md-btn"} aria-disabled={leaving} onClick={begin}>
+        Да започнем
       </button>
     </section>
   );
@@ -558,7 +610,6 @@ function RegisterForm({
   ready,
   pending,
   onSubmit,
-  onBack,
 }: {
   form: {
     firstName: string;
@@ -573,12 +624,10 @@ function RegisterForm({
   ready: boolean;
   pending: boolean;
   onSubmit: () => void;
-  onBack: () => void;
 }) {
   return (
     <section className="md-reveal">
-      <h1 className="md-question md-display">Вашите данни</h1>
-      <p className="md-support">Нужни са, за да свържем идеята с организацията и да отворим разговор след резултата.</p>
+      <div className="md-register-title" aria-hidden="true" />
       <form
         className="md-form"
         onSubmit={(event) => {
@@ -655,19 +704,8 @@ function RegisterForm({
             onChange={(event) => setForm({ ...form, phone: event.target.value })}
           />
         </label>
-        <label className="md-consent">
-          <input
-            type="checkbox"
-            checked={form.marketingConsent}
-            onChange={(event) => setForm({ ...form, marketingConsent: event.target.checked })}
-          />
-          <span>Искам да получа резултатите от инициативата и последващи материали, свързани с идеите от конференцията.</span>
-        </label>
         <button type="submit" className="md-btn" disabled={!ready || pending}>
           Продължи
-        </button>
-        <button type="button" className="md-text-btn md-back" onClick={onBack}>
-          Назад
         </button>
       </form>
     </section>

@@ -73,7 +73,7 @@ export function MahniLiveScreen({ initialSnapshot }: { initialSnapshot: PublicLi
 
   return (
     <div className={`md-live ${sceneClass(snapshot.phase)}`}>
-      {quiet ? null : <LiveHeader stage={stage} title={snapshot.title} />}
+      {quiet ? null : <LiveHeader stage={stage} />}
       <div className="md-live-body">
         {snapshot.phase === "COLLECTING" ? <Collecting snapshot={snapshot} /> : null}
         {snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
@@ -98,17 +98,18 @@ function sceneClass(phase: PublicLiveSnapshot["phase"]): string {
       return "md-scene-result";
     case "AI_JURY":
       return "md-scene-jury";
+    case "DRAFT":
+      return "md-scene-hold";
     default:
       return "md-scene-night";
   }
 }
 
-function LiveHeader({ stage, title = "Махни досадното" }: { stage?: ReturnType<typeof storyForPhase>; title?: string }) {
+function LiveHeader({ stage }: { stage?: ReturnType<typeof storyForPhase> }) {
   return (
     <header className="md-live-top">
       <div className="md-live-brand">
         <EventLockup tone="on-dark" height={32} />
-        <p>{title}</p>
       </div>
       {stage ? <LiveRail stage={stage} /> : null}
     </header>
@@ -302,15 +303,17 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
 function Holding() {
   return (
     <div className="md-live-hold">
-      <h1 className="md-display">Махни досадното</h1>
-      <p className="md-live-lead">Реални проблеми. Подредени идеи. Практически решения.</p>
-      <ol className="md-live-story">
-        <li>Споделяме</li>
-        <li>Подреждаме</li>
-        <li>Избираме</li>
-        <li>Втори поглед</li>
-        <li>От резултат към действие</li>
-      </ol>
+      <h1 className="md-display">
+        Какво ви губи
+        <br />
+        време?
+      </h1>
+      <p className="md-live-lead">
+        Споделете какво ви губи време.
+        <br />
+        После заедно ще изберем кое си струва да решим.
+      </p>
+      <p className="md-live-soon">Започваме след малко</p>
     </div>
   );
 }

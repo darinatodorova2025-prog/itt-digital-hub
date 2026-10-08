@@ -50,6 +50,8 @@ export interface MahniStore {
 
   registerParticipant(input: RegistrationInput, sessionToken: string, isDemo?: boolean): Promise<{ participant: Participant; recovered: boolean }>;
   resolveParticipant(sessionToken: string): Promise<Participant | null>;
+  /** Slide the browser session forward when the same phone opens the game again. */
+  touchParticipantSession(sessionToken: string): Promise<void>;
   recoverParticipantByEmail(email: string, sessionToken: string): Promise<Participant | null>;
 
   submitIdea(sessionToken: string, body: string, frequency: string | null, idempotencyKey?: string): Promise<{ idea: Idea; duplicate: boolean }>;

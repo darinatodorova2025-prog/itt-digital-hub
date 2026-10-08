@@ -2,6 +2,7 @@ import "server-only";
 
 import { createSupabaseServiceClient } from "@/lib/cms/supabase-service";
 import { hashSessionToken } from "../../session-crypto";
+import { PARTICIPANT_SESSION_MS } from "../../session-lifetime";
 import {
   CAMPAIGN_SLUG,
   CONSENT_VERSION,
@@ -117,6 +118,14 @@ export class SupabaseMahniStore implements MahniStore {
       p_participant_id: participantId,
     });
     if (error) throw new MahniStoreUnavailableError();
+    const expiresAt = new Date(Date.now() + PARTICIPANT_SESSION_MS).toISOString();
+    await sb.from("md_participant_sessions").update({ expires_at: expiresAt }).eq("token_hash", hashSessionToken(token));
+  }
+
+  async touchParticipantSession(token: string) {
+    const participant = await this.resolveParticipant(token);
+    if (!participant) return;
+    await this.bindSession(token, participant.id);
   }
 
   async resolveParticipant(sessionToken: string): Promise<Participant | null> {

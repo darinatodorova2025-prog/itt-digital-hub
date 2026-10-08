@@ -25,6 +25,7 @@ import {
 } from "../state-machine";
 import { assertJuryCompleteForResults, publicJuryLenses, summarizeJuryProgress } from "../jury-status";
 import { hashSessionToken } from "../session-crypto";
+import { PARTICIPANT_SESSION_MS } from "../session-lifetime";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validation";
 import { validateClusteringAgainstIdeas } from "../validation";
 import { aggregateAiJury, overlapCount, rankHumanThemes, type ThemeScoreRow } from "../tie-break";
@@ -104,7 +105,14 @@ export class MemoryMahniStore implements MahniStore {
 
   private bindSession(token: string, participantId: string) {
     const hash = hashSessionToken(token);
-    this.sessions.set(hash, { tokenHash: hash, participantId, expiresAt: Date.now() + 86400000 * 2 });
+    this.sessions.set(hash, { tokenHash: hash, participantId, expiresAt: Date.now() + PARTICIPANT_SESSION_MS });
+  }
+
+  async touchParticipantSession(token: string) {
+    const hash = hashSessionToken(token);
+    const row = this.sessions.get(hash);
+    if (!row || row.expiresAt < Date.now()) return;
+    row.expiresAt = Date.now() + PARTICIPANT_SESSION_MS;
   }
 
   async registerParticipant(input: RegistrationInput, sessionToken: string, isDemo = false) {

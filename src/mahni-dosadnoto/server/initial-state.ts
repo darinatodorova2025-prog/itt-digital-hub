@@ -59,6 +59,9 @@ export async function getParticipantInitialState(): Promise<{
 }> {
   const store = getMahniStore();
   const token = await readSessionTokenFromCookies();
+  if (token && (await store.resolveParticipant(token))) {
+    await store.touchParticipantSession(token);
+  }
   const [context, snapshot] = await Promise.all([buildParticipantContext(token), store.getPublicLiveSnapshot()]);
   return { context, snapshot };
 }
