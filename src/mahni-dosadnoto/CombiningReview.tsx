@@ -3,7 +3,6 @@ import type { PublicReviewCard } from "@/mahni-dosadnoto/review";
 export function AudienceReviewCard({ card, notice }: { card: PublicReviewCard; notice?: string }) {
   return (
     <section className="md-audience" aria-label="Преглед от залата">
-      <p className="md-audience-kicker">ИИ ни помага да намерим общото между идеите. После проверяваме заедно дали сме ги подредили правилно.</p>
       {notice ? <p className="md-audience-notice">{notice}</p> : null}
       <p className="md-audience-map">{card.mapping}</p>
       <h2>{card.title}</h2>
