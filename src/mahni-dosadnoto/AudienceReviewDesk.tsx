@@ -48,10 +48,11 @@ export function AudienceReviewDesk({
   return (
     <section className="md-ops-section" id="ops-review">
       <h2>Преглед от залата</h2>
-      <p className="md-ops-note">ИИ ни помага да намерим общото между идеите. После проверяваме заедно дали сме ги подредили правилно.</p>
-      <p className="md-ops-note">
-        Одобрени {approved} от {real.length}. Само одобрените реални теми влизат в избора.
-      </p>
+      {real.length > 0 ? (
+        <p className="md-ops-note">
+          Одобрени {approved} от {real.length}
+        </p>
+      ) : null}
       {current ? (
         <article className="md-ops-panel">
           <p className="md-ops-kicker">{current.reviewStatus === "audit_unavailable" ? "Одитът не е наличен" : "Текуща тема"}</p>
@@ -95,7 +96,7 @@ export function AudienceReviewDesk({
           )}
         </article>
       ) : (
-        <p className="md-ops-note">{real.length === 0 ? "Няма теми за преглед." : "Всички реални теми са одобрени. Изборът може да се отвори."}</p>
+        <p className="md-ops-note">{real.length === 0 ? "Няма теми за преглед." : "Всички теми са одобрени."}</p>
       )}
       {message ? <p className="md-ops-error">{message}</p> : null}
       {real.length > 1 ? (

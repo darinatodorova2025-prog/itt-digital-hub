@@ -6,7 +6,7 @@ import type { AnalysisRun, EventCampaign, EventPhase, Participant, Theme } from 
 import type { WinningThemeContacts } from "@/mahni-dosadnoto/admin/winners";
 import type { PublicLiveSnapshot } from "@/mahni-dosadnoto/store/types";
 import type { JuryProgress } from "@/mahni-dosadnoto/jury-status";
-import { LENS_COPY, operatorPhaseNote, operatorPhaseTitle, storyForPhase } from "@/mahni-dosadnoto/presentation";
+import { LENS_COPY, operatorPhaseTitle, storyForPhase } from "@/mahni-dosadnoto/presentation";
 import { CheckIcon, OrgIcon, PeopleIcon, StageGlyph } from "@/mahni-dosadnoto/icons";
 import { AdminRail } from "@/mahni-dosadnoto/journey";
 import { votingTransitionAllowed } from "@/mahni-dosadnoto/review-status";
@@ -157,17 +157,17 @@ export function MahniAdminDashboard({ initial }: Props) {
           <p className="md-ops-kicker">Контролна зала</p>
           <h1>Махни досадното</h1>
         </div>
-        <div className={active ? "md-ops-status is-on" : "md-ops-status"}>
-          <p className={active ? "md-ops-live is-on" : "md-ops-live"}>
-            <i />
-            {campaign.paused ? "Пауза" : campaign.phase === "CLOSED" ? "Събитието е приключено" : campaign.phase === "DRAFT" ? "Очаква старт" : "Събитието е активно"}
-          </p>
-          {active ? (
+        <div className={active && !campaign.paused ? "md-ops-status is-on" : "md-ops-status"}>
+          {campaign.paused ? (
+            <p className="md-ops-live">Пауза</p>
+          ) : active ? (
             <p className="md-ops-rec">
               <i />
               Live
             </p>
-          ) : null}
+          ) : (
+            <p className="md-ops-live">{campaign.phase === "CLOSED" ? "Приключено" : "Очаква старт"}</p>
+          )}
         </div>
       </header>
 
@@ -190,9 +190,8 @@ export function MahniAdminDashboard({ initial }: Props) {
           <div>
             <p className="md-ops-kicker">Текуща фаза</p>
             <h2>{operatorPhaseTitle(campaign.phase)}</h2>
-            <p>{operatorPhaseNote(campaign.phase)}</p>
             {campaign.phase === "FINALIZING" && snapshot.live.countdownSeconds !== null ? (
-              <p className="md-ops-note">Остават около {snapshot.live.countdownSeconds} секунди</p>
+              <p className="md-ops-note">{snapshot.live.countdownSeconds} секунди</p>
             ) : null}
           </div>
         </div>
@@ -206,13 +205,7 @@ export function MahniAdminDashboard({ initial }: Props) {
             <p className="md-ops-note">Няма следваща стъпка.</p>
           )}
           {analysisRunning && campaign.phase === "ANALYZING" ? <p className="md-ops-note">Подреждането тече.</p> : null}
-          {snapshot.counts.ideas === 0 && campaign.phase === "ANALYZING" ? <p className="md-ops-note">Няма подадени идеи. Подреждането не се стартира.</p> : null}
-          {analysisReady && campaign.phase === "ANALYZING" && !votingReady ? (
-            <p className="md-ops-note">Изборът се отваря, когато всяка реална тема е одобрена от залата.</p>
-          ) : null}
-          {analysisFailed && campaign.phase === "ANALYZING" ? (
-            <p className="md-ops-note">Подреждането не завърши. Фазата остава същата. Повторете действието.</p>
-          ) : null}
+          {analysisFailed && campaign.phase === "ANALYZING" ? <p className="md-ops-note">Подреждането не завърши.</p> : null}
         </div>
       </section>
 
@@ -236,7 +229,6 @@ export function MahniAdminDashboard({ initial }: Props) {
           </OpsButton>
         </div>
         {confirm && isOperatorConfirm(confirm) ? <ConfirmPanel confirm={confirm} busy={busy} onConfirm={() => void execute(confirm)} onCancel={() => setConfirm(null)} /> : null}
-        {campaign.paused ? <p className="md-ops-note">Пауза. Залата и телефоните чакат. Фазата остава същата.</p> : null}
       </section>
 
       {campaign.phase === "ANALYZING" ? (
@@ -290,11 +282,7 @@ export function MahniAdminDashboard({ initial }: Props) {
         <Metric icon={<StageGlyph stage={5} size={18} />} value={snapshot.counts.followups} label="Заявки за разговор" />
       </section>
 
-      <section className="md-ops-now" aria-label="Какво вижда залата">
-        <div>
-          <p className="md-ops-kicker">Какво вижда залата</p>
-          <p className="md-ops-now-phase">{roomSees(campaign.phase)}</p>
-        </div>
+      <section className="md-ops-now" aria-label="Екран">
         <div className="md-ops-now-actions">
           <a className="md-ops-link" href="/bg/mahni-dosadnoto/live" target="_blank" rel="noreferrer">
             Отвори екрана
@@ -383,9 +371,7 @@ export function MahniAdminDashboard({ initial }: Props) {
               })}
             </ol>
           ) : liveRank.some((theme) => theme.voteCount > 0) ? (
-            <>
-              <p className="md-ops-note">Официалният топ 3 се заключва след гласуването.</p>
-              <ol className="md-ops-rank">
+            <ol className="md-ops-rank">
                 {liveRank.slice(0, 5).map((theme, index) => (
                   <li key={theme.id}>
                     <b>{String(index + 1).padStart(2, "0")}</b>
@@ -398,7 +384,6 @@ export function MahniAdminDashboard({ initial }: Props) {
                   </li>
                 ))}
               </ol>
-            </>
           ) : (
             <p className="md-ops-note">Още няма класиране.</p>
           )}
@@ -420,9 +405,11 @@ export function MahniAdminDashboard({ initial }: Props) {
 
       <section className="md-ops-section" id="ops-people">
         <h2>Участници ({snapshot.participants.length})</h2>
-        <p className="md-ops-count">
-          {filtered.length} от {snapshot.participants.length}
-        </p>
+        {filtered.length !== snapshot.participants.length ? (
+          <p className="md-ops-count">
+            {filtered.length} от {snapshot.participants.length}
+          </p>
+        ) : null}
         <input
           className="md-ops-search"
           type="search"
@@ -464,9 +451,7 @@ export function MahniAdminDashboard({ initial }: Props) {
 
       <section className="md-ops-section" id="ops-orgs">
         <h2>Организации за контакт</h2>
-        {snapshot.winningOrganizations.length === 0 ? (
-          <p className="md-ops-note">Ще се появи, когато има теми и класиране.</p>
-        ) : (
+        {snapshot.winningOrganizations.length === 0 ? null : (
           snapshot.winningOrganizations.map((row) => (
             <article key={row.themeId} className="md-ops-winner">
               <p className="md-ops-kicker">Топ {row.rank}</p>
@@ -540,9 +525,7 @@ export function MahniAdminDashboard({ initial }: Props) {
 
       {campaign.phase === "CLOSED" ? (
         <section className="md-ops-prepare" id="ops-prepare">
-          <p className="md-ops-kicker">След затворено събитие</p>
           <h2>Подготви ново събитие</h2>
-          <p>Затвореното събитие и данните му остават запазени. Новото започва празно и чака старт.</p>
           <div className="md-ops-demo-actions">
             <OpsButton id="prepare-rehearsal" busy={busy} onClick={() => ask("prepare-rehearsal")}>
               Репетиция
@@ -555,9 +538,7 @@ export function MahniAdminDashboard({ initial }: Props) {
       ) : null}
 
       <section className="md-ops-demo" id="ops-demo">
-        <p className="md-ops-kicker">Не е част от живото събитие</p>
         <h2>Демо / репетиция</h2>
-        <p>Тези действия пипат само демо записи и стоят отделно от основното следващо действие.</p>
         <div className="md-ops-demo-actions">
           <OpsButton id="seed" busy={busy} onClick={() => ask("seed")}>
             Зареди демо данни
@@ -800,15 +781,6 @@ function advancedActions(phase: EventPhase, primaryId: ActionId | null, jury: Ju
   if (phase === "AI_JURY" && !jury.complete && primaryId !== "retry-jury") pool.push("retry-jury");
   if (phase === "RESULTS") pool.push("closed");
   return pool.filter((id) => id !== primaryId);
-}
-
-function roomSees(phase: EventPhase): string {
-  if (phase === "DRAFT") return "Очаква старт";
-  if (phase === "FINALIZING") return "03 · Последни секунди";
-  if (phase === "CLOSED") return "05 · Резултат";
-  const stage = storyForPhase(phase);
-  if (stage) return `${String(stage.n).padStart(2, "0")} · ${stage.label}`;
-  return operatorPhaseTitle(phase);
 }
 
 function judgeStatus(status: JuryProgress["judges"][number]["status"]): string {
