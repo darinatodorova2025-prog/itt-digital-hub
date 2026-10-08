@@ -1237,7 +1237,7 @@
 }
 
 .md-live.md-scene-hold .md-live-hold {
-  max-width: min(48rem, 56vw);
+  max-width: min(42rem, 48vw);
 }
 
 .md-live.md-scene-hold h1 {
@@ -1248,14 +1248,14 @@
 }
 
 .md-live.md-scene-hold .md-live-lead {
-  max-width: none;
-  margin-top: 1.75rem;
-  font-size: clamp(1.15rem, 1.35vw, 1.45rem);
-  line-height: 1.45;
+  max-width: 40rem;
+  margin-top: 2.65rem;
+  font-size: clamp(1.05rem, 1.15vw, 1.28rem);
+  line-height: 1.65;
 }
 
 .md-live.md-scene-hold .md-live-soon {
-  margin-top: 2.75rem;
+  margin-top: 3.6rem;
   color: rgba(247, 248, 253, 0.8);
   font-size: clamp(1.15rem, 1.4vw, 1.45rem);
 }

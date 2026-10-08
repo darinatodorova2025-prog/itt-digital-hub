@@ -109,7 +109,7 @@ function LiveHeader({ stage }: { stage?: ReturnType<typeof storyForPhase> }) {
   return (
     <header className="md-live-top">
       <div className="md-live-brand">
-        <EventLockup tone="on-dark" height={32} />
+        <EventLockup tone="on-dark" height={36} />
       </div>
       {stage ? <LiveRail stage={stage} /> : null}
     </header>
@@ -309,7 +309,7 @@ function Holding() {
         време?
       </h1>
       <p className="md-live-lead">
-        Споделете какво ви губи време.
+        Споделете нещо от ежедневната работа, което ви бави.
         <br />
         После заедно ще изберем кое си струва да решим.
       </p>
