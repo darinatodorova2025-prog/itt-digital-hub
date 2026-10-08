@@ -159,7 +159,10 @@ export function MahniAdminDashboard({ initial }: Props) {
         </div>
         <div className={active && !campaign.paused ? "md-ops-status is-on" : "md-ops-status"}>
           {campaign.paused ? (
-            <p className="md-ops-live">Пауза</p>
+            <p className="md-ops-live is-paused">
+              <i />
+              Пауза
+            </p>
           ) : active ? (
             <p className="md-ops-rec">
               <i />

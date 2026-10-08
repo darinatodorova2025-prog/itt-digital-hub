@@ -2345,6 +2345,34 @@
   animation: md-live-pulse 1.35s ease-out infinite;
 }
 
+.md-ops-live.is-paused {
+  color: #fbbc05;
+  font-size: 1.2rem;
+  font-weight: 750;
+}
+
+.md-ops-live.is-paused i {
+  width: 0.72rem;
+  height: 0.72rem;
+  background: #fbbc05;
+  box-shadow: 0 0 0 0 rgba(251, 188, 5, 0.55);
+  animation: md-pause-pulse 1.35s ease-out infinite;
+}
+
+@keyframes md-pause-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(251, 188, 5, 0.6);
+  }
+
+  70% {
+    box-shadow: 0 0 0 9px rgba(251, 188, 5, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(251, 188, 5, 0);
+  }
+}
+
 .md-ops-rec {
   display: inline-flex;
   align-items: center;
