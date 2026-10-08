@@ -19,7 +19,11 @@ export function AudienceReviewDesk({
   onCombine: (themeIds: string[]) => Promise<void>;
 }) {
   const real = themes.filter((theme) => !theme.isAiWildcard);
-  const current = real.find((theme) => theme.reviewStatus === "review_ready") ?? real.find((theme) => theme.reviewStatus === "audit_unavailable") ?? null;
+  const current =
+    real.find((theme) => theme.reviewStatus === "review_ready") ??
+    real.find((theme) => theme.reviewStatus === "audit_unavailable") ??
+    real.find((theme) => theme.reviewStatus === "pending") ??
+    null;
   const [reason, setReason] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [message, setMessage] = useState("");
@@ -48,10 +52,9 @@ export function AudienceReviewDesk({
   return (
     <section className="md-ops-section" id="ops-review">
       <h2>Преглед от залата</h2>
-      {real.length > 0 ? (
-        <p className="md-ops-note">
-          Одобрени {approved} от {real.length}
-        </p>
+      {real.length > 0 ? <p className="md-ops-note">Одобрени {approved} от {real.length}</p> : null}
+      {real.length > 0 && approved < real.length ? (
+        <p className="md-ops-note">Одобрете темите една по една. След последната се отключва „Отвори избора“.</p>
       ) : null}
       {current ? (
         <article className="md-ops-panel">
@@ -84,7 +87,7 @@ export function AudienceReviewDesk({
             </form>
           ) : (
             <div className="md-ops-advanced-row">
-              <button type="button" className="md-ops-btn" disabled={busy || pending.length > 0 || current.reviewStatus !== "review_ready"} aria-busy={pending === "approve"} onClick={() => void run("approve", () => onApprove(current.id), "Одобрението не беше записано.")}>
+              <button type="button" className="md-ops-btn" disabled={busy || pending.length > 0 || (current.reviewStatus !== "review_ready" && current.reviewStatus !== "pending")} aria-busy={pending === "approve"} onClick={() => void run("approve", () => onApprove(current.id), "Одобрението не беше записано.")}>
                 {pending === "approve" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
                 ОДОБРЕНО ОТ ЗАЛАТА
               </button>
@@ -96,7 +99,9 @@ export function AudienceReviewDesk({
           )}
         </article>
       ) : (
-        <p className="md-ops-note">{real.length === 0 ? "Няма теми за преглед." : "Всички теми са одобрени."}</p>
+        <p className="md-ops-note">
+          {real.length === 0 ? "Няма теми за преглед." : approved === real.length ? "Всички теми са одобрени." : "Остават теми за решение от залата."}
+        </p>
       )}
       {message ? <p className="md-ops-error">{message}</p> : null}
       {real.length > 1 ? (

@@ -31,7 +31,7 @@ import { assertJuryCompleteForResults, publicJuryLenses, summarizeJuryProgress }
 import { clusteringCommitTheme, clusteringCommitWildcard, hydrateThemeTrace } from "../../ai/formulation";
 import { draftsFromThemes, currentPublicReview, extractSources, mergeDrafts, type ReviewDraft } from "../../review";
 import { publicExcerpt } from "../../public-excerpt";
-import { isVotingTheme, votingTransitionAllowed } from "../../review-status";
+import { isThemeReviewStatus, isVotingTheme, votingTransitionAllowed } from "../../review-status";
 import { sanitizePlainText } from "../../sanitize";
 import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "../types";
 import {
@@ -773,7 +773,29 @@ export class SupabaseMahniStore implements MahniStore {
     const { data, error } = await sb.from("md_themes").select("*").eq("campaign_id", campaign.id).order("sort_order");
     if (error) throw new MahniStoreUnavailableError();
     const themes = (data ?? []).map((row) => mapTheme(row));
-    return hydrateStoredThemes(sb, themes);
+    return this.withAuditReviews(campaign.id, await hydrateStoredThemes(sb, themes));
+  }
+
+  private async withAuditReviews(campaignId: string, themes: Theme[]): Promise<Theme[]> {
+    const sb = client();
+    const { data, error } = await sb
+      .from("md_event_audit_log")
+      .select("detail")
+      .eq("campaign_id", campaignId)
+      .eq("action", "theme_review")
+      .order("created_at", { ascending: true });
+    if (error || !data || data.length === 0) return themes;
+    const statusByTheme = new Map<string, ThemeReviewStatus>();
+    for (const row of data) {
+      const detail = row.detail as { themeId?: unknown; status?: unknown } | null;
+      if (!detail || typeof detail.themeId !== "string" || !isThemeReviewStatus(detail.status)) continue;
+      statusByTheme.set(detail.themeId, detail.status);
+    }
+    if (statusByTheme.size === 0) return themes;
+    return themes.map((theme) => {
+      const status = statusByTheme.get(theme.id);
+      return status ? { ...theme, reviewStatus: status } : theme;
+    });
   }
 
   async listThemeIdeaLinks(themeId: string) {
@@ -807,12 +829,20 @@ export class SupabaseMahniStore implements MahniStore {
       p_status: status,
       p_override: override,
     });
-    if (error) throwMapped(error);
+    if (!error) return;
+    const missing = error.code === "PGRST202" || (error.message ?? "").includes("md_set_theme_review");
+    if (!missing) throwMapped(error);
+    const { error: auditError } = await sb.rpc("md_audit", {
+      p_campaign_id: campaign.id,
+      p_action: "theme_review",
+      p_detail: { themeId, status, override },
+    });
+    if (auditError) throw new MahniStoreUnavailableError(auditError.message);
   }
 
   async approveAudienceTheme(themeId: string) {
     const theme = (await this.listThemes()).find((item) => item.id === themeId);
-    if (!theme || theme.isAiWildcard || theme.reviewStatus !== "review_ready") throw new Error(theme ? "not_review_ready" : "invalid_theme");
+    if (!theme || theme.isAiWildcard || (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "pending")) throw new Error(theme ? "not_review_ready" : "invalid_theme");
     await this.setThemeReview(themeId, "approved", null);
   }
 

@@ -123,7 +123,7 @@ export function mapTheme(row: Record<string, unknown>): Theme {
     createdAt: String(row.created_at),
     formulationNote: typeof row.formulation_note === "string" ? row.formulation_note : "",
     sourceIdeas: parseSourceIdeas(row.source_ideas),
-    reviewStatus: isThemeReviewStatus(row.review_status) ? row.review_status : "pending",
+    reviewStatus: isThemeReviewStatus(row.review_status) ? row.review_status : "review_ready",
     audit: parseAuditRecord(row.audit_record),
     auditOverride: parseAuditOverride(row.audit_override),
   };

@@ -738,7 +738,7 @@ export class MemoryMahniStore implements MahniStore {
 
   async approveAudienceTheme(themeId: string) {
     const theme = this.themeInReview(themeId);
-    if (theme.reviewStatus !== "review_ready") throw new Error("not_review_ready");
+    if (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "pending") throw new Error("not_review_ready");
     theme.reviewStatus = "approved";
   }
 
