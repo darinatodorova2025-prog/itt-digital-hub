@@ -442,20 +442,13 @@ export function MahniParticipantApp({
           <p className="md-vote-left">{ctx.votesRemaining === 0 ? "Гласовете ви са използвани" : votesRemainingLabel(ctx.votesRemaining)}</p>
           <p className="md-vote-hint">Натиснете отбелязания глас, за да го махнете и да го сложите на друга тема.</p>
           <ul className="md-theme-list">
-            {(snapshot?.themes ?? []).map((theme, index) => {
+            {(snapshot?.themes ?? []).map((theme) => {
               const voted = ctx.votedThemeIds.includes(theme.id);
               const noted = ctx.interestThemeIds.includes(theme.id);
               const open = expanded === theme.id;
               return (
                 <li key={theme.id} className={voted ? "md-theme is-on" : "md-theme"}>
                   <div className="md-theme-main">
-                    <Image
-                      src={THUMBS[index % THUMBS.length]!}
-                      alt=""
-                      width={88}
-                      height={64}
-                      className="md-theme-photo"
-                    />
                     <div className="md-theme-copy">
                       <h2>{theme.title}</h2>
                       <p>

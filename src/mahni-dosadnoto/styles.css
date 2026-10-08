@@ -724,16 +724,16 @@
 
 
 .md-theme-list {
-  margin: 1rem 0 0;
+  margin: 0.75rem 0 0;
   padding: 0;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.4rem;
 }
 
 .md-theme {
-  padding: 0.75rem;
+  padding: 0.45rem 0.55rem 0.4rem;
   border: 1px solid var(--md-line);
-  border-radius: 16px;
+  border-radius: 12px;
   background: #fff;
 }
 
@@ -745,16 +745,9 @@
 
 .md-theme-main {
   display: grid;
-  grid-template-columns: 4.6rem minmax(0, 1fr) 2.75rem;
-  gap: 0.7rem;
+  grid-template-columns: minmax(0, 1fr) 2.35rem;
+  gap: 0.45rem;
   align-items: center;
-}
-
-.md-theme-photo {
-  width: 4.6rem;
-  height: 3.4rem;
-  object-fit: cover;
-  border-radius: 10px;
 }
 
 .md-theme-copy h2,
@@ -770,6 +763,11 @@
   line-height: 1.3;
 }
 
+.md-theme-copy h2 {
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
 .md-theme-copy p,
 .md-theme-desc,
 .md-context-list p {
@@ -779,20 +777,26 @@
   line-height: 1.4;
 }
 
+.md-theme-copy p {
+  margin-top: 0.05rem;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
 .md-theme-desc {
-  margin-top: 0.65rem;
+  margin-top: 0.3rem;
 }
 
 .md-theme-desc.is-clamped {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .md-pick {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.35rem;
+  height: 2.35rem;
   border: 1.5px solid #c5cede;
   border-radius: 999px;
   background: #fff;
@@ -823,9 +827,9 @@
 
 .md-interest,
 .md-follow {
-  margin-top: 0.55rem;
-  min-height: 2.75rem;
-  padding: 0.2rem 0;
+  margin-top: 0.2rem;
+  min-height: 0;
+  padding: 0.15rem 0;
   border: 0;
   background: transparent;
   color: var(--md-ink-2);
@@ -1211,7 +1215,6 @@
 
 @media (max-width: 380px) {
   .md-fields.two,
-  .md-theme-main,
   .md-context-list li {
     grid-template-columns: 1fr;
   }
