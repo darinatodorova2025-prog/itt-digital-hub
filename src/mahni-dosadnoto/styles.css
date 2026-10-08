@@ -1645,9 +1645,11 @@
 
 .md-audience-body {
   margin: 0.2rem 0 0;
-  max-width: 32rem;
+  width: max-content;
+  max-width: none;
   font-size: clamp(1.2rem, 1.5vw, 1.55rem);
   line-height: 1.4;
+  white-space: nowrap;
 }
 
 .md-audience-count {
