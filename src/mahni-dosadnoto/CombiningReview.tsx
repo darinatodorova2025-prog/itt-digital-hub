@@ -12,9 +12,12 @@ export function AudienceReviewCard({ card, notice }: { card: PublicReviewCard; n
         {card.organizationCount > 0 ? ` · ${card.organizationCount} ${card.organizationCount === 1 ? "организация" : "организации"}` : ""}
       </p>
       {card.excerpts.length > 0 ? (
-        <ul>
+        <ul className="md-audience-sources">
           {card.excerpts.map((excerpt) => (
-            <li key={excerpt}>{excerpt}</li>
+            <li key={excerpt}>
+              <span>Подадена идея</span>
+              <strong>{excerpt}</strong>
+            </li>
           ))}
         </ul>
       ) : null}

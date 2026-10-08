@@ -1658,18 +1658,37 @@
   font-size: clamp(1.05rem, 1.3vw, 1.3rem);
 }
 
-.md-audience ul {
-  margin: 0.35rem 0 0;
+.md-audience-sources {
+  margin: 0.85rem 0 0;
   padding: 0;
   list-style: none;
+  display: grid;
+  gap: 0.65rem;
+  width: min(36rem, 72vw);
 }
 
-.md-audience li {
+.md-audience-sources li {
+  display: grid;
+  gap: 0.3rem;
   margin: 0;
-  padding: 0.15rem 0 0.15rem 0.9rem;
-  border-left: 2px solid rgba(247, 248, 253, 0.45);
+  padding: 0.7rem 1rem 0.85rem;
+  border: 1px solid rgba(247, 248, 253, 0.4);
+  border-radius: 14px;
+  background: rgba(4, 14, 49, 0.55);
+}
+
+.md-audience-sources span {
+  color: rgba(247, 248, 253, 0.78);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.md-audience-sources strong {
   color: #fff;
-  font-size: clamp(1.15rem, 1.45vw, 1.5rem);
+  font-size: clamp(1.3rem, 1.7vw, 1.75rem);
+  font-weight: 700;
   line-height: 1.35;
 }
 
