@@ -35,6 +35,7 @@ import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "./types
 import { clusteringCommitTheme, clusteringCommitWildcard, hydrateThemeTrace } from "../ai/formulation";
 import { draftsFromThemes, currentPublicReview, extractSources, mergeDrafts, type ReviewDraft } from "../review";
 import { publicExcerpt } from "../public-excerpt";
+import { creditsByTheme } from "../result-credits";
 import { isVotingTheme, votingTransitionAllowed } from "../review-status";
 import { sanitizePlainText } from "../sanitize";
 
@@ -376,11 +377,25 @@ export class MemoryMahniStore implements MahniStore {
         organizationCount: t.organizationCount,
       }));
     const ranked = rankHumanThemes(this.buildThemeScores().filter((row) => isVotingTheme(row.theme)));
+    const creditRows = ranked.slice(0, 3).flatMap((row) =>
+      [...(this.themeLinks.get(row.theme.id) ?? [])].flatMap((ideaId) => {
+        const idea = this.ideas.get(ideaId);
+        const person = idea ? this.participants.get(idea.participantId) : undefined;
+        if (!idea) return [];
+        return [{
+          themeId: row.theme.id,
+          organization: idea.organization,
+          person: person ? `${person.firstName} ${person.lastName}` : "",
+        }];
+      }),
+    );
+    const credits = creditsByTheme(creditRows);
     const humanTop3 = ranked.slice(0, 3).map((r, idx) => ({
       rank: idx + 1,
       id: r.theme.id,
       title: r.theme.title,
       isAiWildcard: r.theme.isAiWildcard,
+      organizations: credits.get(r.theme.id) ?? [],
     }));
     const juryPicks = [...this.juryVotes.values()];
     const aiAgg = aggregateAiJury(

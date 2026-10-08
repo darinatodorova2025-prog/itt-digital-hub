@@ -1,6 +1,7 @@
 import type { AiRunStatus, EventCampaign, EventPhase, JudgeType, ThemeAuditRecord, ThemeReviewStatus } from "../types";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validation";
 import type { PublicReviewCard } from "../review";
+import type { ResultCredit } from "../result-credits";
 import type { Idea, Participant, Theme, Vote, FollowupRequest, AnalysisRun, AiJuryRun, AiJuryVote } from "../types";
 
 export type PublicLiveSnapshot = {
@@ -22,7 +23,7 @@ export type PublicLiveSnapshot = {
   }>;
   votingEndsAt: string | null;
   countdownSeconds: number | null;
-  humanTop3: Array<{ rank: number; id: string; title: string; isAiWildcard: boolean }>;
+  humanTop3: Array<{ rank: number; id: string; title: string; isAiWildcard: boolean; organizations: ResultCredit[] }>;
   aiTop3: Array<{ rank: number; id: string; title: string; isAiWildcard: boolean }>;
   overlap: number | null;
   groupedThemeCount: number;

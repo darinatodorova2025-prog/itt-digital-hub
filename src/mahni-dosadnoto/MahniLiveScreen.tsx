@@ -15,6 +15,7 @@ import { ConvergeIcon } from "@/mahni-dosadnoto/icons";
 import { LiveRail } from "@/mahni-dosadnoto/journey";
 import { ThemeEquation } from "@/mahni-dosadnoto/grouping";
 import { AudienceReviewCard } from "@/mahni-dosadnoto/CombiningReview";
+import { ResultCredits } from "@/mahni-dosadnoto/ResultCredits";
 import { toPublicReviewCard, type LiveReviewItem } from "@/mahni-dosadnoto/review";
 import { REVIEW_PREVIEW_ITEMS, REVIEW_PREVIEW_KEY } from "@/mahni-dosadnoto/review-preview";
 import { mdApproveAudienceTheme, mdCloseVoting, mdOpenVoting, mdSplitAudienceTheme } from "@/app/admin/(console)/mahni-dosadnoto/actions";
@@ -517,10 +518,11 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
             {snapshot.humanTop3.map((row) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
                 <b>{String(row.rank).padStart(2, "0")}</b>
-                <span className="md-live-choice-copy">
-                  {row.title}
+                <div className="md-live-choice-copy">
+                  <span>{row.title}</span>
                   {aiIds.has(row.id) ? <em className="md-live-shared-badge">Общ приоритет</em> : null}
-                </span>
+                  <ResultCredits organizations={row.organizations} />
+                </div>
               </li>
             ))}
           </ol>

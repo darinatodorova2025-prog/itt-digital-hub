@@ -19,6 +19,7 @@ import { CheckIcon, ConvergeIcon, PlaneIcon } from "@/mahni-dosadnoto/icons";
 import { ParticipantStage, StageProgress } from "@/mahni-dosadnoto/journey";
 import { GroupingDiagram, ThemeEquation } from "@/mahni-dosadnoto/grouping";
 import { LensBoard } from "@/mahni-dosadnoto/lenses";
+import { ResultCredits } from "@/mahni-dosadnoto/ResultCredits";
 
 type Context = ParticipantInitialContext;
 
@@ -801,10 +802,13 @@ function ResultsView({
                   height={72}
                   className="md-rank-photo"
                 />
-                <span>
-                  {row.title}
-                  {aiIds.has(row.id) ? <em>Общ приоритет</em> : null}
-                </span>
+                <div className="md-rank-copy">
+                  <span>
+                    {row.title}
+                    {aiIds.has(row.id) ? <em>Общ приоритет</em> : null}
+                  </span>
+                  <ResultCredits organizations={row.organizations} />
+                </div>
               </li>
             ))}
           </ol>

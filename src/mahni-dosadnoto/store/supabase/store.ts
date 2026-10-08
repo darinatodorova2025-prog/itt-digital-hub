@@ -32,6 +32,7 @@ import { publicJuryLenses, summarizeJuryProgress } from "../../jury-status";
 import { clusteringCommitTheme, clusteringCommitWildcard, hydrateThemeTrace } from "../../ai/formulation";
 import { draftsFromThemes, currentPublicReview, extractSources, mergeDrafts, type ReviewDraft } from "../../review";
 import { publicExcerpt } from "../../public-excerpt";
+import { creditsByTheme, type ResultCredit } from "../../result-credits";
 import { isThemeReviewStatus, isVotingTheme, votingTransitionAllowed } from "../../review-status";
 import { sanitizePlainText } from "../../sanitize";
 import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "../types";
@@ -555,6 +556,40 @@ export class SupabaseMahniStore implements MahniStore {
         submissionOrgCount: theme.organizationCount,
       })),
     );
+    const showResults = campaign.phase === "RESULTS" || campaign.phase === "CLOSED";
+    const topIds = ranked.slice(0, 3).map((row) => row.theme.id);
+    let credits = new Map<string, ResultCredit[]>();
+    if (showResults && topIds.length > 0) {
+      const { data: links } = await sb.from("md_theme_idea_links").select("theme_id, idea_id").in("theme_id", topIds);
+      const pairs = (links ?? []).map((link) => ({ themeId: String(link.theme_id), ideaId: String(link.idea_id) }));
+      const linkedThemes = new Set(pairs.map((pair) => pair.themeId));
+      for (const row of ranked.slice(0, 3)) {
+        if (linkedThemes.has(row.theme.id)) continue;
+        for (const source of row.theme.sourceIdeas ?? []) pairs.push({ themeId: row.theme.id, ideaId: source.id });
+      }
+      const ideaIds = [...new Set(pairs.map((pair) => pair.ideaId))];
+      const { data: linkedIdeas } = ideaIds.length
+        ? await sb.from("md_ideas").select("id, participant_id, organization").in("id", ideaIds)
+        : { data: [] as Array<{ id: string; participant_id: string; organization: string }> };
+      const participantIds = [...new Set((linkedIdeas ?? []).map((idea) => String(idea.participant_id)))];
+      const { data: people } = participantIds.length
+        ? await sb.from("md_participants").select("id, first_name, last_name").in("id", participantIds)
+        : { data: [] as Array<{ id: string; first_name: string; last_name: string }> };
+      const ideaById = new Map((linkedIdeas ?? []).map((idea) => [String(idea.id), idea]));
+      const personById = new Map((people ?? []).map((person) => [String(person.id), person]));
+      credits = creditsByTheme(
+        pairs.flatMap((pair) => {
+          const idea = ideaById.get(pair.ideaId);
+          if (!idea) return [];
+          const person = personById.get(String(idea.participant_id));
+          return [{
+            themeId: pair.themeId,
+            organization: String(idea.organization ?? ""),
+            person: person ? `${person.first_name} ${person.last_name}` : "",
+          }];
+        }),
+      );
+    }
 
     const juryRuns = await this.listJuryResults();
     const juryProgress = summarizeJuryProgress(juryRuns);
@@ -569,7 +604,6 @@ export class SupabaseMahniStore implements MahniStore {
     const showThemes =
       ["VOTING", "FINALIZING", "RESULTS", "CLOSED"].includes(campaign.phase) ||
       (campaign.phase === "ANALYZING" && votingTransitionAllowed(themes).ok);
-    const showResults = campaign.phase === "RESULTS" || campaign.phase === "CLOSED";
 
     const { data: latestRun } = await sb
       .from("md_analysis_runs")
@@ -609,7 +643,13 @@ export class SupabaseMahniStore implements MahniStore {
       votingEndsAt: campaign.votingEndsAt,
       countdownSeconds,
       humanTop3: showResults
-        ? ranked.slice(0, 3).map((r, idx) => ({ rank: idx + 1, id: r.theme.id, title: r.theme.title, isAiWildcard: r.theme.isAiWildcard }))
+        ? ranked.slice(0, 3).map((r, idx) => ({
+            rank: idx + 1,
+            id: r.theme.id,
+            title: r.theme.title,
+            isAiWildcard: r.theme.isAiWildcard,
+            organizations: credits.get(r.theme.id) ?? [],
+          }))
         : [],
       aiTop3: showResults
         ? aiAgg.slice(0, 3).map((r, idx) => ({ rank: idx + 1, id: r.theme.id, title: r.theme.title, isAiWildcard: r.theme.isAiWildcard }))

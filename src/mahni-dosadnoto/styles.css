@@ -1022,8 +1022,8 @@
   gap: 0.65rem;
 }
 
-.md-rank li,
-.md-live-choice li {
+.md-rank > li,
+.md-live-choice > li {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.75rem;
@@ -1031,7 +1031,7 @@
 }
 
 /* Participant Top 3 as elevated cards with a photo, matching the concept. */
-.md-result-primary .md-rank li {
+.md-result-primary .md-rank > li {
   grid-template-columns: auto 4.5rem minmax(0, 1fr);
   padding: 0.9rem 1.05rem;
   border: 1px solid var(--md-line);
@@ -1041,7 +1041,7 @@
   align-items: center;
 }
 
-.md-result-primary .md-rank li.is-shared {
+.md-result-primary .md-rank > li.is-shared {
   border-color: rgba(0, 44, 255, 0.4);
   box-shadow: 0 12px 28px rgba(0, 44, 255, 0.1);
 }
@@ -1102,12 +1102,12 @@
   padding-top: 0.2rem;
 }
 
-.md-result-secondary .md-rank li {
+.md-result-secondary .md-rank > li {
   padding: 0.35rem 0;
   border-top: 1px solid var(--md-line);
 }
 
-.md-result-secondary .md-rank li:first-child {
+.md-result-secondary .md-rank > li:first-child {
   border-top: 0;
 }
 
@@ -2164,12 +2164,12 @@
   gap: 0.85rem;
 }
 
-.md-live-choice li {
-  align-items: center;
+.md-live-choice > li {
+  align-items: start;
 }
 
 /* Participant Top 3 as elevated dark photo cards — the official result dominates. */
-.md-live-choice:not(.is-quiet) li {
+.md-live-choice:not(.is-quiet) > li {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 1rem;
   padding: 0.85rem 1.15rem;
@@ -2180,13 +2180,68 @@
   backdrop-filter: blur(6px);
 }
 
-.md-live-choice:not(.is-quiet) li.is-shared {
+.md-live-choice:not(.is-quiet) > li.is-shared {
   border-color: rgba(174, 191, 255, 0.5);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
 }
 
 .md-live-choice-copy {
-  display: block;
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.md-result-orgs {
+  margin: 0.45rem 0 0;
+  padding: 0 0 0 1.2rem;
+  list-style: disc;
+}
+
+.md-live-choice .md-result-orgs > li,
+.md-rank .md-result-orgs > li {
+  display: list-item;
+  margin: 0;
+  padding: 0.12rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-weight: 650;
+}
+
+.md-live-choice .md-result-orgs > li {
+  color: #fff;
+  font-size: clamp(1.05rem, 1.45vw, 1.35rem);
+}
+
+.md-rank .md-result-orgs > li {
+  color: var(--md-ink);
+  font-size: 0.95rem;
+}
+
+.md-result-orgs ul {
+  margin: 0.12rem 0 0.2rem;
+  padding: 0 0 0 1.15rem;
+  list-style: circle;
+}
+
+.md-live-choice .md-result-orgs ul li,
+.md-rank .md-result-orgs ul li {
+  display: list-item;
+  padding: 0.05rem 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-weight: 500;
+}
+
+.md-live-choice .md-result-orgs ul li {
+  color: rgba(247, 248, 253, 0.92);
+}
+
+.md-rank .md-result-orgs ul li {
+  color: var(--md-ink);
+  font-weight: 500;
 }
 
 .md-live-shared-badge {
