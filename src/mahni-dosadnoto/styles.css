@@ -2939,6 +2939,27 @@
   box-shadow: 0 6px 14px rgba(4, 14, 49, 0.06);
 }
 
+.md-ops button.md-ops-btn.is-confirm {
+  background: #ff1a1a;
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(255, 26, 26, 0.32), 0 2px 6px rgba(4, 14, 49, 0.08);
+}
+
+.md-ops button.md-ops-btn.is-confirm:hover:not(:disabled) {
+  background: #ff3b3b;
+  color: #fff;
+}
+
+.md-ops button.md-ops-btn.is-confirm:active:not(:disabled) {
+  background: #d90000;
+  color: #fff;
+}
+
+.md-ops button.md-ops-btn.is-confirm .md-ops-spin {
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+}
+
 .md-ops-spin {
   width: 0.85rem;
   height: 0.85rem;

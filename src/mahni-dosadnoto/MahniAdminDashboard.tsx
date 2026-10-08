@@ -280,7 +280,7 @@ export function MahniAdminDashboard({ initial }: Props) {
         <div className="md-ops-confirm" role="alertdialog" aria-label="Потвърждение">
           <p>{confirmCopy(confirm)}</p>
           <div className="md-ops-confirm-actions">
-            <OpsButton id={confirm} busy={busy} onClick={() => void execute(confirm)}>
+            <OpsButton id={confirm} busy={busy} tone="confirm" onClick={() => void execute(confirm)}>
               Потвърди
             </OpsButton>
             <OpsButton id="cancel-confirm" busy="" onClick={() => setConfirm(null)}>
@@ -601,18 +601,26 @@ function OpsButton({
   id,
   busy,
   disabled,
+  tone,
   onClick,
   children,
 }: {
   id: string;
   busy: string;
   disabled?: boolean;
+  tone?: "confirm";
   onClick: () => void;
   children: ReactNode;
 }) {
   const loading = busy === id;
   return (
-    <button type="button" className="md-ops-btn" disabled={Boolean(disabled) || loading || (busy.length > 0 && !loading)} aria-busy={loading} onClick={onClick}>
+    <button
+      type="button"
+      className={tone === "confirm" ? "md-ops-btn is-confirm" : "md-ops-btn"}
+      disabled={Boolean(disabled) || loading || (busy.length > 0 && !loading)}
+      aria-busy={loading}
+      onClick={onClick}
+    >
       {loading ? <span className="md-ops-spin" aria-hidden="true" /> : null}
       {children}
     </button>
