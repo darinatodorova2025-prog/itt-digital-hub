@@ -513,7 +513,6 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
       <h1 className="md-display">Какво излезе напред</h1>
       <div className="md-live-result">
         <section>
-          <h2>Изборът на участниците</h2>
           <ol className="md-live-choice">
             {snapshot.humanTop3.map((row) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
