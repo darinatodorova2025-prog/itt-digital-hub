@@ -10,26 +10,26 @@ export interface ProblemClass {
 export const problemClasses: ProblemClass[] = [
   {
     code: "01",
-    title: { bg: "Рутината отнема капацитет", en: "Routine work uses up capacity" },
+    title: { bg: "Една и съща работа се повтаря", en: "The same work keeps repeating" },
     body: {
-      bg: "Проверки, прехвърляне на данни, търсене на информация и административни стъпки заемат време, което може да бъде използвано за по-важна работа.",
-      en: "Checks, moving data, searching for information and administrative steps take time that could go to more important work.",
+      bg: "Данни се въвеждат повторно, справки се подготвят ръчно, а едни и същи проверки отнемат време всеки ден.",
+      en: "Data is entered more than once, reports are prepared manually and the same checks take up time every day.",
     },
   },
   {
     code: "02",
-    title: { bg: "Информацията е на много места", en: "Information sits in too many places" },
+    title: { bg: "Информацията е там, но трудно се намира", en: "The information exists, but it is hard to find" },
     body: {
-      bg: "Документи, таблици, имейли и различни системи съдържат части от един и същ процес. Резултатът е търсене, дублиране и трудна проследимост.",
-      en: "Documents, spreadsheets, email and separate systems each hold part of the same process. The result is searching, duplication and weak traceability.",
+      bg: "Документи, таблици, имейли и вътрешни системи съдържат различни части от необходимата информация. Намирането и сверяването ѝ се превръща в отделна задача.",
+      en: "Documents, spreadsheets, emails and internal systems each contain part of what is needed. Finding and verifying the information becomes a task of its own.",
     },
   },
   {
     code: "03",
-    title: { bg: "Системите не следват процеса", en: "Systems do not follow the process" },
+    title: { bg: "Системите не работят заедно", en: "Systems do not work together" },
     body: {
-      bg: "Когато инструментите не обменят информация или не отразяват начина, по който екипът действително работи, хората компенсират ръчно.",
-      en: "When tools do not exchange information, or do not reflect how the team actually works, people fill the gaps by hand.",
+      bg: "Когато инструментите не обменят информация, хората трябва да прехвърлят данни между тях. Това забавя работата и затруднява проследяването.",
+      en: "When tools cannot exchange information, people have to move data between them. This slows work down and makes it harder to track.",
     },
   },
 ];

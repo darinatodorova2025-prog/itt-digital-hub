@@ -49,13 +49,13 @@ describe("public team", () => {
     expect(people[0]?.name).toEqual({ bg: "Иван Тодоров", en: "Ivan Todorov" });
     expect(people[0]?.role).toEqual({
       bg: "Консултант по бизнес оптимизация и ИИ",
-      en: "Business optimization and AI consultant",
+      en: "Business Optimization & AI Consultant",
     });
     expect(people[0]?.axis).toEqual({ bg: "Бизнес / Оптимизация", en: "Business / Optimization" });
     expect(people[1]?.name).toEqual({ bg: "Иван Томчев", en: "Ivan Tomchev" });
     expect(people[1]?.role).toEqual({
-      bg: "Софтуерен инженер и архитект на системи",
-      en: "Software engineer and systems architect",
+      bg: "Архитект на софтуерни и ИИ системи",
+      en: "Software & AI Systems Architect",
     });
     expect(people[1]?.axis).toEqual({ bg: "Системи / Инженеринг", en: "Systems / Engineering" });
     expect(people[1]?.portrait?.src).toBe("/images/team/ivan-tomchev-portrait-v2.jpg");
@@ -82,7 +82,7 @@ describe("public team", () => {
       expect(person.links).toBeUndefined();
       expect(linkedInHref(person)).toBeUndefined();
       expect(person.cardBio?.en.every((paragraph) => /^(I |At ITT Digital Hub, I )/.test(paragraph))).toBe(true);
-      expect(person.cardBio?.bg.every((paragraph) => /^(Работя |Проектирам |Фокусирам |В ITT Digital Hub )/.test(paragraph))).toBe(
+      expect(person.cardBio?.bg.every((paragraph) => /^(Анализирам |Работя |Проектирам |Фокусирам |В ITT Digital Hub )/.test(paragraph))).toBe(
         true,
       );
     }
@@ -114,7 +114,7 @@ describe("public team", () => {
       createElement(FoundersPair, { people: founders(), locale: "en", variant: "profile" }),
     );
 
-    expect(card).toContain("I focus on the process");
+    expect(card).toContain("I analyze workflows");
     expect(card).not.toContain("I work on business processes, automation");
     expect(profile).toContain("I work on business processes, automation");
     expect(profile).toContain("Processes · Automation · Business optimization");
@@ -153,10 +153,10 @@ describe("About / People framing", () => {
 
 describe("homepage TEAM intro", () => {
   it("positions the team around problem-to-system delivery", () => {
-    expect(home.people.heading.en).toBe("Business and engineering at the same table.");
-    expect(home.people.heading.bg).toBe("Бизнесът и инженерството на една маса.");
-    expect(home.people.lead.en).toContain("We work together from defining the problem");
-    expect(home.people.lead.bg).toContain("Работим заедно от дефинирането на проблема");
+    expect(home.people.heading.en).toBe("Different expertise. One team.");
+    expect(home.people.heading.bg).toBe("Различни компетентности. Един екип.");
+    expect(home.people.lead.en).toContain("We bring together experience in business processes");
+    expect(home.people.lead.bg).toContain("Съчетаваме опит в бизнес процесите");
     const blob = [home.people.label.en, home.people.label.bg, home.people.heading.en, home.people.heading.bg, home.people.lead.en, home.people.lead.bg].join("\n");
     expect(blob).not.toMatch(/Two complementary specialists|One accountable team|Direct contact|fewer handoffs|Директен контакт|малко предавания|Двама допълващи се специалисти|Един отговорен екип/i);
   });

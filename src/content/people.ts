@@ -15,7 +15,7 @@ const confirmedPeople: Person[] = [
     axis: { bg: "Бизнес / Оптимизация", en: "Business / Optimization" },
     role: {
       bg: "Консултант по бизнес оптимизация и ИИ",
-      en: "Business optimization and AI consultant",
+      en: "Business Optimization & AI Consultant",
     },
     expertise: {
       bg: ["Процеси", "Автоматизация", "Бизнес оптимизация", "Проследимост", "Корпоративни системи"],
@@ -23,10 +23,10 @@ const confirmedPeople: Person[] = [
     },
     cardBio: {
       bg: [
-        "Фокусирам се върху процесите: къде се губят време и информация, кои стъпки могат да се опростят и къде технологията има реален смисъл.",
+        "Анализирам работните процеси, изяснявам какво трябва да се подобри и свързвам бизнес нуждите с техническото изпълнение.",
       ],
       en: [
-        "I focus on the process: where time and information are lost, which steps can be simplified, and where technology is actually useful.",
+        "I analyze workflows, identify what needs to improve and connect business requirements with technical implementation.",
       ],
     },
     bio: {
@@ -51,8 +51,8 @@ const confirmedPeople: Person[] = [
     name: { bg: "Иван Томчев", en: "Ivan Tomchev" },
     axis: { bg: "Системи / Инженеринг", en: "Systems / Engineering" },
     role: {
-      bg: "Софтуерен инженер и архитект на системи",
-      en: "Software engineer and systems architect",
+      bg: "Архитект на софтуерни и ИИ системи",
+      en: "Software & AI Systems Architect",
     },
     expertise: {
       bg: ["Софтуерна архитектура", "Интеграции", "Инфраструктура", "Локални и облачни модели", "Оркестрация"],
@@ -60,10 +60,10 @@ const confirmedPeople: Person[] = [
     },
     cardBio: {
       bg: [
-        "Проектирам и изграждам системите зад процеса: приложения, интеграции, инфраструктура и ИИ компоненти там, където са необходими.",
+        "Проектирам техническата архитектура и изграждам системи, които обединяват софтуер, данни, интеграции и ИИ там, където има практическа полза.",
       ],
       en: [
-        "I design and build the systems behind the process: applications, integrations, infrastructure and AI components where they are needed.",
+        "I design technical architectures and build systems that bring together software, data, integrations and AI where they provide practical value.",
       ],
     },
     bio: {

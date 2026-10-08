@@ -9,21 +9,21 @@ export const home = {
     },
   },
   hero: {
-    label: { bg: "Бизнес процеси · Данни · Системи", en: "Business processes · Data · Systems" },
+    label: { bg: "Бизнес процеси · Софтуер · Автоматизация", en: "Business Processes · Software · Automation" },
     headline: {
-      bg: "По-малко рутина.\nПовече време за важната работа.",
-      en: "Less repetitive work.\nMore time for the work that matters.",
+      bg: "От конкретен проблем до работещо решение.",
+      en: "From a real problem to a working solution.",
     },
     lead: {
-      bg: "Помагаме на екипите да подредят информацията, да оптимизират работните процеси и да свържат системите си, така че по-малко време да отива в повтаряеми действия, а повече в работа, която изисква експертиза, преценка и решения.",
-      en: "We help teams organize information, improve workflows and connect systems, so less time goes into repetitive tasks and more into work that needs expertise, judgment and decisions.",
+      bg: "Помагаме на организациите да преодолеят затрудненията, които създават повтарящите се задачи, разпръснатата информация и несвързаните системи.",
+      en: "We help organizations overcome the challenges created by repetitive tasks, scattered information and disconnected systems.",
     },
     support: {
-      bg: "Използваме автоматизация, специализиран софтуер и ИИ там, където намаляват ръчната работа, съкращават времето за изпълнение или подобряват контрола.",
-      en: "We use automation, purpose-built software and AI where they reduce manual work, shorten execution time or improve control.",
+      bg: "Разбираме как се върши работата, откриваме какво може да се подобри и избираме подходящото решение. Понякога това е по-добър процес, друг път интеграция, автоматизация, специализиран софтуер или ИИ.",
+      en: "We understand how the work gets done, identify what can be improved and choose the right solution. Sometimes that means a better workflow, other times an integration, automation, purpose-built software or AI.",
     },
-    primary: { bg: "Вижте какво сме изградили", en: "See what we have built" },
-    secondary: { bg: "Обсъдете вашия процес", en: "Discuss your process" },
+    primary: { bg: "Вижте какво сме изградили", en: "Explore our work" },
+    secondary: { bg: "Нека поговорим", en: "Let's talk" },
     proofLabel: { bg: "Работа", en: "Work" },
   },
   experience: {
@@ -44,50 +44,50 @@ export const home = {
   },
   problems: {
     label: { bg: "Какво решаваме", en: "What we solve" },
-    heading: { bg: "Къде най-често се губят време и капацитет.", en: "Where time and capacity are usually lost." },
+    heading: { bg: "Къде работата се затруднява?", en: "Where does work get difficult?" },
     lead: {
-      bg: "Технологията рядко е първият проблем. По-често работата се забавя от повтаряеми действия, разпръсната информация и системи, които не следват реалния процес.",
-      en: "Technology is rarely the first problem. Work more often slows down because of repetitive tasks, scattered information and systems that do not follow the real process.",
+      bg: "Понякога проблемът не е в отделен инструмент, а в начина, по който хората, информацията и системите работят заедно.",
+      en: "Sometimes the problem is not one particular tool, but how people, information and systems work together.",
     },
   },
   judgement: {
-    label: { bg: "Принцип", en: "Principle" },
-    heading: { bg: "Първо процесът. После технологията.", en: "Process first. Technology second." },
+    label: { bg: "Избор на решение", en: "Choosing the right solution" },
+    heading: { bg: "Не всеки проблем изисква нова технология.", en: "Not every problem needs new technology." },
     lead: {
-      bg: "Започваме с начина, по който работата се извършва днес: информацията, хората, решенията, системите и ограниченията.\n\nОткриваме къде се губят време, информация или контрол и определяме какво действително има смисъл да бъде променено.\n\nРешението може да бъде по-добър процес, интеграция, автоматизация, специализиран софтуер, ИИ или комбинация от тях.",
-      en: "We start from how work is actually done today: the information, the people, the decisions, the systems and the constraints.\n\nWe look for where time, information or control is lost, and decide what is actually worth changing.\n\nThe right step may be a better process, an integration, automation, purpose-built software, AI, or a combination.",
+      bg: "Понякога е достатъчно да премахнем излишна стъпка, да свържем съществуващи инструменти или да подредим информацията. Друг път е необходимо да изградим нещо ново. Изборът зависи от задачата, а не от предварително предпочетена технология.",
+      en: "Sometimes the right answer is to remove an unnecessary step, connect existing tools or organize information better. Other times, something new needs to be built. The choice depends on the problem, not on a preferred technology.",
     },
   },
   benefit: {
-    label: { bg: "Полза", en: "Benefit" },
-    heading: { bg: "Повече от спестено време", en: "More than time saved" },
+    label: { bg: "Резултат", en: "Results" },
+    heading: { bg: "Как разбираме, че решението е по-добро?", en: "How do we know the solution is better?" },
     lead: {
-      bg: "Когато една повтаряема дейност престане да отнема часове всяка седмица, ефектът не е просто по-бързо изпълнение.\n\nОсвободеният капацитет може да бъде използван за повече клиентска работа, по-добър контрол, анализ, планиране и решения, които изискват човешка експертиза.",
-      en: "When a repeated activity stops taking hours every week, the effect is not only faster execution.\n\nThe capacity that comes free can go into more client work, better control, analysis, planning and decisions that need human expertise.",
+      bg: "Проверяваме как се справя с реалната задача. Намалели ли са ръчните стъпки? Намира ли се информацията по-лесно? Работят ли системите по-добре заедно? Когато резултатът не е достатъчно добър, търсим какво трябва да се коригира.",
+      en: "We evaluate it against the real task. Are there fewer manual steps? Is information easier to find? Do systems work better together? When the result falls short, we look at what needs to change.",
     },
   },
   approach: {
     label: { bg: "Как работим", en: "How we work" },
     heading: { bg: "Разбираме. Проектираме. Изграждаме.", en: "Understand. Design. Build." },
     lead: {
-      bg: "Един и същ екип следва процеса от първоначалния проблем до работещото решение.",
-      en: "The same team follows the work from the original problem to a working solution.",
+      bg: "Изясняваме задачата, избираме подходящото решение и проверяваме как работи на практика. При по-сложни или нови задачи можем да започнем с малък пилот, да оценим резултата и да направим необходимите корекции.",
+      en: "We clarify the problem, choose the right approach and check how the solution performs in practice. For new or more complex challenges, we can start with a small pilot, evaluate the results and make adjustments before moving further.",
     },
   },
   people: {
     label: { bg: "Екип", en: "Team" },
-    heading: { bg: "Бизнесът и инженерството на една маса.", en: "Business and engineering at the same table." },
+    heading: { bg: "Различни компетентности. Един екип.", en: "Different expertise. One team." },
     lead: {
-      bg: "Работим заедно от дефинирането на проблема до реализацията. Така бизнес логиката, техническите ограничения и практическото изпълнение се разглеждат като части от една система.",
-      en: "We work together from defining the problem through to delivery. Business logic, technical constraints and practical implementation are treated as parts of one system.",
+      bg: "Съчетаваме опит в бизнес процесите, софтуерната архитектура и разработката на приложения. Работим заедно от изясняването на задачата до техническата реализация.",
+      en: "We bring together experience in business processes, software architecture and application development. We work together from understanding the problem through to technical implementation.",
     },
   },
   work: {
     label: { bg: "Контакт", en: "Contact" },
-    heading: { bg: "Къде губите време, информация или контрол?", en: "Where are you losing time, information or control?" },
+    heading: { bg: "Сещате ли се за процес, който може да работи по-добре?", en: "Can you think of a process that could work better?" },
     lead: {
-      bg: "Опишете процеса с няколко изречения. Ще преценим дали виждаме смислена възможност за подобрение и какъв би бил разумният следващ ход.",
-      en: "Describe the process in a few sentences. We will assess whether there is a meaningful opportunity to improve it, and what a sensible next step could be.",
+      bg: "Не е необходимо да имате готово техническо задание. Разкажете ни какво ви затруднява или какво бихте искали да подобрите. Ще обсъдим дали можем да помогнем и каква би била разумната следваща стъпка.\n\nНека поговорим.",
+      en: "You do not need a detailed technical brief. Tell us what is slowing you down or what you would like to improve. We can discuss whether we can help and what a sensible next step might be.\n\nLet's talk.",
     },
   },
 } as const;
@@ -96,12 +96,12 @@ export const contactForm = {
   name: { bg: "Име", en: "Name" },
   company: { bg: "Фирма", en: "Company" },
   phone: { bg: "Телефон", en: "Phone" },
-  problem: { bg: "Опишете процеса или проблема", en: "Describe the process or the problem" },
+  problem: { bg: "Разкажете ни какво ви затруднява", en: "Tell us what is slowing you down" },
   problemPlaceholder: {
     bg: "Коя дейност ви забавя, повтаря се твърде често или изисква прекалено много ръчна работа?",
     en: "Which activity slows you down, repeats too often, or takes too much manual work?",
   },
-  send: { bg: "Изпрати казуса", en: "Send the enquiry" },
+  send: { bg: "Изпратете запитване", en: "Send an enquiry" },
   sending: { bg: "Изпращане…", en: "Sending…" },
   success: {
     bg: "Получихме съобщението. Ще се свържем с вас.",
