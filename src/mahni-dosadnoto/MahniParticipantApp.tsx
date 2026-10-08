@@ -787,7 +787,6 @@ function ResultsView({
       </header>
       <div className="md-result-grid">
         <section className="md-result-primary">
-          <h2 className="md-result-primary-title">Изборът на участниците</h2>
           <ol className="md-rank">
             {snapshot.humanTop3.map((row) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
