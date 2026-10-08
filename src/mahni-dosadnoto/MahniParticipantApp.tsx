@@ -252,7 +252,7 @@ export function MahniParticipantApp({
   if (!ctx) {
     return (
       <div className="md-app">
-        <EventHeader stage={null} showTitle={false} onBack={leaveGame} />
+        <EventHeader stage={null} onBack={leaveGame} />
         <section className="md-reveal md-loading" aria-busy="true">
           <Logo locale="bg" layout="compact" />
           <h1 className="md-display md-loading-title">Махни досадното</h1>
@@ -277,7 +277,7 @@ export function MahniParticipantApp({
   if (snapshot?.paused && !showingIntro) {
     return (
       <div className="md-app">
-        <EventHeader stage={stage} showTitle showBack onBack={() => { setEntered(false); setShowIntro(true); }} />
+        <EventHeader stage={stage} showBack onBack={() => { setEntered(false); setShowIntro(true); }} />
         <section className="md-reveal">
           <h1 className="md-question md-display">Пауза</h1>
           <p className="md-support">
@@ -294,7 +294,6 @@ export function MahniParticipantApp({
     <div className={view === "results" ? "md-app is-results" : "md-app"}>
       <EventHeader
         stage={showingIntro || !ctx.participant ? null : stage}
-        showTitle
         showBack={!showingIntro}
         onBack={() => {
           setEntered(false);
@@ -546,12 +545,10 @@ function BackLink({ onBack }: { onBack: () => void }) {
 
 function EventHeader({
   stage,
-  showTitle,
   showBack = true,
   onBack,
 }: {
   stage: StoryStage | null;
-  showTitle: boolean;
   showBack?: boolean;
   onBack: () => void;
 }) {
@@ -561,7 +558,6 @@ function EventHeader({
         <Logo locale="bg" layout="compact" />
         {showBack ? <BackLink onBack={onBack} /> : null}
       </div>
-      {showTitle && stage ? <p className="md-bar-event">Махни досадното</p> : null}
       {stage ? <ParticipantStage stage={stage} /> : null}
       {stage ? <StageProgress stage={stage} /> : null}
     </header>

@@ -124,13 +124,6 @@
   height: auto;
 }
 
-.md-bar-event {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.15;
-}
-
 .md-stage-chip {
   display: flex;
   align-items: center;
