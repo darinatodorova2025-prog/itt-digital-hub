@@ -357,7 +357,11 @@ function PauseHold() {
   return (
     <div className="md-live-hold is-pause">
       <h1 className="md-display">Пауза</h1>
-      <p className="md-live-lead">Спираме за момент. После продължаваме заедно.</p>
+      <p className="md-live-lead">
+        Спираме за момент.
+        <br />
+        След малко ще продължим.
+      </p>
     </div>
   );
 }
