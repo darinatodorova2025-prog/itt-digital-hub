@@ -739,7 +739,7 @@ export class MemoryMahniStore implements MahniStore {
 
   async approveAudienceTheme(themeId: string) {
     const theme = this.themeInReview(themeId);
-    if (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "pending") throw new Error("not_review_ready");
+    if (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "pending" && theme.reviewStatus !== "rework") throw new Error("not_review_ready");
     theme.reviewStatus = "approved";
   }
 
@@ -756,6 +756,11 @@ export class MemoryMahniStore implements MahniStore {
     const theme = this.themeInReview(themeId);
     if (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "rework") throw new Error("not_review_ready");
     theme.reviewStatus = "rework";
+  }
+
+  async reopenThemeReview(themeId: string) {
+    const theme = this.themeInReview(themeId);
+    if (theme.reviewStatus === "rework") theme.reviewStatus = "review_ready";
   }
 
   async replaceReviewTheme(

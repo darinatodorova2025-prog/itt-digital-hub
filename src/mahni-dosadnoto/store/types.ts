@@ -90,6 +90,8 @@ export interface MahniStore {
   approveAudienceTheme(themeId: string): Promise<void>;
   recordAuditOverride(themeId: string, actorEmail: string, reason: string): Promise<void>;
   markThemeRework(themeId: string): Promise<void>;
+  /** Put a theme back on the hall card after a split that did not finish. */
+  reopenThemeReview(themeId: string): Promise<void>;
   replaceReviewTheme(
     themeId: string,
     replacements: Array<{

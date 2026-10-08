@@ -50,7 +50,7 @@ export function toPublicReviewCard(
 
 export function currentPublicReview(themes: Theme[], ideas: Array<{ id: string; organization: string }> = []): PublicReviewCard | null {
   const organizations = new Map(ideas.map((idea) => [idea.id, idea.organization]));
-  const current = themes.find((theme) => !theme.isAiWildcard && theme.reviewStatus === "review_ready");
+  const current = themes.find((theme) => !theme.isAiWildcard && (theme.reviewStatus === "review_ready" || theme.reviewStatus === "rework"));
   return current ? toPublicReviewCard(current, organizations) : null;
 }
 

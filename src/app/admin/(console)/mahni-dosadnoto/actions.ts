@@ -104,6 +104,7 @@ export async function mdSplitAudienceTheme(themeId: string) {
   const [themes, ideas] = await Promise.all([store.listThemes(), store.listIdeasAdmin()]);
   const theme = themes.find((item) => item.id === themeId);
   if (!theme || theme.isAiWildcard) throw new Error("invalid_theme");
+  if ((theme.sourceIdeas ?? []).length < 2) throw new Error("already_single");
   await store.markThemeRework(themeId);
   const byId = new Map(ideas.map((idea) => [idea.id, idea]));
   const semantic = (theme.sourceIdeas ?? []).map((source) => {
@@ -114,6 +115,7 @@ export async function mdSplitAudienceTheme(themeId: string) {
     const replacements = await resplitCluster(semantic, theme.audit?.reasonCodes ?? ["audience_split"], asSolComplete(completeClusteringJson));
     await store.replaceReviewTheme(themeId, replacements);
   } catch {
+    await store.reopenThemeReview(themeId);
     throw new Error("split_failed");
   }
   revalidatePath("/admin/mahni-dosadnoto");

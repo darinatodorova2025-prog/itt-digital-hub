@@ -140,6 +140,7 @@ export function MahniLiveScreen({
             {operator && realReview ? (
               <HallReviewControls
                 themeId={card.id}
+                canSplit={card.ideaCount > 1}
                 onBusy={(busy) => {
                   pausePoll.current = busy;
                 }}
@@ -219,10 +220,12 @@ function FinalThemes({
 
 function HallReviewControls({
   themeId,
+  canSplit,
   onBusy,
   onDone,
 }: {
   themeId: string;
+  canSplit: boolean;
   onBusy: (busy: boolean) => void;
   onDone: () => Promise<void>;
 }) {
@@ -239,7 +242,13 @@ function HallReviewControls({
       await onDone();
     } catch (caught) {
       const code = caught instanceof Error ? caught.message : "";
-      setError(code === "split_failed" ? "Разделянето не завърши. Темата остава за нов опит." : "Решението не беше записано.");
+      setError(
+        code === "already_single"
+          ? "Тази тема вече е една идея и не може да се раздели."
+          : code === "split_failed"
+            ? "Разделянето не завърши. Темата остава за нов опит."
+            : "Решението не беше записано.",
+      );
     } finally {
       onBusy(false);
       setPending("");
@@ -252,10 +261,12 @@ function HallReviewControls({
         {pending === "approve" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
         ОДОБРЕНО ОТ ЗАЛАТА
       </button>
-      <button type="button" className="md-ops-btn" disabled={pending.length > 0} aria-busy={pending === "split"} onClick={() => void run("split")}>
-        {pending === "split" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
-        ТРЯБВА ДА СЕ РАЗДЕЛИ
-      </button>
+      {canSplit ? (
+        <button type="button" className="md-ops-btn" disabled={pending.length > 0} aria-busy={pending === "split"} onClick={() => void run("split")}>
+          {pending === "split" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
+          ТРЯБВА ДА СЕ РАЗДЕЛИ
+        </button>
+      ) : null}
       {error ? <p className="md-audience-error">{error}</p> : null}
     </div>
   );

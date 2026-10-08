@@ -96,23 +96,69 @@ async function persistReviewDrafts(campaignId: string, previousIds: string[], dr
   const sb = client();
   const nextIds = new Set(drafts.map((draft) => draft.id));
   const removed = previousIds.filter((id) => !nextIds.has(id));
+  const payload = drafts.map((draft) => ({
+    id: draft.id,
+    analysisRunId: draft.analysisRunId,
+    title: draft.title,
+    description: draft.description,
+    formulationNote: draft.formulationNote,
+    isAiWildcard: draft.isAiWildcard,
+    sortOrder: draft.sortOrder,
+    ideaIds: draft.sources.map((source) => source.id),
+    sourceIdeas: draft.sources.map((source) => ({ id: source.id, body: source.body })),
+    reviewStatus: draft.reviewStatus,
+  }));
   const { error } = await sb.rpc("md_replace_review_themes", {
     p_campaign_id: campaignId,
     p_remove_ids: removed,
-    p_themes: drafts.map((draft) => ({
+    p_themes: payload,
+  });
+  if (!error) return;
+  const missing = error.code === "PGRST202" || (error.message ?? "").includes("md_replace_review_themes");
+  if (!missing) throw new MahniStoreUnavailableError(error.message);
+  await persistReviewDraftsDirect(campaignId, removed, drafts);
+}
+
+async function persistReviewDraftsDirect(campaignId: string, removed: string[], drafts: ReviewDraft[]) {
+  const sb = client();
+  if (removed.length > 0) {
+    const { error } = await sb.from("md_themes").delete().eq("campaign_id", campaignId).in("id", removed);
+    if (error) throw new MahniStoreUnavailableError(error.message);
+  }
+  for (const draft of drafts) {
+    const organizations = new Set(draft.sources.map((source) => source.organization.trim().toLowerCase()).filter((name) => name.length > 0));
+    const row = {
       id: draft.id,
-      analysisRunId: draft.analysisRunId,
+      campaign_id: campaignId,
+      analysis_run_id: draft.analysisRunId,
       title: draft.title,
       description: draft.description,
-      formulationNote: draft.formulationNote,
-      isAiWildcard: draft.isAiWildcard,
-      sortOrder: draft.sortOrder,
-      ideaIds: draft.sources.map((source) => source.id),
-      sourceIdeas: draft.sources.map((source) => ({ id: source.id, body: source.body })),
-      reviewStatus: draft.reviewStatus,
-    })),
-  });
-  if (error) throw new MahniStoreUnavailableError(error.message);
+      is_ai_wildcard: draft.isAiWildcard,
+      sort_order: draft.sortOrder,
+      idea_count: draft.sources.length,
+      organization_count: organizations.size,
+      formulation_note: draft.formulationNote,
+      source_ideas: draft.sources.map((source) => ({ id: source.id, body: source.body })),
+    };
+    let { error } = await sb.from("md_themes").upsert(row);
+    if (error && /formulation_note|source_ideas/.test(error.message)) {
+      const { formulation_note: _note, source_ideas: _sources, ...base } = row;
+      const retry = await sb.from("md_themes").upsert(base);
+      error = retry.error;
+    }
+    if (error) throw new MahniStoreUnavailableError(error.message);
+    const cleared = await sb.from("md_theme_idea_links").delete().eq("theme_id", draft.id);
+    if (cleared.error) throw new MahniStoreUnavailableError(cleared.error.message);
+    if (draft.sources.length > 0) {
+      const linked = await sb.from("md_theme_idea_links").insert(draft.sources.map((source) => ({ theme_id: draft.id, idea_id: source.id })));
+      if (linked.error) throw new MahniStoreUnavailableError(linked.error.message);
+    }
+    await sb.rpc("md_audit", {
+      p_campaign_id: campaignId,
+      p_action: "theme_review",
+      p_detail: { themeId: draft.id, status: draft.reviewStatus },
+    });
+  }
 }
 
 function throwMapped(error: { message?: string; code?: string }): never {
@@ -844,7 +890,7 @@ export class SupabaseMahniStore implements MahniStore {
 
   async approveAudienceTheme(themeId: string) {
     const theme = (await this.listThemes()).find((item) => item.id === themeId);
-    if (!theme || theme.isAiWildcard || (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "pending")) throw new Error(theme ? "not_review_ready" : "invalid_theme");
+    if (!theme || theme.isAiWildcard || (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "pending" && theme.reviewStatus !== "rework")) throw new Error(theme ? "not_review_ready" : "invalid_theme");
     await this.setThemeReview(themeId, "approved", null);
   }
 
@@ -862,6 +908,12 @@ export class SupabaseMahniStore implements MahniStore {
     if (!theme || theme.isAiWildcard) throw new Error("invalid_theme");
     if (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "rework") throw new Error("not_review_ready");
     await this.setThemeReview(themeId, "rework", theme.auditOverride ?? null);
+  }
+
+  async reopenThemeReview(themeId: string) {
+    const theme = (await this.listThemes()).find((item) => item.id === themeId);
+    if (!theme || theme.isAiWildcard || theme.reviewStatus !== "rework") return;
+    await this.setThemeReview(themeId, "review_ready", theme.auditOverride ?? null);
   }
 
   async replaceReviewTheme(

@@ -23,6 +23,7 @@ export function AudienceReviewDesk({
     real.find((theme) => theme.reviewStatus === "review_ready") ??
     real.find((theme) => theme.reviewStatus === "audit_unavailable") ??
     real.find((theme) => theme.reviewStatus === "pending") ??
+    real.find((theme) => theme.reviewStatus === "rework") ??
     null;
   const [reason, setReason] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
@@ -40,7 +41,9 @@ export function AudienceReviewDesk({
       setMessage(
         code === "not_mergeable"
           ? "Тези идеи не описват един и същ проблем и остават отделни."
-          : code === "split_failed"
+          : code === "already_single"
+            ? "Тази тема вече е една идея и не може да се раздели."
+            : code === "split_failed"
             ? "Разделянето не завърши. Темата остава за нов опит."
             : failure,
       );
@@ -87,7 +90,7 @@ export function AudienceReviewDesk({
             </form>
           ) : (
             <div className="md-ops-advanced-row">
-              <button type="button" className="md-ops-btn" disabled={busy || pending.length > 0 || (current.reviewStatus !== "review_ready" && current.reviewStatus !== "pending")} aria-busy={pending === "approve"} onClick={() => void run("approve", () => onApprove(current.id), "Одобрението не беше записано.")}>
+              <button type="button" className="md-ops-btn" disabled={busy || pending.length > 0 || (current.reviewStatus !== "review_ready" && current.reviewStatus !== "pending" && current.reviewStatus !== "rework")} aria-busy={pending === "approve"} onClick={() => void run("approve", () => onApprove(current.id), "Одобрението не беше записано.")}>
                 {pending === "approve" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
                 ОДОБРЕНО ОТ ЗАЛАТА
               </button>
