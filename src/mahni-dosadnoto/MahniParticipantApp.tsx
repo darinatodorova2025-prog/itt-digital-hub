@@ -195,7 +195,15 @@ export function MahniParticipantApp({
       });
       const data = await res.json();
       if (!data.ok) {
-        setError("Гласът не беше записан.");
+        setError(
+          data.error === "paused"
+            ? "Пауза. Изчакваме оператора."
+            : data.error === "not_voting"
+              ? "Гласуването не е отворено."
+              : data.error === "vote_limit"
+                ? "Гласовете ви са използвани."
+                : "Гласът не беше записан.",
+        );
         return;
       }
       await reload();

@@ -380,15 +380,8 @@ export class SupabaseMahniStore implements MahniStore {
   }
 
   private async assertVotingTheme(campaignId: string, themeId: string) {
-    const sb = client();
-    const { data, error } = await sb
-      .from("md_themes")
-      .select("id, is_ai_wildcard, review_status")
-      .eq("id", themeId)
-      .eq("campaign_id", campaignId)
-      .maybeSingle();
-    if (error) throw new MahniStoreUnavailableError();
-    if (!data || data.is_ai_wildcard || data.review_status !== "approved") throw new Error("invalid_theme");
+    const theme = (await this.listThemes()).find((item) => item.id === themeId && item.campaignId === campaignId);
+    if (!theme || !isVotingTheme(theme)) throw new Error("invalid_theme");
   }
 
   async castVote(sessionToken: string, themeId: string, idempotencyKey?: string) {
