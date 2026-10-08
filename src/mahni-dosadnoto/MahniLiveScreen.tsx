@@ -19,9 +19,6 @@ import { toPublicReviewCard, type LiveReviewItem } from "@/mahni-dosadnoto/revie
 import { REVIEW_PREVIEW_ITEMS, REVIEW_PREVIEW_KEY } from "@/mahni-dosadnoto/review-preview";
 import { mdApproveAudienceTheme, mdCloseVoting, mdOpenVoting, mdSplitAudienceTheme } from "@/app/admin/(console)/mahni-dosadnoto/actions";
 
-/** Stable theme thumbnails for the participant Top 3 result cards. */
-const RESULT_THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-river.webp", "/event/mahni/thumb-aerial.webp"];
-
 export function MahniLiveScreen({
   initialSnapshot,
   preview = false,
@@ -517,11 +514,8 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
         <section>
           <h2>Изборът на участниците</h2>
           <ol className="md-live-choice">
-            {snapshot.humanTop3.map((row, index) => (
+            {snapshot.humanTop3.map((row) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
-                <span className="md-live-choice-photo" aria-hidden="true">
-                  <Image src={RESULT_THUMBS[index % RESULT_THUMBS.length]!} alt="" fill sizes="9rem" className="md-live-choice-img" />
-                </span>
                 <b>{String(row.rank).padStart(2, "0")}</b>
                 <span className="md-live-choice-copy">
                   {row.title}
