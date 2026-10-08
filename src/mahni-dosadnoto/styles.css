@@ -1378,9 +1378,9 @@
 
 .md-scene-result {
   background:
-    linear-gradient(90deg, rgba(4, 14, 49, 0.74) 0%, rgba(4, 14, 49, 0.52) 42%, rgba(4, 14, 49, 0.2) 74%, rgba(4, 14, 49, 0.34) 100%),
-    linear-gradient(180deg, rgba(4, 14, 49, 0.5) 0%, rgba(4, 14, 49, 0) 30%, rgba(4, 14, 49, 0) 62%, rgba(4, 14, 49, 0.55) 100%),
-    url("/event/mahni/aerial.webp") center 40% / cover no-repeat;
+    linear-gradient(180deg, rgba(4, 14, 49, 0.9) 0%, rgba(4, 14, 49, 0.55) 10%, rgba(4, 14, 49, 0) 28%, rgba(4, 14, 49, 0) 72%, rgba(4, 14, 49, 0.62) 100%),
+    linear-gradient(90deg, rgba(4, 14, 49, 0.55) 0%, rgba(4, 14, 49, 0.28) 34%, rgba(4, 14, 49, 0.06) 58%, rgba(4, 14, 49, 0) 74%),
+    url("/event/mahni/result.webp") center / cover no-repeat;
 }
 
 .md-scene-jury {
@@ -2330,6 +2330,15 @@
   font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.4;
+}
+
+.md-scene-result .md-live-official {
+  justify-self: end;
+  max-width: 28rem;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  background: rgba(7, 20, 51, 0.62);
+  backdrop-filter: blur(6px);
 }
 
 .md-live-official span {
