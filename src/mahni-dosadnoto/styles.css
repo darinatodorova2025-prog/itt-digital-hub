@@ -616,6 +616,11 @@
   font-weight: 700;
 }
 
+.md-confirm .md-support {
+  margin-top: 1.35rem;
+  margin-bottom: 1.35rem;
+}
+
 .md-confirm-art {
   display: grid;
   place-items: center;
