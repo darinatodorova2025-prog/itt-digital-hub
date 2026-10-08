@@ -1552,14 +1552,41 @@
   font-weight: 650;
 }
 
+.md-live .md-equation {
+  align-items: center;
+  margin-top: clamp(3.6rem, 9vh, 6.5rem);
+  gap: 1.1rem 1.75rem;
+}
+
 .md-live .md-equation strong {
   color: #fff;
-  font-size: clamp(2.8rem, 4vw, 4rem);
+  font-size: clamp(4.2rem, 6.4vw, 6.4rem);
 }
 
 .md-live .md-equation span,
 .md-live .md-eq-plus {
-  color: rgba(247, 248, 253, 0.72);
+  color: #f7f8fd;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  font-weight: 650;
+}
+
+.md-live .md-equation .is-waiting {
+  opacity: 1;
+}
+
+.md-live .md-equation .is-waiting strong {
+  opacity: 0.72;
+}
+
+.md-live .md-eq-arrow {
+  align-self: center;
+  padding-bottom: 0;
+  color: #fff;
+}
+
+.md-live .md-eq-arrow svg {
+  width: 3.4rem;
+  height: 1.9rem;
 }
 
 .md-live-group-frame {
@@ -2124,7 +2151,12 @@
   .md-live-metrics strong,
   .md-live-vote-total strong,
   .md-live .md-equation strong {
-    font-size: clamp(2rem, 6vh, 3rem);
+    font-size: clamp(3.2rem, 8vh, 5rem);
+  }
+
+  .md-live .md-equation span,
+  .md-live .md-eq-plus {
+    font-size: clamp(1.2rem, 2.6vh, 1.6rem);
   }
 
   .md-live-group-frame {
