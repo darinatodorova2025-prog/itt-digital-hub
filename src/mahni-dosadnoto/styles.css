@@ -612,6 +612,10 @@
   text-align: left;
 }
 
+.md-app .md-confirm h1 {
+  font-weight: 700;
+}
+
 .md-confirm-art {
   display: grid;
   place-items: center;
