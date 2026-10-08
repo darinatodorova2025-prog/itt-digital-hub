@@ -280,7 +280,7 @@ export function MahniParticipantApp({
         <EventHeader stage={stage} showTitle showBack onBack={() => { setEntered(false); setShowIntro(true); }} />
         <section className="md-reveal">
           <h1 className="md-question md-display">Пауза</h1>
-          <p className="md-support">Операторът спря за момент. Продължаваме от същото място.</p>
+          <p className="md-support">Спираме за малко. След малко продължаваме заедно.</p>
         </section>
       </div>
     );
