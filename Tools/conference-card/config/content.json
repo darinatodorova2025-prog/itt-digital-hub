@@ -1,0 +1,37 @@
+{
+  "brand": "ITT Digital Hub",
+  "website": "ittdigitalhub.org",
+  "phone": "+359 895 581 911",
+  "showPhone": false,
+  "phoneEvidence": "src/content/site.ts contactPhones[0]; live footer /bg/vik-proektant/compare checked 2026-10-08",
+  "front": {
+    "header": "",
+    "heading": "Кой е най-досадният проблем във вашата работа?",
+    "support": "",
+    "steps": [
+      "Сканирай",
+      "Сподели",
+      "Гласувай"
+    ],
+    "rewardTitle": "TOP 3",
+    "rewardNoun": "идеи за автоматизиране",
+    "rewardBody": "получават безплатен ИИ одит за организацията или лична консултация"
+  },
+  "back": {
+    "heading": "Може ли този процес да се оптимизира?",
+    "instruction": "",
+    "questions": [
+      "Повтаря ли се?",
+      "Отнема ли ненужно време?",
+      "Търси ли се информация на различни места?",
+      "Прехвърлят ли се данни ръчно?",
+      "Повтарят ли се едни и същи проверки?",
+      "Има ли чакане, връщане назад или грешки?"
+    ],
+    "interpretation": "Дори едно „Да“ може да е повод да разгледате процеса.",
+    "ctaHeading": "Разпознахте такъв процес?",
+    "ctaBody": "Нека обсъдим как да го подобрим.",
+    "phone": "+359 895 581 911",
+    "email": "office@ittdigitalhub.org"
+  }
+}

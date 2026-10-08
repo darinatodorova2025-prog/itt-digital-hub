@@ -1,0 +1,38 @@
+{
+  "name": "itt-conference-card",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4176 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test tests/*.test.mjs",
+    "export": "node scripts/export.mjs",
+    "export:individual": "node scripts/export.mjs --only individual",
+    "export:duplex": "node scripts/export.mjs --only duplex",
+    "export:calibration": "node scripts/export.mjs --only calibration",
+    "export:proof": "node scripts/export.mjs --proof",
+    "render": "node scripts/render.mjs",
+    "preflight": "node scripts/preflight.mjs",
+    "print:package": "npm run typecheck && npm test && npm run export && npm run render && npm run preflight",
+    "print:proof": "npm run typecheck && npm test && npm run export:proof && npm run render -- --proof && npm run preflight -- --proof",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "jsqr": "1.4.0",
+    "pdf-lib": "1.17.1",
+    "playwright": "1.58.2",
+    "pngjs": "7.0.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.1"
+  }
+}

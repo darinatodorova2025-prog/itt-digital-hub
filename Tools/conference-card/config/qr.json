@@ -1,0 +1,9 @@
+{
+  "url": "https://ittdigitalhub.org/bg/mahni-dosadnoto",
+  "confirmedUrl": "https://ittdigitalhub.org/bg/mahni-dosadnoto",
+  "evidence": "scripts/mahni-dosadnoto-qr.ts, docs/mahni-dosadnoto/REHEARSAL.md and public/event/mahni-dosadnoto-qr.svg; live destination checked 2026-10-08",
+  "errorCorrectionLevel": "M",
+  "quietZoneModules": 4,
+  "originalAsset": "/assets/original-challenge-qr.svg",
+  "originalUrl": "https://ittdigitalhub.org/bg/mahni-dosadnoto"
+}

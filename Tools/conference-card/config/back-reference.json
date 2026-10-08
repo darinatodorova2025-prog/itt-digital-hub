@@ -1,0 +1,12 @@
+{
+  "src": "/assets/back-reference.png",
+  "sha256": "b10d45114512e46f43f74491c0a8890c97cf6b9c4ae02026891a958b6366ad8b",
+  "widthPx": 1066,
+  "heightPx": 1476,
+  "trimMm": {
+    "width": 65,
+    "height": 90
+  },
+  "format": "native-reference-layout",
+  "safeAreaNote": "Native content is arranged within a minimum 4 mm safe area."
+}

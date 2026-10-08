@@ -1,0 +1,15 @@
+:root {
+  --navy: #040e31;
+  --signal: #002cff;
+  --paper: #edf0fb;
+  --white: #f7f8fd;
+  --muted: #465473;
+  --line: #cfd7ed;
+  --signal-on-dark: #7390ff;
+  --front-heading: 18px;
+  --back-heading: 18px;
+  --body: 8pt;
+  --qr-size: 23mm;
+  --panel-radius: 3mm;
+  --row-gap: 0mm;
+}

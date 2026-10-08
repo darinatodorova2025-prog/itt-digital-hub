@@ -1,0 +1,376 @@
+@import "./tokens.css";
+@font-face {
+  font-family: Plex;
+  src: url("/assets/IBMPlexSans-Regular.woff2");
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: Plex;
+  src: url("/assets/IBMPlexSans-Medium.woff2");
+  font-weight: 500;
+  font-display: block;
+}
+@font-face {
+  font-family: Plex;
+  src: url("/assets/IBMPlexSans-SemiBold.woff2");
+  font-weight: 600 900;
+  font-display: block;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+p,
+h1,
+h2,
+ol {
+  margin: 0;
+  padding: 0;
+}
+.card {
+  width: var(--full-width);
+  height: var(--full-height);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--paper);
+  color: var(--navy);
+  font-family: Plex, "IBM Plex Sans", sans-serif;
+  font-size: var(--body);
+  font-weight: 400;
+  line-height: 1.15;
+  font-synthesis: none;
+  font-feature-settings: "locl";
+  text-rendering: optimizeLegibility;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.safe-content {
+  position: relative;
+  width: calc(var(--trim-width) - 2 * var(--safe));
+  margin-left: calc(var(--bleed) + var(--safe));
+}
+.brand-logo {
+  display: block;
+  width: 23mm;
+  height: 4.7917mm;
+  overflow: hidden;
+}
+.brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* The official lockup has 14 transparent rows above the visible mark. */
+  transform: translateY(-0.4193mm);
+}
+.front-hero {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 38mm;
+  background-color: #040e31;
+  background-image: radial-gradient(ellipse at 75% 0%, #09235b 0, #040e31 72%);
+}
+.front-content {
+  padding-top: calc(var(--bleed) + var(--safe));
+  color: var(--white);
+}
+.challenge-label {
+  font-size: 7.5pt;
+  min-height: 1.15em;
+  color: #c8d1ec;
+  margin-top: 0.7mm;
+  margin-bottom: 0.5mm;
+}
+.front-content h1 {
+  font-size: var(--front-heading);
+  line-height: 1.16;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.headline-emphasis {
+  color: #002cff;
+}
+.support {
+  font-size: 8pt;
+  line-height: 1.15;
+  color: #dce3f8;
+  margin-top: 0.6mm;
+}
+.workbench {
+  position: absolute;
+  top: 37mm;
+  left: var(--bleed);
+  right: var(--bleed);
+  bottom: 0;
+  background: var(--white);
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+  padding: 1.3mm var(--safe) calc(var(--bleed) + var(--safe) + 0.3mm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.qr-section {
+  width: var(--qr-size);
+  height: var(--qr-size);
+  background: white;
+  flex-shrink: 0;
+}
+.participation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 3mm;
+}
+.participation .steps {
+  flex-direction: column;
+  width: auto;
+  margin-top: 0;
+  gap: 2mm;
+}
+.qr-art,
+.qr-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.qr-placeholder {
+  width: 100%;
+  height: 100%;
+  border: 0.35mm dashed var(--signal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1mm;
+  font-size: 8pt;
+  padding: 2mm;
+}
+.qr-placeholder strong {
+  font-size: 18pt;
+}
+.qr-placeholder small {
+  font-size: 6.5pt;
+}
+.steps {
+  display: flex;
+  list-style: none;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 1.3mm;
+  gap: 1mm;
+  font-size: 8pt;
+  font-weight: 500;
+}
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 1mm;
+  white-space: nowrap;
+}
+.steps li span {
+  display: grid;
+  place-items: center;
+  background: var(--signal);
+  color: white;
+  width: 3.5mm;
+  height: 3.5mm;
+  border-radius: 50%;
+  font-size: 7.5pt;
+}
+.reward {
+  border-top: 0.2mm solid var(--line);
+  width: 100%;
+  margin-top: 0.6mm;
+  padding-top: 1mm;
+  text-align: center;
+}
+.reward > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2mm;
+}
+.reward > div > strong {
+  font-size: 16pt;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--signal);
+  flex-shrink: 0;
+}
+.reward > div > b {
+  font-size: 10pt;
+  font-weight: 600;
+  max-width: 35mm;
+  line-height: 1.1;
+  text-align: left;
+}
+.reward p {
+  font-size: 8pt;
+  line-height: 1.1;
+  max-width: 57mm;
+  margin: 1.7mm auto 0;
+}
+.reward-highlight {
+  color: var(--signal);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.contact-footer {
+  font-size: 8pt;
+  color: var(--muted);
+  line-height: 1.1;
+  text-align: center;
+  margin-top: auto;
+}
+.contact-footer > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3mm;
+}
+.card-back { background: #edf0fb; }
+.composed-back { position: absolute; inset: 0; }
+.back-hero {
+  position: absolute; inset: 0 0 auto;
+  height: 29mm;
+  background-color: #040e31;
+  background-image: radial-gradient(ellipse at 75% 0%, #09235b 0, #040e31 72%);
+  color: var(--white);
+}
+.back-hero .safe-content { padding-top: calc(var(--bleed) + var(--safe)); }
+.back-hero h1 {
+  font-size: var(--back-heading); font-weight: 600; line-height: 1.08;
+  letter-spacing: -0.015em; margin-top: 0.5mm;
+}
+.back-title-line { display: block; }
+.back-title-accent { color: #002cff; }
+.back-hero .instruction {
+  margin-top: 0.9mm; font-size: 8pt; line-height: 1.13;
+  color: #c8d1ec; font-weight: 400;
+}
+.back-workbench {
+  position: absolute; top: 27.1mm; left: 3mm; right: 3mm; bottom: 3mm;
+  background-color: #f7f8fd;
+  border-radius: 3.5mm;
+  padding: 1.2mm 4mm 4.12mm;
+  display: flex; flex-direction: column;
+}
+.assessment { list-style: none; display: flex; flex-direction: column; gap: 0.65mm; }
+.assessment li {
+  position: relative;
+  display: grid; grid-template-columns: 3mm 0.12mm 1fr;
+  column-gap: 0.7mm; align-items: center;
+  margin: 0 -0.7mm; padding: 0.28mm 0.7mm;
+  outline: 0.12mm solid #d5ddf6; border-radius: 1.2mm;
+}
+.question-checkbox {
+  width: 3mm; height: 3mm;
+  border: 0.32mm solid #002cff; border-radius: 0.5mm;
+  background: #ffffff;
+}
+.question-divider { width: 0.12mm; height: 100%; min-height: 3mm; background: #d5ddf6; }
+.question-text { font-size: 8pt; line-height: 1.17; font-weight: 400; letter-spacing: -0.015em; }
+.back-summary {
+  margin: 1.1mm -0.7mm 0; padding: 1mm 0.7mm 0.6mm;
+  border-radius: 1.7mm; background: #e6ecff;
+}
+.interpretation { font-size: 8pt; line-height: 1.17; font-weight: 400; color: #465473; }
+.interpretation strong { font-weight: 600; color: #002cff; }
+.cta { margin-top: 1.5mm; }
+.cta h2 { font-size: 8.5pt; font-weight: 600; line-height: 1.1; color: #040e31; }
+.cta p { font-size: 8.5pt; font-weight: 500; line-height: 1.1; color: #002cff; margin-top: 0.45mm; }
+.back-footer {
+  margin-top: auto; padding-top: 0.5mm;
+  width: 100%;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.2mm;
+  color: var(--muted);
+}
+.back-phone, .back-email, .back-website {
+  font-size: 7.5pt; font-weight: 400; line-height: 1.08;
+}
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.guides {
+  position: absolute;
+  inset: 0;
+  border: 0.2mm solid #c0245b;
+  pointer-events: none;
+  z-index: 3;
+}
+.trim-guide {
+  position: absolute;
+  left: var(--bleed);
+  top: var(--bleed);
+  width: var(--trim-width);
+  height: var(--trim-height);
+  border: 0.18mm dashed #c0245b;
+}
+.safe-guide {
+  position: absolute;
+  inset: calc(var(--bleed) + var(--safe));
+  border: 0.18mm dashed #008267;
+}
+.sheet {
+  position: relative;
+  background: white;
+  flex-shrink: 0;
+}
+.sheet-slot {
+  position: absolute;
+  transform-origin: center;
+}
+.sheet-marks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.proof-slot {
+  position: absolute;
+  right: 8mm;
+  top: 8mm;
+  background: #ffe84d;
+  color: #040e31;
+  border: 0.2mm solid #040e31;
+  padding: 0.6mm 1mm;
+  font: 600 11pt Plex;
+  z-index: 4;
+}
+.print-surface {
+  margin: 0;
+  padding: 0;
+  width: 71mm;
+  height: 96mm;
+}
+@page {
+  size: 71mm 96mm;
+  margin: 0;
+}
+@media print {
+  html,
+  body,
+  #root {
+    margin: 0;
+    padding: 0;
+    width: 71mm;
+    height: 96mm;
+  }
+  .guides {
+    display: none !important;
+  }
+  .preview-app {
+    display: none !important;
+  }
+  .card {
+    break-after: page;
+  }
+}
