@@ -539,8 +539,8 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
           </section>
         ) : null}
       </div>
-      <div className="md-live-close">
-        {headline && body ? (
+      {headline && body ? (
+        <div className="md-live-close">
           <div className="md-live-shared">
             <ConvergeIcon size={26} />
             <div>
@@ -548,14 +548,8 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
               <p>{body}</p>
             </div>
           </div>
-        ) : (
-          <div />
-        )}
-        <p className="md-live-official">
-          Официалният резултат е изборът на участниците.
-          <span>От резултат към действие — организациите зад водещите теми могат да продължат разговора с ITT Digital Hub.</span>
-        </p>
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
