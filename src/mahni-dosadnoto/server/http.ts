@@ -19,6 +19,7 @@ export function handleStoreError(error: unknown) {
   if (message === "not_voting" || message === "vote_limit") return jsonError(message, 409);
   if (message === "unauthorized") return jsonError("unauthorized", 401);
   if (message === "invalid_theme") return jsonError("invalid_theme", 400);
+  if (message === "not_analyzing") return jsonError("not_analyzing", 409);
   return jsonError("failed", 500);
 }
 

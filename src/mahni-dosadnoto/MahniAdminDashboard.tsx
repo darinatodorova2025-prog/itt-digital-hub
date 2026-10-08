@@ -140,10 +140,18 @@ export function MahniAdminDashboard({ initial }: Props) {
           <p className="md-ops-kicker">Контролна зала</p>
           <h1>Махни досадното</h1>
         </div>
-        <p className={active ? "md-ops-live is-on" : "md-ops-live"}>
-          <i />
-          {campaign.phase === "CLOSED" ? "Събитието е приключено" : campaign.phase === "DRAFT" ? "Очаква старт" : "Събитието е активно"}
-        </p>
+        <div className={active ? "md-ops-status is-on" : "md-ops-status"}>
+          <p className={active ? "md-ops-live is-on" : "md-ops-live"}>
+            <i />
+            {campaign.phase === "CLOSED" ? "Събитието е приключено" : campaign.phase === "DRAFT" ? "Очаква старт" : "Събитието е активно"}
+          </p>
+          {active ? (
+            <p className="md-ops-rec">
+              <i />
+              Live
+            </p>
+          ) : null}
+        </div>
       </header>
 
       <nav className="md-ops-jump" aria-label="Секции на контролната зала">

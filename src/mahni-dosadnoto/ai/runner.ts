@@ -3,7 +3,7 @@ import "server-only";
 import type { Idea } from "../types";
 import { clusteringOutputSchemaFor, validateClusteringAgainstIdeas } from "../validation";
 import { getMahniStore } from "../store";
-import { completeJsonWithRetry } from "./provider";
+import { completeClusteringJson } from "./clustering";
 import { CLUSTERING_SYSTEM, clusteringUserPrompt } from "./prompts";
 import { isTransientAiError } from "./transient-errors";
 import { runJuryWithResilience, type RunJuryResult } from "./jury-execution";
@@ -24,7 +24,7 @@ export async function runClusteringAnalysis(): Promise<void> {
   let lastError: unknown = new Error("unknown");
   for (let attempt = 0; attempt <= backoffMs.length; attempt++) {
     try {
-      const { data, provider, model } = await completeJsonWithRetry(schema, CLUSTERING_SYSTEM, clusteringUserPrompt(payload));
+      const { data, provider, model } = await completeClusteringJson(schema, CLUSTERING_SYSTEM, clusteringUserPrompt(payload));
       const valid = validateClusteringAgainstIdeas(data, new Set(ideas.map((i) => i.id)));
       if (!valid.ok) throw new Error(valid.reason);
       await store.completeAnalysisRun(run.id, data, { provider, model });

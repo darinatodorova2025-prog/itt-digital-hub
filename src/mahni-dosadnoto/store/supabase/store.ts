@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { createSupabaseServiceClient } from "@/lib/cms/supabase-service";
 import { hashSessionToken } from "../../session-crypto";
 import { PARTICIPANT_SESSION_MS } from "../../session-lifetime";
@@ -12,6 +13,8 @@ import {
   type EventPhase,
   type JudgeType,
   type Participant,
+  type Theme,
+  type ThemeSourceIdea,
 } from "../../types";
 import {
   assertTransition,
@@ -23,6 +26,8 @@ import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../../vali
 import { validateClusteringAgainstIdeas } from "../../validation";
 import { aggregateAiJury, overlapCount, rankHumanThemes } from "../../tie-break";
 import { assertJuryCompleteForResults, publicJuryLenses, summarizeJuryProgress } from "../../jury-status";
+import { clusteringCommitTheme, clusteringCommitWildcard, hydrateThemeTrace } from "../../ai/formulation";
+import { draftsFromThemes, extractSources, mergeDrafts, toLiveReviewItem, type ReviewDraft } from "../../review";
 import { sanitizePlainText } from "../../sanitize";
 import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "../types";
 import {
@@ -57,6 +62,97 @@ function client() {
   }
 }
 
+async function hydrateStoredThemes(sb: ReturnType<typeof client>, themes: Theme[]): Promise<Theme[]> {
+  const sparseIds = themes
+    .filter((theme) => !theme.isAiWildcard && (theme.sourceIdeas ?? []).length === 0)
+    .map((theme) => theme.id);
+  const linked = new Map<string, ThemeSourceIdea[]>();
+  if (sparseIds.length > 0) {
+    const { data: links, error } = await sb.from("md_theme_idea_links").select("theme_id, idea_id").in("theme_id", sparseIds);
+    if (error) throw new MahniStoreUnavailableError();
+    const ideaIds = [...new Set((links ?? []).map((row) => String(row.idea_id)))];
+    const bodies = new Map<string, string>();
+    if (ideaIds.length > 0) {
+      const { data: ideas, error: ideaError } = await sb.from("md_ideas").select("id, body").in("id", ideaIds);
+      if (ideaError) throw new MahniStoreUnavailableError();
+      for (const idea of ideas ?? []) bodies.set(String(idea.id), String(idea.body ?? ""));
+    }
+    for (const link of links ?? []) {
+      const themeId = String(link.theme_id);
+      const ideaId = String(link.idea_id);
+      const list = linked.get(themeId) ?? [];
+      list.push({ id: ideaId, body: bodies.get(ideaId) ?? "" });
+      linked.set(themeId, list);
+    }
+  }
+  return themes.map((theme) => hydrateThemeTrace(theme, linked.get(theme.id) ?? []));
+}
+
+function missingTraceColumn(message: string): boolean {
+  return message.includes("formulation_note") || message.includes("source_ideas");
+}
+
+function organizationCount(sources: ReviewDraft["sources"]): number {
+  return new Set(sources.map((source) => source.organization.trim().toLocaleLowerCase("bg-BG")).filter((org) => org.length > 0)).size;
+}
+
+async function writeThemeRow(sb: ReturnType<typeof client>, campaignId: string, draft: ReviewDraft, exists: boolean) {
+  const base = {
+    campaign_id: campaignId,
+    analysis_run_id: draft.analysisRunId,
+    title: draft.title,
+    description: draft.description,
+    is_ai_wildcard: draft.isAiWildcard,
+    sort_order: draft.sortOrder,
+    idea_count: draft.sources.length,
+    organization_count: organizationCount(draft.sources),
+  };
+  const trace = {
+    formulation_note: draft.formulationNote,
+    source_ideas: draft.sources.map((source) => ({ id: source.id, body: source.body })),
+  };
+  const write = exists
+    ? () => sb.from("md_themes").update({ ...base, ...trace }).eq("id", draft.id)
+    : () => sb.from("md_themes").insert({ id: draft.id, ...base, ...trace });
+  const writeBase = exists
+    ? () => sb.from("md_themes").update(base).eq("id", draft.id)
+    : () => sb.from("md_themes").insert({ id: draft.id, ...base });
+  const first = await write();
+  if (!first.error) return;
+  if (!missingTraceColumn(first.error.message)) throw new MahniStoreUnavailableError(first.error.message);
+  const second = await writeBase();
+  if (second.error) throw new MahniStoreUnavailableError(second.error.message);
+}
+
+async function replaceThemeLinks(sb: ReturnType<typeof client>, draft: ReviewDraft) {
+  const removed = await sb.from("md_theme_idea_links").delete().eq("theme_id", draft.id);
+  if (removed.error) throw new MahniStoreUnavailableError(removed.error.message);
+  if (draft.sources.length === 0) return;
+  const inserted = await sb.from("md_theme_idea_links").insert(
+    draft.sources.map((source) => ({ theme_id: draft.id, idea_id: source.id })),
+  );
+  if (inserted.error) throw new MahniStoreUnavailableError(inserted.error.message);
+}
+
+async function persistReviewDrafts(campaignId: string, previousIds: string[], drafts: ReviewDraft[]) {
+  const sb = client();
+  const previous = new Set(previousIds);
+  for (const draft of drafts) {
+    await writeThemeRow(sb, campaignId, draft, previous.has(draft.id));
+  }
+  for (const draft of drafts.filter((item) => !previous.has(item.id))) {
+    await replaceThemeLinks(sb, draft);
+  }
+  for (const draft of drafts.filter((item) => previous.has(item.id))) {
+    await replaceThemeLinks(sb, draft);
+  }
+  const nextIds = new Set(drafts.map((draft) => draft.id));
+  const removed = previousIds.filter((id) => !nextIds.has(id));
+  if (removed.length === 0) return;
+  const deleted = await sb.from("md_themes").delete().in("id", removed);
+  if (deleted.error) throw new MahniStoreUnavailableError(deleted.error.message);
+}
+
 function throwMapped(error: { message?: string; code?: string }): never {
   const code = mapPostgresError(error);
   throw new Error(code);
@@ -64,6 +160,7 @@ function throwMapped(error: { message?: string; code?: string }): never {
 
 export class SupabaseMahniStore implements MahniStore {
   private campaignCache: EventCampaign | null = null;
+  private campaignInflight: Promise<EventCampaign> | null = null;
 
   constructor(private readonly campaignSlug: string = CAMPAIGN_SLUG) {}
 
@@ -81,6 +178,12 @@ export class SupabaseMahniStore implements MahniStore {
       this.campaignCache = mapCampaign(inserted as never);
       return this.campaignCache;
     }
+    // The finalizing RPC locks the campaign row. Skip it unless that phase can advance,
+    // so admin reads are not a chain of row locks.
+    if ((data as { phase?: string }).phase !== "FINALIZING") {
+      this.campaignCache = mapCampaign(data as never);
+      return this.campaignCache;
+    }
     await sb.rpc("md_maybe_advance_finalizing", { p_campaign_id: data.id });
     const { data: refreshed } = await sb.from("md_event_campaigns").select("*").eq("id", data.id).single();
     this.campaignCache = mapCampaign((refreshed ?? data) as never);
@@ -88,7 +191,12 @@ export class SupabaseMahniStore implements MahniStore {
   }
 
   async ensureCampaign(): Promise<EventCampaign> {
-    return this.loadCampaignRow();
+    if (!this.campaignInflight) {
+      this.campaignInflight = this.loadCampaignRow().finally(() => {
+        this.campaignInflight = null;
+      });
+    }
+    return this.campaignInflight;
   }
 
   async prepareNextCampaign(options: { isDemo: boolean }): Promise<EventCampaign> {
@@ -436,6 +544,7 @@ export class SupabaseMahniStore implements MahniStore {
       juryReady: campaign.phase === "AI_JURY" ? juryProgress.succeeded : null,
       juryTotal: campaign.phase === "AI_JURY" ? juryProgress.total : null,
       juryLenses: publicJuryLenses(campaign.phase, juryProgress),
+      review: campaign.phase === "ANALYZING" ? (await this.listThemes()).map(toLiveReviewItem) : null,
     };
   }
 
@@ -507,23 +616,20 @@ export class SupabaseMahniStore implements MahniStore {
   async completeAnalysisRun(runId: string, output: ClusteringOutput, meta: { provider: string; model: string }) {
     const campaign = await this.ensureCampaign();
     const sb = client();
-    const { data: ideas } = await sb.from("md_ideas").select("id").eq("campaign_id", campaign.id);
-    const ideaIds = new Set((ideas ?? []).map((i) => String(i.id)));
+    const { data: ideas } = await sb.from("md_ideas").select("id, body").eq("campaign_id", campaign.id);
+    const ideaRows = (ideas ?? []).map((idea) => ({ id: String(idea.id), body: String(idea.body ?? "") }));
+    const ideaIds = new Set(ideaRows.map((idea) => idea.id));
     const valid = validateClusteringAgainstIdeas(output, ideaIds);
     if (!valid.ok) throw new Error(valid.reason);
 
-    const themesPayload = output.themes.map((theme) => ({
-      title: theme.title,
-      description: theme.description,
-      ideaIds: theme.ideaIds,
-    }));
+    const themesPayload = output.themes.map((theme) => clusteringCommitTheme(theme, ideaRows));
 
     const { error } = await sb.rpc("md_commit_clustering", {
       p_run_id: runId,
       p_provider: meta.provider,
       p_model: meta.model,
       p_themes: themesPayload,
-      p_wildcard: output.wildcard,
+      p_wildcard: clusteringCommitWildcard(output.wildcard),
     });
     if (error) throw new MahniStoreUnavailableError(error.message);
   }
@@ -604,7 +710,8 @@ export class SupabaseMahniStore implements MahniStore {
     const sb = client();
     const { data, error } = await sb.from("md_themes").select("*").eq("campaign_id", campaign.id).order("sort_order");
     if (error) throw new MahniStoreUnavailableError();
-    return (data ?? []).map((row) => mapTheme(row));
+    const themes = (data ?? []).map((row) => mapTheme(row));
+    return hydrateStoredThemes(sb, themes);
   }
 
   async listThemeIdeaLinks(themeId: string) {
@@ -612,6 +719,27 @@ export class SupabaseMahniStore implements MahniStore {
     const { data, error } = await sb.from("md_theme_idea_links").select("idea_id").eq("theme_id", themeId);
     if (error) throw new MahniStoreUnavailableError();
     return (data ?? []).map((r) => String(r.idea_id));
+  }
+
+  async extractReviewIdeas(themeId: string, ideaIds: string[]) {
+    const { campaignId, drafts } = await this.reviewDrafts();
+    const planned = extractSources(drafts, themeId, ideaIds, ideaIds.map(() => randomUUID()));
+    await persistReviewDrafts(campaignId, drafts.map((theme) => theme.id), planned.themes);
+    return { openedId: planned.openedId };
+  }
+
+  async mergeReviewThemes(themeIds: string[], result: { title: string; description: string; formulationNote: string }) {
+    const { campaignId, drafts } = await this.reviewDrafts();
+    const planned = mergeDrafts(drafts, themeIds, result, randomUUID());
+    await persistReviewDrafts(campaignId, drafts.map((theme) => theme.id), planned.themes);
+    return { openedId: planned.openedId };
+  }
+
+  private async reviewDrafts(): Promise<{ campaignId: string; drafts: ReviewDraft[] }> {
+    const campaign = await this.ensureCampaign();
+    if (campaign.phase !== "ANALYZING") throw new Error("not_analyzing");
+    const [themes, ideas] = await Promise.all([this.listThemes(), this.listIdeasAdmin()]);
+    return { campaignId: campaign.id, drafts: draftsFromThemes(themes, ideas) };
   }
 
   async listIdeasAdmin() {

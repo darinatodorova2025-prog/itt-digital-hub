@@ -1,5 +1,6 @@
 import type { AiRunStatus, EventCampaign, EventPhase, JudgeType } from "../types";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validation";
+import type { LiveReviewItem } from "../review";
 import type { Idea, Participant, Theme, Vote, FollowupRequest, AnalysisRun, AiJuryRun, AiJuryVote } from "../types";
 
 export type PublicLiveSnapshot = {
@@ -31,6 +32,8 @@ export type PublicLiveSnapshot = {
     judge: JudgeType;
     status: "pending" | "running" | "succeeded" | "failed" | "missing";
   }> | null;
+  /** Combined ideas and their source texts, only while the room is grouping. */
+  review: LiveReviewItem[] | null;
 };
 
 export type ParticipantContext = {
@@ -79,6 +82,13 @@ export interface MahniStore {
 
   listThemes(): Promise<Theme[]>;
   listThemeIdeaLinks(themeId: string): Promise<string[]>;
+  /** Pull raw ideas out of one combination. They become their own items. */
+  extractReviewIdeas(themeId: string, ideaIds: string[]): Promise<{ openedId: string }>;
+  /** Replace the selected combinations with one newly worded idea. */
+  mergeReviewThemes(
+    themeIds: string[],
+    result: { title: string; description: string; formulationNote: string },
+  ): Promise<{ openedId: string }>;
   listIdeasAdmin(): Promise<Idea[]>;
   listParticipantsAdmin(): Promise<Array<Participant & { ideaCount: number; followupCount: number }>>;
   listVotesAdmin(): Promise<Vote[]>;

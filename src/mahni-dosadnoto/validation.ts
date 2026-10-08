@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { acceptedFormulationNote } from "./ai/formulation";
 import { CONSENT_VERSION, IDEA_FREQUENCIES } from "./types";
 
 const text = (max: number) => z.string().trim().min(1, "Задължително поле.").max(max);
@@ -49,11 +50,13 @@ export const clusteringThemeSchema = z
     title: z.string().min(3).max(200),
     description: z.union([z.string(), z.null(), z.undefined()]).optional(),
     ideaIds: z.array(z.string().uuid()).min(1),
+    formulationNote: z.unknown().optional(),
   })
-  .transform(({ title, description, ideaIds }) => ({
+  .transform(({ title, description, ideaIds, formulationNote }) => ({
     title,
     description: clusteringDescription(description, title),
     ideaIds,
+    formulationNote: acceptedFormulationNote(formulationNote),
   }));
 
 /**
@@ -74,10 +77,12 @@ const clusteringWildcardSchema = z
   .object({
     title: z.string().min(3).max(200),
     description: z.union([z.string(), z.null(), z.undefined()]).optional(),
+    formulationNote: z.unknown().optional(),
   })
-  .transform(({ title, description }) => ({
+  .transform(({ title, description, formulationNote }) => ({
     title,
     description: clusteringDescription(description, title),
+    formulationNote: acceptedFormulationNote(formulationNote),
   }));
 
 export function clusteringOutputSchemaFor(ideaCount: number) {

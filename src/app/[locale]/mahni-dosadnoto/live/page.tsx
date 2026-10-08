@@ -8,7 +8,7 @@ import type { EventPhase } from "@/mahni-dosadnoto/types";
 // Live event data is request-specific; never statically cache this surface.
 export const dynamic = "force-dynamic";
 
-type Params = { params: Promise<{ locale: string }> };
+type Params = { params: Promise<{ locale: string }>; searchParams: Promise<{ pregled?: string }> };
 
 /** Only the scene image required for the initial phase is preloaded. */
 function sceneImageFor(phase: EventPhase): string | null {
@@ -29,9 +29,11 @@ function sceneImageFor(phase: EventPhase): string | null {
   }
 }
 
-export default async function MahniLivePage({ params }: Params) {
+export default async function MahniLivePage({ params, searchParams }: Params) {
   const { locale: raw } = await params;
+  const query = await searchParams;
   if (!isLocale(raw) || raw !== "bg") notFound();
+  const preview = process.env.NODE_ENV !== "production" && query.pregled === "1";
 
   // Resolve the initial snapshot first. On a genuine store/error condition,
   // fall back to null so the client renders a neutral navy state with no
@@ -48,7 +50,7 @@ export default async function MahniLivePage({ params }: Params) {
   return (
     <>
       {preload ? <link rel="preload" as="image" href={preload} /> : null}
-      <MahniLiveScreen initialSnapshot={snapshot} />
+      <MahniLiveScreen initialSnapshot={snapshot} preview={preview} />
     </>
   );
 }

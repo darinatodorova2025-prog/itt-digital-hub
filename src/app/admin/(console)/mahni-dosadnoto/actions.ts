@@ -160,17 +160,20 @@ export async function mdResetDemo() {
 export async function mdAdminSnapshot() {
   await assertAdmin();
   const store = getMahniStore();
-  const campaign = await store.ensureCampaign();
-  const participants = await store.listParticipantsAdmin();
-  const ideas = await store.listIdeasAdmin();
-  const votes = await store.listVotesAdmin();
-  const themes = await store.listThemes();
-  const followups = await store.listFollowupsAdmin();
-  const jury = await store.listJuryResults();
+  const [campaign, participants, ideas, votes, themes, followups, jury, analysisRuns, winningOrganizations, live] =
+    await Promise.all([
+      store.ensureCampaign(),
+      store.listParticipantsAdmin(),
+      store.listIdeasAdmin(),
+      store.listVotesAdmin(),
+      store.listThemes(),
+      store.listFollowupsAdmin(),
+      store.listJuryResults(),
+      store.listAnalysisRunsAdmin(),
+      computeWinningOrganizations(store),
+      store.getPublicLiveSnapshot(),
+    ]);
   const juryProgress: JuryProgress = summarizeJuryProgress(jury);
-  const analysisRuns = await store.listAnalysisRunsAdmin();
-  const winningOrganizations = await computeWinningOrganizations(store);
-  const live = await store.getPublicLiveSnapshot();
   return {
     campaign,
     counts: { participants: participants.length, ideas: ideas.length, votes: votes.length, followups: followups.length },

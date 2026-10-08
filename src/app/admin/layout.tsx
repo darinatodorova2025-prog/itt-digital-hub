@@ -5,14 +5,14 @@ import "./admin.css";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
-  title: "ITT Admin",
+  title: "Махни досадното · Админ",
 };
 
 export const dynamic = "force-dynamic";
 
 export default function AdminRootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={fontClassName}>
+    <html lang="bg" className={fontClassName}>
       <body className="admin-root">{children}</body>
     </html>
   );

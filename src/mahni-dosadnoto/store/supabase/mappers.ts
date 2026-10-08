@@ -1,3 +1,4 @@
+import { parseSourceIdeas } from "../../ai/formulation";
 import type {
   AiJuryRun,
   AiJuryVote,
@@ -101,6 +102,8 @@ export function mapTheme(row: Record<string, unknown>): Theme {
     ideaCount: Number(row.idea_count),
     organizationCount: Number(row.organization_count),
     createdAt: String(row.created_at),
+    formulationNote: typeof row.formulation_note === "string" ? row.formulation_note : "",
+    sourceIdeas: parseSourceIdeas(row.source_ideas),
   };
 }
 

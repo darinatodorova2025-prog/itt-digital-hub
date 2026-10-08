@@ -35,7 +35,7 @@ export function LiveRail({ stage }: { stage: StoryStage }) {
         const state = item.n < stage.n ? "is-done" : item.n === stage.n ? "is-current" : undefined;
         return (
           <li key={item.n} className={state} aria-current={item.n === stage.n ? "step" : undefined}>
-            <b>{String(item.n).padStart(2, "0")}</b>
+            <b>{item.n}</b>
             <em>{item.rail}</em>
           </li>
         );

@@ -30,6 +30,8 @@ import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validat
 import { validateClusteringAgainstIdeas } from "../validation";
 import { aggregateAiJury, overlapCount, rankHumanThemes, type ThemeScoreRow } from "../tie-break";
 import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "./types";
+import { clusteringCommitTheme, clusteringCommitWildcard, hydrateThemeTrace } from "../ai/formulation";
+import { draftsFromThemes, extractSources, mergeDrafts, toLiveReviewItem, type ReviewDraft } from "../review";
 import { sanitizePlainText } from "../sanitize";
 
 type SessionRow = { tokenHash: string; participantId: string; expiresAt: number };
@@ -401,6 +403,7 @@ export class MemoryMahniStore implements MahniStore {
       juryReady: campaign.phase === "AI_JURY" ? juryProgress.succeeded : null,
       juryTotal: campaign.phase === "AI_JURY" ? juryProgress.total : null,
       juryLenses: publicJuryLenses(campaign.phase, juryProgress),
+      review: campaign.phase === "ANALYZING" ? (await this.listThemes()).map(toLiveReviewItem) : null,
     };
   }
 
@@ -468,8 +471,10 @@ export class MemoryMahniStore implements MahniStore {
         this.themeLinks.delete(id);
       }
     }
+    const ideaRows = [...this.ideas.values()].filter((idea) => idea.campaignId === campaign.id);
     let order = 0;
     for (const theme of output.themes) {
+      const committed = clusteringCommitTheme(theme, ideaRows);
       const orgs = new Set<string>();
       for (const id of theme.ideaIds) {
         const idea = this.ideas.get(id);
@@ -479,28 +484,33 @@ export class MemoryMahniStore implements MahniStore {
         id: randomUUID(),
         campaignId: campaign.id,
         analysisRunId: runId,
-        title: theme.title,
-        description: theme.description,
+        title: committed.title,
+        description: committed.description,
         isAiWildcard: false,
         sortOrder: order++,
         ideaCount: theme.ideaIds.length,
         organizationCount: orgs.size,
         createdAt: nowIso(),
+        formulationNote: committed.formulationNote,
+        sourceIdeas: committed.sourceIdeas,
       };
       this.themes.set(row.id, row);
       this.themeLinks.set(row.id, new Set(theme.ideaIds));
     }
+    const wildcard = clusteringCommitWildcard(output.wildcard);
     const wc: Theme = {
       id: randomUUID(),
       campaignId: campaign.id,
       analysisRunId: runId,
-      title: output.wildcard.title,
-      description: output.wildcard.description,
+      title: wildcard.title,
+      description: wildcard.description,
       isAiWildcard: true,
       sortOrder: order,
       ideaCount: 0,
       organizationCount: 0,
       createdAt: nowIso(),
+      formulationNote: wildcard.formulationNote,
+      sourceIdeas: [],
     };
     this.themes.set(wc.id, wc);
     this.themeLinks.set(wc.id, new Set());
@@ -578,11 +588,83 @@ export class MemoryMahniStore implements MahniStore {
 
   async listThemes() {
     const campaign = await this.ensureCampaign();
-    return [...this.themes.values()].filter((theme) => theme.campaignId === campaign.id).sort((a, b) => a.sortOrder - b.sortOrder);
+    return [...this.themes.values()]
+      .filter((theme) => theme.campaignId === campaign.id)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((theme) =>
+        hydrateThemeTrace(
+          theme,
+          [...(this.themeLinks.get(theme.id) ?? [])].map((id) => ({
+            id,
+            body: this.ideas.get(id)?.body ?? "",
+          })),
+        ),
+      );
   }
 
   async listThemeIdeaLinks(themeId: string) {
     return [...(this.themeLinks.get(themeId) ?? [])];
+  }
+
+  async extractReviewIdeas(themeId: string, ideaIds: string[]) {
+    const drafts = this.reviewDrafts();
+    const planned = extractSources(drafts, themeId, ideaIds, ideaIds.map(() => randomUUID()));
+    this.applyReviewDrafts(planned.themes);
+    return { openedId: planned.openedId };
+  }
+
+  async mergeReviewThemes(themeIds: string[], result: { title: string; description: string; formulationNote: string }) {
+    const drafts = this.reviewDrafts();
+    const planned = mergeDrafts(drafts, themeIds, result, randomUUID());
+    this.applyReviewDrafts(planned.themes);
+    return { openedId: planned.openedId };
+  }
+
+  private reviewDrafts(): ReviewDraft[] {
+    const campaign = this.campaignOrThrow();
+    if (campaign.phase !== "ANALYZING") throw new Error("not_analyzing");
+    const themes = [...this.themes.values()]
+      .filter((theme) => theme.campaignId === campaign.id)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((theme) =>
+        hydrateThemeTrace(
+          theme,
+          [...(this.themeLinks.get(theme.id) ?? [])].map((id) => ({
+            id,
+            body: this.ideas.get(id)?.body ?? "",
+          })),
+        ),
+      );
+    const ideas = [...this.ideas.values()].filter((idea) => idea.campaignId === campaign.id);
+    return draftsFromThemes(themes, ideas);
+  }
+
+  private applyReviewDrafts(drafts: ReviewDraft[]) {
+    const campaign = this.campaignOrThrow();
+    for (const [id, theme] of [...this.themes]) {
+      if (theme.campaignId === campaign.id) {
+        this.themes.delete(id);
+        this.themeLinks.delete(id);
+      }
+    }
+    for (const draft of drafts) {
+      const orgs = new Set(draft.sources.map((source) => normalizeOrg(source.organization)).filter((org) => org.length > 0));
+      this.themes.set(draft.id, {
+        id: draft.id,
+        campaignId: campaign.id,
+        analysisRunId: draft.analysisRunId,
+        title: draft.title,
+        description: draft.description,
+        isAiWildcard: draft.isAiWildcard,
+        sortOrder: draft.sortOrder,
+        ideaCount: draft.sources.length,
+        organizationCount: orgs.size,
+        createdAt: nowIso(),
+        formulationNote: draft.formulationNote,
+        sourceIdeas: draft.sources.map((source) => ({ id: source.id, body: source.body })),
+      });
+      this.themeLinks.set(draft.id, new Set(draft.sources.map((source) => source.id)));
+    }
   }
 
   async listIdeasAdmin() {

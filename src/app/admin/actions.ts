@@ -37,11 +37,11 @@ export async function loginAction(formData: FormData) {
   const mode = cmsMode();
   if (mode === "local") {
     const staff = await localLogin(email, password);
-    if (!staff) redirect("/admin/login?error=" + encodeURIComponent("Invalid email or password."));
+    if (!staff) redirect("/admin/login?error=" + encodeURIComponent("Невалиден имейл или парола."));
     try {
       await setAdminSessionCookie({ userId: staff.userId, email: staff.email, role: staff.role, exp: Date.now() + 1000 * 60 * 60 * 12 });
     } catch (error) {
-      redirect("/admin/login?error=" + encodeURIComponent(error instanceof Error ? error.message : "Session signing is not configured."));
+      redirect("/admin/login?error=" + encodeURIComponent(error instanceof Error ? error.message : "Подписването на сесията не е настроено."));
     }
     redirect("/admin");
   }
@@ -49,11 +49,11 @@ export async function loginAction(formData: FormData) {
     const { createSupabaseServerClient } = await import("@/lib/cms/supabase-server");
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) redirect("/admin/login?error=" + encodeURIComponent(error?.message ?? "Sign-in failed."));
+    if (error || !data.user) redirect("/admin/login?error=" + encodeURIComponent(error?.message ?? "Входът не успя."));
     const { data: staff } = await supabase.from("staff").select("user_id, email, role").eq("user_id", data.user.id).maybeSingle();
     if (!staff) {
       await supabase.auth.signOut();
-      redirect("/admin/login?error=" + encodeURIComponent("This account is not on the staff list."));
+      redirect("/admin/login?error=" + encodeURIComponent("Този акаунт не е в списъка на екипа."));
     }
     try {
       await setAdminSessionCookie({
@@ -64,11 +64,11 @@ export async function loginAction(formData: FormData) {
       });
     } catch (error) {
       await supabase.auth.signOut();
-      redirect("/admin/login?error=" + encodeURIComponent(error instanceof Error ? error.message : "Session signing is not configured."));
+      redirect("/admin/login?error=" + encodeURIComponent(error instanceof Error ? error.message : "Подписването на сесията не е настроено."));
     }
     redirect("/admin");
   }
-  redirect("/admin/login?error=" + encodeURIComponent("CMS is not configured."));
+  redirect("/admin/login?error=" + encodeURIComponent("CMS не е конфигуриран."));
 }
 
 export async function logoutAction() {

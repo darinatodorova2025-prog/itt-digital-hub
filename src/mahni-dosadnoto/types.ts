@@ -74,6 +74,11 @@ export interface Idea {
   isDemo: boolean;
 }
 
+export interface ThemeSourceIdea {
+  id: string;
+  body: string;
+}
+
 export interface Theme {
   id: string;
   campaignId: string;
@@ -85,6 +90,10 @@ export interface Theme {
   ideaCount: number;
   organizationCount: number;
   createdAt: string;
+  /** How the combined wording was reached. Empty until a trace is stored or rebuilt from the source ideas. */
+  formulationNote?: string;
+  /** Idea ids and original text captured when the theme was combined. */
+  sourceIdeas?: ThemeSourceIdea[];
 }
 
 export interface ThemeIdeaLink {

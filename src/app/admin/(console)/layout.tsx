@@ -1,58 +1,86 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { logoutAction } from "../actions";
 import { getAdminSession } from "@/lib/auth/session";
-import { cmsMode, hostedDemoStore } from "@/lib/cms/mode";
-import { Mark } from "@/components/layout/Logo";
+import { hostedDemoStore } from "@/lib/cms/mode";
+import type { StaffRole } from "@/lib/cms/types";
+import lockupOnDark from "../../../../public/brand/itt-lockup-compact-on-dark.png";
+import AdminLoading from "./admin-loading";
+import { AdminLinkPending, AdminPendingButton } from "./pending";
 
-const nav = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/projects", label: "Projects" },
-  { href: "/admin/insights", label: "Insights & news" },
-  { href: "/admin/people", label: "Team" },
-  { href: "/admin/partners", label: "Partners" },
-  { href: "/admin/media", label: "Media" },
-  { href: "/admin/settings", label: "Settings" },
-  { href: "/admin/mahni-dosadnoto", label: "Махни досадното" },
-];
+/** Same visual height as the site header compact lockup (`h-9`). */
+const lockupHeight = 36;
 
-export default async function ConsoleLayout({ children }: { children: ReactNode }) {
-  const session = await getAdminSession();
-  if (!session) redirect("/admin/login");
+const nav = [{ href: "/admin/mahni-dosadnoto", label: "Махни досадното" }];
 
+function roleLabel(role: StaffRole): string {
+  if (role === "admin") return "администратор";
+  return "редактор";
+}
+
+export default function ConsoleLayout({ children }: { children: ReactNode }) {
   return (
     <div className="admin-shell">
       <aside className="admin-nav">
         <div style={{ padding: "0 0.5rem 1rem" }}>
-          <Mark size={43} />
-          <p className="admin-status" style={{ marginTop: "0.75rem" }}>
-            ITT · {cmsMode()}
-          </p>
+          <Image
+            src={lockupOnDark}
+            alt="ITT Digital Hub"
+            height={lockupHeight}
+            width={Math.round((lockupHeight * lockupOnDark.width) / lockupOnDark.height)}
+            priority
+            className="admin-lockup"
+          />
         </div>
-        <nav aria-label="Admin">
+        <nav aria-label="Админ">
           {nav.map((item) => (
             <Link key={item.href} href={item.href} style={{ display: "block", padding: "0.45rem 0.6rem" }}>
               {item.label}
+              <AdminLinkPending />
             </Link>
           ))}
         </nav>
-        <form action="/admin/logout" method="post" style={{ marginTop: "1.5rem", padding: "0 0.5rem" }}>
-          <p className="admin-muted" style={{ color: "#b7c3d0" }}>
-            {session.email} · {session.role}
-          </p>
-          <button type="submit" className="admin-btn secondary" style={{ marginTop: "0.75rem", width: "100%" }}>
-            Log out
-          </button>
-        </form>
+        <Suspense fallback={null}>
+          <AdminAccount />
+        </Suspense>
       </aside>
-      <div className="admin-main">
-        {hostedDemoStore() ? (
-          <p className="admin-card" style={{ marginBottom: "1rem" }}>
-            Hosted demo store. Changes here are temporary until Supabase is configured.
-          </p>
-        ) : null}
-        {children}
-      </div>
+      <Suspense fallback={<div className="admin-main"><AdminLoading /></div>}>
+        <AdminMain>{children}</AdminMain>
+      </Suspense>
+    </div>
+  );
+}
+
+async function AdminAccount() {
+  const session = await getAdminSession();
+  if (!session) return null;
+
+  return (
+    <form action={logoutAction} style={{ marginTop: "1.5rem", padding: "0 0.5rem" }}>
+      <p className="admin-muted" style={{ color: "#b7c3d0" }}>
+        {session.email} · {roleLabel(session.role)}
+      </p>
+      <AdminPendingButton className="admin-btn secondary" style={{ marginTop: "0.75rem", width: "100%" }}>
+        Изход
+      </AdminPendingButton>
+    </form>
+  );
+}
+
+async function AdminMain({ children }: { children: ReactNode }) {
+  const session = await getAdminSession();
+  if (!session) redirect("/admin/login");
+
+  return (
+    <div className="admin-main">
+      {hostedDemoStore() ? (
+        <p className="admin-card" style={{ marginBottom: "1rem" }}>
+          Хоствано демо хранилище. Промените тук са временни, докато Supabase не бъде конфигуриран.
+        </p>
+      ) : null}
+      {children}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   formatClock,
@@ -10,26 +10,54 @@ import {
 } from "@/mahni-dosadnoto/presentation";
 import { useCountdown } from "@/mahni-dosadnoto/use-countdown";
 import type { PublicLiveSnapshot } from "@/mahni-dosadnoto/store/types";
+import type { Theme } from "@/mahni-dosadnoto/types";
 import { EventLockup } from "@/mahni-dosadnoto/brand";
 import { ConvergeIcon } from "@/mahni-dosadnoto/icons";
 import { LiveRail } from "@/mahni-dosadnoto/journey";
 import { ThemeEquation } from "@/mahni-dosadnoto/grouping";
 import { LensBoard } from "@/mahni-dosadnoto/lenses";
+import { CombiningReview } from "@/mahni-dosadnoto/CombiningReview";
+import { draftsFromThemes, extractSources, mergeDrafts, type LiveReviewItem, type ReviewDraft } from "@/mahni-dosadnoto/review";
+import { REVIEW_PREVIEW_ITEMS, REVIEW_PREVIEW_KEY } from "@/mahni-dosadnoto/review-preview";
 
 /** Stable theme thumbnails for the participant Top 3 result cards. */
 const RESULT_THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-river.webp", "/event/mahni/thumb-aerial.webp"];
 
-export function MahniLiveScreen({ initialSnapshot }: { initialSnapshot: PublicLiveSnapshot | null }) {
+export function MahniLiveScreen({
+  initialSnapshot,
+  preview = false,
+}: {
+  initialSnapshot: PublicLiveSnapshot | null;
+  preview?: boolean;
+}) {
   const [snapshot, setSnapshot] = useState<PublicLiveSnapshot | null>(initialSnapshot);
   const [compact, setCompact] = useState(false);
+  const [previewItems, setPreviewItems] = useState<LiveReviewItem[]>(REVIEW_PREVIEW_ITEMS);
+  const pausePoll = useRef(false);
+
+  useEffect(() => {
+    if (!preview) return;
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = window.sessionStorage.getItem(REVIEW_PREVIEW_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved) as LiveReviewItem[];
+        if (Array.isArray(parsed) && parsed.length > 0) setPreviewItems(parsed);
+      } catch {
+        // Keep the built-in preview ideas.
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [preview]);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      if (pausePoll.current) return;
       try {
         const res = await fetch("/api/mahni-dosadnoto/live", { cache: "no-store" });
         const data = await res.json();
-        if (!cancelled) setSnapshot(data.snapshot ?? null);
+        if (!cancelled && !pausePoll.current) setSnapshot(data.snapshot ?? null);
       } catch {
         if (!cancelled) setSnapshot((current) => current);
       }
@@ -70,18 +98,103 @@ export function MahniLiveScreen({ initialSnapshot }: { initialSnapshot: PublicLi
 
   const quiet = snapshot.phase === "FINALIZING";
   const stage = storyForPhase(snapshot.phase);
+  const realReview = snapshot.phase === "ANALYZING" && snapshot.review && snapshot.review.length > 0 ? snapshot.review : null;
+  const showPreview = preview && !realReview;
+  const showReview = realReview !== null || showPreview;
+
+  async function extractLive(themeId: string, ideaIds: string[]) {
+    pausePoll.current = true;
+    try {
+      const res = await fetch("/api/mahni-dosadnoto/review/extract", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ themeId, ideaIds }),
+      });
+      const data = (await res.json()) as { snapshot?: PublicLiveSnapshot; openedId?: string };
+      if (!res.ok || !data.snapshot || !data.openedId) throw new Error("failed");
+      setSnapshot(data.snapshot);
+      return { openedId: data.openedId };
+    } finally {
+      pausePoll.current = false;
+    }
+  }
+
+  async function combineLive(themeIds: string[]) {
+    pausePoll.current = true;
+    try {
+      const res = await fetch("/api/mahni-dosadnoto/review/combine", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ themeIds }),
+      });
+      const data = (await res.json()) as { snapshot?: PublicLiveSnapshot; openedId?: string };
+      if (!res.ok || !data.snapshot || !data.openedId) throw new Error("failed");
+      setSnapshot(data.snapshot);
+      return { openedId: data.openedId };
+    } finally {
+      pausePoll.current = false;
+    }
+  }
+
+  function rememberPreview(items: LiveReviewItem[]) {
+    setPreviewItems(items);
+    try {
+      window.sessionStorage.setItem(REVIEW_PREVIEW_KEY, JSON.stringify(items));
+    } catch {
+      // The room can continue this page load even if storage is blocked.
+    }
+  }
+
+  async function extractPreview(themeId: string, ideaIds: string[]) {
+    const drafts = draftsFromThemes(previewItems.map(previewTheme), []);
+    const planned = extractSources(
+      drafts,
+      themeId,
+      ideaIds,
+      ideaIds.map(() => crypto.randomUUID()),
+    );
+    rememberPreview(planned.themes.map(draftToReviewItem));
+    return { openedId: planned.openedId };
+  }
+
+  async function combinePreview(themeIds: string[]) {
+    const groups = themeIds.map((id) => {
+      const item = previewItems.find((theme) => theme.id === id);
+      if (!item) throw new Error("missing");
+      return { title: item.title, rawIdeas: item.sources.map((source) => source.body).filter((body) => body.trim().length > 0) };
+    });
+    const res = await fetch("/api/mahni-dosadnoto/review/combine", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ preview: true, groups }),
+    });
+    const data = (await res.json()) as { result?: { title: string; description: string; formulationNote: string } };
+    if (!res.ok || !data.result) throw new Error("failed");
+    const drafts = draftsFromThemes(previewItems.map(previewTheme), []);
+    const planned = mergeDrafts(drafts, themeIds, data.result, crypto.randomUUID());
+    rememberPreview(planned.themes.map(draftToReviewItem));
+    return { openedId: planned.openedId };
+  }
 
   return (
-    <div className={`md-live ${sceneClass(snapshot.phase)}`}>
-      {quiet ? null : <LiveHeader stage={stage} />}
-      <div className="md-live-body">
-        {snapshot.phase === "COLLECTING" ? <Collecting snapshot={snapshot} /> : null}
-        {snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
-        {snapshot.phase === "VOTING" ? <Voting snapshot={snapshot} limit={compact ? 4 : 5} /> : null}
-        {snapshot.phase === "FINALIZING" ? <Countdown snapshot={snapshot} /> : null}
-        {snapshot.phase === "AI_JURY" ? <Jury snapshot={snapshot} /> : null}
-        {snapshot.phase === "RESULTS" || snapshot.phase === "CLOSED" ? <Results snapshot={snapshot} /> : null}
-        {snapshot.phase === "DRAFT" ? <Holding /> : null}
+    <div className={`md-live ${sceneClass(showReview ? "ANALYZING" : snapshot.phase)}`}>
+      {quiet && !showReview ? null : <LiveHeader stage={stage} />}
+      <div className={showReview ? "md-live-body is-review" : "md-live-body"}>
+        {showReview ? (
+          <CombiningReview
+            items={realReview ?? previewItems}
+            notice={showPreview ? "Локален преглед. Живото събитие не се променя." : undefined}
+            onExtract={realReview ? extractLive : extractPreview}
+            onCombine={realReview ? combineLive : combinePreview}
+          />
+        ) : null}
+        {showReview ? null : snapshot.phase === "COLLECTING" ? <Collecting snapshot={snapshot} /> : null}
+        {showReview ? null : snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
+        {showReview ? null : snapshot.phase === "VOTING" ? <Voting snapshot={snapshot} limit={compact ? 4 : 5} /> : null}
+        {showReview ? null : snapshot.phase === "FINALIZING" ? <Countdown snapshot={snapshot} /> : null}
+        {showReview ? null : snapshot.phase === "AI_JURY" ? <Jury snapshot={snapshot} /> : null}
+        {showReview ? null : snapshot.phase === "RESULTS" || snapshot.phase === "CLOSED" ? <Results snapshot={snapshot} /> : null}
+        {showReview ? null : snapshot.phase === "DRAFT" ? <Holding /> : null}
       </div>
     </div>
   );
@@ -100,6 +213,8 @@ function sceneClass(phase: PublicLiveSnapshot["phase"]): string {
       return "md-scene-jury";
     case "DRAFT":
       return "md-scene-hold";
+    case "COLLECTING":
+      return "md-scene-collect";
     default:
       return "md-scene-night";
   }
@@ -120,8 +235,16 @@ function Collecting({ snapshot }: { snapshot: PublicLiveSnapshot }) {
   return (
     <div className="md-live-collect">
       <div>
-        <h1 className="md-display">Какво ви губи време?</h1>
-        <p className="md-live-lead">Сканирайте и споделете реален проблем от работата си.</p>
+        <h1 className="md-display">
+          Какво ви губи
+          <br />
+          време?
+        </h1>
+        <p className="md-live-lead">
+          Споделете нещо от ежедневната работа, което ви бави.
+          <br />
+          После заедно ще изберем кое си струва да решим.
+        </p>
         <div className="md-live-metrics">
           <Metric value={snapshot.stats.participants} label="участници" />
           <Metric value={snapshot.stats.organizations} label="организации" />
@@ -300,6 +423,34 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
   );
 }
 
+function previewTheme(item: LiveReviewItem): Theme {
+  return {
+    id: item.id,
+    campaignId: "preview",
+    analysisRunId: "preview",
+    title: item.title,
+    description: item.description,
+    isAiWildcard: item.isAiWildcard,
+    sortOrder: 0,
+    ideaCount: item.sources.length,
+    organizationCount: 0,
+    createdAt: "",
+    formulationNote: item.formulationNote,
+    sourceIdeas: item.sources,
+  };
+}
+
+function draftToReviewItem(draft: ReviewDraft): LiveReviewItem {
+  return {
+    id: draft.id,
+    title: draft.title,
+    description: draft.description,
+    formulationNote: draft.formulationNote,
+    isAiWildcard: draft.isAiWildcard,
+    sources: draft.sources.map(({ id, body }) => ({ id, body })),
+  };
+}
+
 function Holding() {
   return (
     <div className="md-live-hold">
@@ -314,6 +465,10 @@ function Holding() {
         После заедно ще изберем кое си струва да решим.
       </p>
       <p className="md-live-soon">Започваме след малко</p>
+      <div className="md-hold-qr">
+        <Image src="/event/mahni-dosadnoto-qr.svg" alt="Код за включване в Махни досадното" width={512} height={540} priority unoptimized />
+        <p>Сканирайте и участвайте</p>
+      </div>
     </div>
   );
 }

@@ -1,13 +1,47 @@
-/* Admin operational surface — not the public ITT editorial system. */
+/* Admin operational surface — not the public ITT editorial system.
+   Visuals from conference-kit/02-itt-branded (see scripts/build_itt_conference_kit.py):
+   paper #edf0fb, paper-2 #e1e7f6, ink #040e31, ink-2 #3a4660, ink-3 #5b6780,
+   line #dce2ee, line-strong #b4bdc9, marine #040e31, marine-2 #0a1850,
+   marine-tint #e8edff, signal #002cff, signal-2 #1b3dff, signal-ink #0018b0,
+   on-dark #f7f8fd, on-dark-muted #9aa8c4, white cards, IBM Plex Sans.
+   Backgrounds are the kit PNGs, not a flat navy fill. */
 .admin-root {
+  --admin-paper: #edf0fb;
+  --admin-paper-2: #e1e7f6;
+  --admin-ink: #040e31;
+  --admin-ink-2: #3a4660;
+  --admin-ink-3: #5b6780;
+  --admin-line: #dce2ee;
+  --admin-line-strong: #b4bdc9;
+  --admin-marine: #040e31;
+  --admin-marine-2: #0a1850;
+  --admin-marine-tint: #e8edff;
+  --admin-signal: #002cff;
+  --admin-signal-2: #1b3dff;
+  --admin-signal-ink: #0018b0;
+  --admin-on-dark: #f7f8fd;
+  --admin-on-dark-muted: #9aa8c4;
+  --admin-white: #ffffff;
+  --admin-radius-card: 1.25rem;
+  --admin-radius-ctrl: 999px;
   font-family: var(--font-plex-sans), "IBM Plex Sans", system-ui, sans-serif;
-  color: #1a1d21;
-  background: #f3f4f2;
+  color: var(--admin-ink);
+  background-color: var(--admin-paper);
+  background-image: url("../../../conference-kit/02-itt-branded/digital/bg-paper-1920x1080.png");
+  background-repeat: repeat;
   min-height: 100svh;
 }
 
 .admin-root a {
   text-decoration: none;
+}
+
+.admin-root h1,
+.admin-root h2,
+.admin-root h3 {
+  color: var(--admin-ink);
+  font-family: var(--font-plex-sans), "IBM Plex Sans", system-ui, sans-serif;
+  font-weight: 600;
 }
 
 .admin-shell {
@@ -17,9 +51,22 @@
 }
 
 .admin-nav {
-  background: #102849;
-  color: #f4f4f0;
+  background-color: var(--admin-marine);
+  background-image: url("../../../conference-kit/02-itt-branded/digital/bg-hero-1920x1080.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 78% 36%;
+  color: var(--admin-on-dark);
   padding: 1.25rem 0.75rem;
+}
+
+.admin-lockup {
+  display: block;
+  height: 2.25rem;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .admin-nav a,
@@ -28,14 +75,56 @@
   color: inherit;
 }
 
+.admin-nav nav a {
+  border-radius: var(--admin-radius-ctrl);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.admin-nav nav a::before {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.45rem;
+  vertical-align: -0.18em;
+  background-color: var(--admin-on-dark);
+  -webkit-mask: url("../../../conference-kit/02-itt-branded/icons/strategy.svg") center / contain no-repeat;
+  mask: url("../../../conference-kit/02-itt-branded/icons/strategy.svg") center / contain no-repeat;
+}
+
+.admin-nav nav a:hover {
+  background: color-mix(in srgb, var(--admin-signal) 32%, transparent);
+  color: var(--admin-on-dark);
+}
+
+.admin-nav nav a:hover::before {
+  background-color: var(--admin-white);
+}
+
+.admin-nav nav a:focus-visible {
+  outline: 2px solid var(--admin-signal);
+  outline-offset: 2px;
+}
+
 .admin-main {
   padding: 1.5rem 1.75rem 3rem;
+  background-color: transparent;
 }
 
 .admin-card {
-  background: #fff;
-  border: 1px solid #dedfd8;
+  background: var(--admin-white);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--admin-radius-card);
+  box-shadow: 0 10px 28px rgba(4, 14, 49, 0.06);
+  color: var(--admin-ink);
   padding: 1rem 1.15rem;
+}
+
+a.admin-card:hover {
+  border-color: color-mix(in srgb, var(--admin-signal) 55%, var(--admin-line));
+  box-shadow: 0 14px 32px rgba(4, 14, 49, 0.09);
 }
 
 .admin-grid {
@@ -48,14 +137,37 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9375rem;
+  background: var(--admin-white);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--admin-radius-card);
+  box-shadow: 0 10px 28px rgba(4, 14, 49, 0.06);
+  overflow: hidden;
 }
 
 .admin-table th,
 .admin-table td {
   text-align: left;
-  padding: 0.65rem 0.5rem;
-  border-bottom: 1px solid #dedfd8;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--admin-line);
   vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--admin-ink-3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-main .admin-table a,
+.admin-main .admin-card a {
+  color: var(--admin-signal);
+}
+
+.admin-main .admin-table a:hover,
+.admin-main .admin-card a:hover {
+  color: var(--admin-signal-ink);
 }
 
 .admin-form {
@@ -68,16 +180,26 @@
   gap: 0.35rem;
   font-size: 0.8125rem;
   font-weight: 600;
+  color: var(--admin-ink-2);
 }
 
 .admin-form input,
 .admin-form textarea,
 .admin-form select {
   font: inherit;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #b9bbb2;
-  border-radius: 2px;
-  background: #fff;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--admin-line-strong);
+  border-radius: 0.65rem;
+  background: var(--admin-white);
+  color: var(--admin-ink);
+}
+
+.admin-form input:focus,
+.admin-form textarea:focus,
+.admin-form select:focus {
+  outline: 2px solid var(--admin-signal);
+  outline-offset: 1px;
+  border-color: var(--admin-signal);
 }
 
 .admin-form textarea {
@@ -95,37 +217,133 @@
   align-items: center;
   justify-content: center;
   min-height: 2.5rem;
-  padding: 0 0.9rem;
-  border: 1px solid #102849;
-  background: #102849;
-  color: #fff;
+  padding: 0 1.05rem;
+  border: 1px solid var(--admin-signal);
+  border-radius: var(--admin-radius-ctrl);
+  background: var(--admin-signal);
+  color: var(--admin-white);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
-  border-radius: 2px;
+  box-shadow: 0 8px 18px rgba(0, 44, 255, 0.18);
+}
+
+.admin-btn:hover {
+  background: var(--admin-signal-2);
+  border-color: var(--admin-signal-2);
+}
+
+.admin-btn:focus-visible {
+  outline: 2px solid var(--admin-signal);
+  outline-offset: 2px;
 }
 
 .admin-btn.secondary {
-  background: #fff;
-  color: #102849;
+  background: var(--admin-white);
+  color: var(--admin-ink);
+  border-color: var(--admin-line);
+  box-shadow: 0 8px 18px rgba(4, 14, 49, 0.06);
+}
+
+.admin-btn.secondary:hover {
+  background: var(--admin-marine-tint);
+  color: var(--admin-signal-ink);
+  border-color: var(--admin-signal);
+}
+
+.admin-nav .admin-btn.secondary {
+  background: var(--admin-white);
+  color: var(--admin-ink);
+  border-color: transparent;
+  box-shadow: 0 10px 22px rgba(4, 14, 49, 0.22);
+}
+
+.admin-nav .admin-btn.secondary:hover {
+  background: var(--admin-marine-tint);
+  color: var(--admin-signal);
+  border-color: transparent;
 }
 
 .admin-btn.danger {
-  background: #fff;
+  background: var(--admin-white);
   color: #8a1c1c;
   border-color: #8a1c1c;
+  box-shadow: none;
+}
+
+.admin-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .admin-muted {
-  color: #5f6873;
+  color: var(--admin-ink-3);
   font-size: 0.875rem;
+}
+
+.admin-nav .admin-muted {
+  color: var(--admin-on-dark-muted) !important;
 }
 
 .admin-status {
   font-family: var(--font-plex-mono), ui-monospace, monospace;
   font-size: 0.75rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--admin-signal);
+}
+
+.admin-nav .admin-status {
+  color: var(--admin-on-dark-muted);
+}
+
+.admin-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 12rem;
+  color: var(--admin-ink-3);
+  font-size: 0.875rem;
+}
+
+.admin-loading-mark {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--admin-line);
+  border-top-color: var(--admin-signal);
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  animation: admin-spin 0.7s linear infinite;
+}
+
+.admin-nav .admin-loading-mark {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-left: 0.45rem;
+  border-color: color-mix(in srgb, var(--admin-on-dark) 35%, transparent);
+  border-top-color: var(--admin-on-dark);
+}
+
+.admin-btn .admin-loading-mark {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.45rem;
+  border-color: color-mix(in srgb, var(--admin-ink) 28%, transparent);
+  border-top-color: var(--admin-ink);
+}
+
+@keyframes admin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-loading-mark {
+    animation: none;
+  }
 }
 
 @media (max-width: 800px) {
@@ -139,6 +357,8 @@
     align-items: flex-start;
     gap: 0.5rem;
     padding: 0.85rem 0.75rem;
+    background-size: cover;
+    background-position: 72% 42%;
   }
 
   .admin-nav nav {

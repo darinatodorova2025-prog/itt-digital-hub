@@ -1,9 +1,15 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getDashboardStats, loadAllRecords } from "@/lib/cms/repository";
 import { getContentSourceSnapshot } from "@/lib/cms/content-source";
 import { translationState } from "@/lib/cms/truth";
 
-export default async function AdminDashboard() {
+export default function AdminHome() {
+  redirect("/admin/mahni-dosadnoto");
+}
+
+/** CMS operational dashboard. Kept in source; /admin opens the game admin instead. */
+export async function CmsDashboard() {
   const stats = await getDashboardStats();
   const { projects, insights } = await loadAllRecords();
   const source = getContentSourceSnapshot();
