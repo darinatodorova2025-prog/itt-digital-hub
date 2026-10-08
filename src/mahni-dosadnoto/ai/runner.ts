@@ -1,10 +1,12 @@
 import "server-only";
 
-import type { Idea } from "../types";
-import { clusteringOutputSchemaFor, validateClusteringAgainstIdeas } from "../validation";
+import type { ClusteringOutput } from "../validation";
 import { getMahniStore } from "../store";
 import { completeClusteringJson } from "./clustering";
-import { CLUSTERING_SYSTEM, clusteringUserPrompt } from "./prompts";
+import { createJavAuditor } from "./jav-audit";
+import { runClusteringPipeline } from "./pipeline";
+import { toSemanticIdeas } from "./semantic";
+import { asSolComplete } from "./sol";
 import { isTransientAiError } from "./transient-errors";
 import { runJuryWithResilience, type RunJuryResult } from "./jury-execution";
 
@@ -18,16 +20,27 @@ export async function runClusteringAnalysis(): Promise<void> {
   const ideas = (await store.listIdeasAdmin()).filter((i) => i.campaignId === campaign.id);
   if (ideas.length === 0) throw new Error("no_ideas");
   const run = await store.startAnalysisRun();
-  const payload = ideas.map((i: Idea) => ({ id: i.id, body: i.body, organization: i.organization }));
-  const schema = clusteringOutputSchemaFor(ideas.length);
+  const semantic = toSemanticIdeas(ideas);
   const backoffMs = [4_000, 8_000];
   let lastError: unknown = new Error("unknown");
   for (let attempt = 0; attempt <= backoffMs.length; attempt++) {
     try {
-      const { data, provider, model } = await completeClusteringJson(schema, CLUSTERING_SYSTEM, clusteringUserPrompt(payload));
-      const valid = validateClusteringAgainstIdeas(data, new Set(ideas.map((i) => i.id)));
-      if (!valid.ok) throw new Error(valid.reason);
-      await store.completeAnalysisRun(run.id, data, { provider, model });
+      const result = await runClusteringPipeline(semantic, { complete: asSolComplete(completeClusteringJson), jav: createJavAuditor() });
+      const output: ClusteringOutput = {
+        themes: result.themes.map((theme) => ({
+          title: theme.title,
+          description: theme.description,
+          ideaIds: theme.ideaIds,
+          formulationNote: theme.formulationNote,
+        })),
+        wildcard: result.wildcard,
+      };
+      await store.completeAnalysisRun(
+        run.id,
+        output,
+        { provider: result.provider, model: result.model },
+        result.themes.map((theme) => ({ reviewStatus: theme.reviewStatus, audit: theme.audit })),
+      );
       return;
     } catch (error) {
       lastError = error;

@@ -1,68 +1,70 @@
 import { z } from "zod";
-import { acceptedFormulationNote, resolveFormulationNote } from "./formulation";
-import { completeClusteringJson } from "./clustering";
+import { createJavAuditor, javDecisionPasses, type JavAuditor } from "./jav-audit";
+import type { SemanticIdea } from "./semantic";
+import type { SolComplete } from "./sol";
+import { synthesizeGroups, type DraftTheme } from "./synthesize";
+import { VIK_EVENT_CONTEXT } from "./vik-context";
 
-const combineSelectionSchema = z
-  .object({
-    title: z.string().trim().min(3).max(200),
-    description: z.string().trim().max(1200).optional(),
-    formulationNote: z.unknown().optional(),
-  })
-  .transform((value) => {
-    const title = value.title.trim();
-    const description = value.description && value.description.trim().length >= 10 ? value.description.trim() : `${title}. Обобщение на избраните идеи.`;
-    return {
-      title,
-      description: description.slice(0, 1200),
-      formulationNote: acceptedFormulationNote(value.formulationNote),
-    };
-  });
+const compatibilitySchema = z.object({
+  mergeable: z.boolean(),
+  sharedProblem: z.preprocess((value) => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed.slice(0, 280) : null;
+  }, z.string().nullable()),
+});
 
-export const COMBINE_SELECTION_SYSTEM = `Ти събираш избрани идеи от българска ВиК конференция в една тема.
-Върни само JSON с title, description и formulationNote.
-title и description са на български и следват само подадените текстове.
-formulationNote е 1–3 изречения: кои текстове са събрани и как е стигнато до формулировката.
-Не добавяй имена, организации, числа или резултати, които ги няма в текстовете.
-Не връщай повече от една тема.`;
+export const COMPATIBILITY_SYSTEM = `СТЪПКА СЪВМЕСТИМОСТ
+Оцени дали подадените идеи имат един кратък общ проблем, верен за всяка, без ново твърдение.
+При съмнение mergeable=false. Не използвай организация.
+${VIK_EVENT_CONTEXT}
+Върни JSON {"mergeable":false,"sharedProblem":null}.`;
 
-export type CombineGroup = {
-  title: string;
-  rawIdeas: string[];
-};
-
-export function combineSelectionPrompt(groups: CombineGroup[]): string {
-  const texts = groups.flatMap((group) => {
-    const raw = group.rawIdeas.map((idea) => idea.trim()).filter((idea) => idea.length > 0);
-    return raw.length > 0 ? raw : [group.title.trim()].filter((title) => title.length > 0);
-  });
+export function compatibilityUserPrompt(ideas: SemanticIdea[]): string {
   return JSON.stringify({
-    instruction: "Обедини всички подадени текстове в една тема.",
-    texts,
+    instruction: "Ако не си сигурен, върни mergeable false и не формулирай тема.",
+    ideas: ideas.map((idea) => ({
+      ideaId: idea.id,
+      body: idea.body,
+      role: idea.role,
+      frequency: idea.frequency,
+    })),
   });
 }
 
-export async function combineSelection(
-  groups: CombineGroup[],
-  options: Parameters<typeof completeClusteringJson>[3] = {},
-): Promise<{ title: string; description: string; formulationNote: string }> {
-  const texts = groups.flatMap((group) => {
-    const raw = group.rawIdeas.map((idea) => idea.trim()).filter((idea) => idea.length > 0);
-    return raw.length > 0 ? raw : [group.title.trim()].filter((title) => title.length > 0);
-  });
-  const { data } = await completeClusteringJson(
-    combineSelectionSchema,
-    COMBINE_SELECTION_SYSTEM,
-    combineSelectionPrompt(groups),
-    options,
-  );
+export type CombineResult =
+  | { mergeable: false }
+  | { mergeable: true; title: string; description: string; formulationNote: string };
+
+export async function combineIfCompatible(
+  ideas: SemanticIdea[],
+  complete: SolComplete,
+  jav: JavAuditor = createJavAuditor(),
+): Promise<CombineResult> {
+  if (ideas.length < 2) return { mergeable: false };
+  const { data } = await complete(compatibilitySchema, COMPATIBILITY_SYSTEM, compatibilityUserPrompt(ideas));
+  if (!data.mergeable || !data.sharedProblem) return { mergeable: false };
+  const drafts = await synthesizeGroups([{ ideaIds: ideas.map((idea) => idea.id), sharedProblem: data.sharedProblem }], ideas, complete);
+  const theme: DraftTheme | undefined = drafts[0];
+  if (!theme || theme.ideaIds.length !== ideas.length) return { mergeable: false };
+  try {
+    const decision = await jav.audit({
+      contextVersion: "vik-event-2026-compact",
+      title: theme.title,
+      description: theme.description,
+      ideas: ideas.map((idea) => ({ ideaId: idea.id, body: idea.body, role: idea.role, frequency: idea.frequency })),
+    });
+    if (!javDecisionPasses(decision, theme.ideaIds)) return { mergeable: false };
+  } catch (error) {
+    if (error instanceof Error && (error.name === "JavNotConfiguredError" || error.message === "audit_unavailable")) {
+      return { mergeable: false };
+    }
+    throw error;
+  }
   return {
-    title: data.title,
-    description: data.description,
-    formulationNote: resolveFormulationNote(data.formulationNote, {
-      title: data.title,
-      description: data.description,
-      isAiWildcard: texts.length === 0,
-      sources: texts.map((body) => ({ body })),
-    }),
+    mergeable: true,
+    title: theme.title,
+    description: theme.description,
+    formulationNote: theme.formulationNote,
   };
 }

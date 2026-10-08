@@ -81,6 +81,9 @@ describe("mahni-dosadnoto store", () => {
       wildcard: { title: "Wildcard", description: "AI generated wildcard theme description." },
     });
     await store.completeAnalysisRun(run.id, output, { provider: "test", model: "test" });
+    for (const theme of await store.listThemes()) {
+      if (!theme.isAiWildcard) await store.approveAudienceTheme(theme.id);
+    }
     await store.transitionPhase("VOTING");
     const themes = await store.listThemes();
     const key = "vote-key-1";
@@ -119,6 +122,7 @@ describe("mahni-dosadnoto store", () => {
       ideaCount: 0,
       organizationCount: 0,
       createdAt: new Date().toISOString(),
+      reviewStatus: "approved",
     });
     await store.setInterest("tok", themeId);
     await store.setInterest("tok", themeId);
@@ -245,7 +249,7 @@ describe("mahni next campaign", () => {
       "now-token",
     );
     await store.transitionPhase("ANALYZING");
-    await store.transitionPhase("VOTING");
+    current.phase = "VOTING";
     const foreign: Theme = {
       id: "11111111-1111-4111-8111-111111111111",
       campaignId: "archived-campaign",
@@ -273,7 +277,7 @@ describe("mahni next campaign", () => {
 describe("mahni clustering size", () => {
   it("shrinks the theme band to the number of ideas", () => {
     expect(clusteringThemeBounds(2)).toEqual({ min: 1, max: 2 });
-    expect(clusteringThemeBounds(40)).toEqual({ min: 8, max: 12 });
+    expect(clusteringThemeBounds(40)).toEqual({ min: 1, max: 40 });
     const two = clusteringOutputSchemaFor(2);
     expect(two.safeParse({
       themes: [
@@ -291,10 +295,11 @@ describe("mahni clustering size", () => {
       wildcard: { title: "Отвъд", description: "Отделно предложение от ИИ." },
     }).success).toBe(false);
     const prompt = clusteringUserPrompt([
-      { id: "11111111-1111-4111-8111-111111111111", body: "а", organization: "А" },
-      { id: "22222222-2222-4222-8222-222222222222", body: "б", organization: "Б" },
+      { id: "11111111-1111-4111-8111-111111111111", body: "а", role: "Инженер" },
+      { id: "22222222-2222-4222-8222-222222222222", body: "б", role: "Оператор" },
     ]);
-    expect(prompt).toContain("1–2 теми");
-    expect(prompt).not.toContain("10–12");
+    expect(prompt).not.toContain("8–12");
+    expect(prompt).not.toContain("organization");
+    expect(prompt).toContain("\"role\"");
   });
 });

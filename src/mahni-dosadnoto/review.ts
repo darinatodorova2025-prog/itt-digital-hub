@@ -1,5 +1,6 @@
 import { deterministicFormulationNote } from "./ai/formulation";
-import type { Theme, ThemeSourceIdea } from "./types";
+import { publicExcerpt } from "./public-excerpt";
+import type { Theme, ThemeReviewStatus, ThemeSourceIdea } from "./types";
 
 export type LiveReviewSource = { id: string; body: string };
 
@@ -12,6 +13,47 @@ export type LiveReviewItem = {
   sources: LiveReviewSource[];
 };
 
+export type PublicReviewCard = {
+  id: string;
+  title: string;
+  description: string;
+  ideaCount: number;
+  organizationCount: number;
+  mapping: string;
+  excerpts: string[];
+  question: string;
+};
+
+export const AUDIENCE_QUESTION = "Това представя ли правилно тези идеи?";
+
+export function reviewMapping(ideaCount: number): string {
+  if (ideaCount <= 1) return "1 идея -> 1 тема";
+  return `${ideaCount} идеи -> 1 обща тема`;
+}
+
+export function toPublicReviewCard(
+  theme: Pick<Theme, "id" | "title" | "description" | "ideaCount" | "organizationCount" | "sourceIdeas">,
+  organizations: Map<string, string> = new Map(),
+): PublicReviewCard {
+  const sources = theme.sourceIdeas ?? [];
+  return {
+    id: theme.id,
+    title: publicExcerpt(theme.title, { max: 200 }),
+    description: publicExcerpt(theme.description, { max: 400 }),
+    ideaCount: theme.ideaCount || sources.length,
+    organizationCount: theme.organizationCount,
+    mapping: reviewMapping(theme.ideaCount || sources.length),
+    excerpts: sources.slice(0, 3).map((source) => publicExcerpt(source.body, { organization: organizations.get(source.id), max: 180 })),
+    question: AUDIENCE_QUESTION,
+  };
+}
+
+export function currentPublicReview(themes: Theme[], ideas: Array<{ id: string; organization: string }> = []): PublicReviewCard | null {
+  const organizations = new Map(ideas.map((idea) => [idea.id, idea.organization]));
+  const current = themes.find((theme) => !theme.isAiWildcard && theme.reviewStatus === "review_ready");
+  return current ? toPublicReviewCard(current, organizations) : null;
+}
+
 export type ReviewSource = LiveReviewSource & { organization: string };
 
 export type ReviewDraft = {
@@ -23,6 +65,7 @@ export type ReviewDraft = {
   isAiWildcard: boolean;
   sortOrder: number;
   sources: ReviewSource[];
+  reviewStatus: ThemeReviewStatus;
 };
 
 export function extractButtonLabel(count: number): string {
@@ -58,6 +101,7 @@ export function draftsFromThemes(
     isAiWildcard: theme.isAiWildcard,
     sortOrder: theme.sortOrder,
     sources: (theme.sourceIdeas ?? []).map((source) => sourceWithOrganization(source, ideaById.get(source.id)?.organization ?? "")),
+    reviewStatus: theme.reviewStatus ?? "review_ready",
   }));
 }
 
@@ -97,6 +141,7 @@ export function extractSources(
       description: text,
       formulationNote: `Извадена от „${parent.title}“. Показан е оригиналният текст, без нова формулировка.`,
       isAiWildcard: false,
+      reviewStatus: "review_ready",
       sortOrder: parent.sortOrder,
       sources: [source],
     };
@@ -109,6 +154,7 @@ export function extractSources(
     next[index] = {
       ...parent,
       isAiWildcard: false,
+      reviewStatus: "review_ready",
       sources: remaining,
       formulationNote: `След изваждане остават ${remaining.length} идеи. Предишната формулировка беше: ${previous || parent.title}`.slice(0, 800),
     };
@@ -154,6 +200,7 @@ export function mergeDrafts(
     description: result.description.trim(),
     formulationNote,
     isAiWildcard: sources.length === 0,
+    reviewStatus: "review_ready",
     sortOrder: picked[0]!.sortOrder,
     sources,
   };

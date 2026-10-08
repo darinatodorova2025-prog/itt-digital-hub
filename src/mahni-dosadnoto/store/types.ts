@@ -1,6 +1,6 @@
-import type { AiRunStatus, EventCampaign, EventPhase, JudgeType } from "../types";
+import type { AiRunStatus, EventCampaign, EventPhase, JudgeType, ThemeAuditRecord, ThemeReviewStatus } from "../types";
 import type { ClusteringOutput, JuryOutput, RegistrationInput } from "../validation";
-import type { LiveReviewItem } from "../review";
+import type { PublicReviewCard } from "../review";
 import type { Idea, Participant, Theme, Vote, FollowupRequest, AnalysisRun, AiJuryRun, AiJuryVote } from "../types";
 
 export type PublicLiveSnapshot = {
@@ -32,8 +32,8 @@ export type PublicLiveSnapshot = {
     judge: JudgeType;
     status: "pending" | "running" | "succeeded" | "failed" | "missing";
   }> | null;
-  /** Combined ideas and their source texts, only while the room is grouping. */
-  review: LiveReviewItem[] | null;
+  /** The one candidate the room is looking at. Raw participant text is not included. */
+  review: PublicReviewCard | null;
 };
 
 export type ParticipantContext = {
@@ -72,7 +72,26 @@ export interface MahniStore {
   lockHumanResult(): Promise<EventCampaign>;
 
   startAnalysisRun(): Promise<AnalysisRun>;
-  completeAnalysisRun(runId: string, output: ClusteringOutput, meta: { provider: string; model: string }): Promise<void>;
+  completeAnalysisRun(
+    runId: string,
+    output: ClusteringOutput,
+    meta: { provider: string; model: string },
+    reviews?: Array<{ reviewStatus: ThemeReviewStatus; audit: ThemeAuditRecord | null }>,
+  ): Promise<void>;
+  approveAudienceTheme(themeId: string): Promise<void>;
+  recordAuditOverride(themeId: string, actorEmail: string, reason: string): Promise<void>;
+  markThemeRework(themeId: string): Promise<void>;
+  replaceReviewTheme(
+    themeId: string,
+    replacements: Array<{
+      title: string;
+      description: string;
+      formulationNote: string;
+      ideaIds: string[];
+      reviewStatus: ThemeReviewStatus;
+      audit: ThemeAuditRecord | null;
+    }>,
+  ): Promise<void>;
   failAnalysisRun(runId: string, code: string, message: string): Promise<void>;
   getAnalysisProgress(): Promise<{ stage: string; run: AnalysisRun | null }>;
 

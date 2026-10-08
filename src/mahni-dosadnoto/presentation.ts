@@ -90,7 +90,7 @@ export function operatorPhaseNote(phase: EventPhase): string {
     case "COLLECTING":
       return "Реалните проблеми влизат в системата.";
     case "ANALYZING":
-      return "Отделните идеи се събират в общи теми.";
+      return "Залата преглежда темите една по една. Само одобрените влизат в избора.";
     case "VOTING":
       return "Участниците определят кои теми заслужават внимание.";
     case "FINALIZING":

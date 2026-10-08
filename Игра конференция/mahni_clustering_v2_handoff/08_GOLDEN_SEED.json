@@ -1,0 +1,381 @@
+{
+  "meta": {
+    "language": "bg",
+    "synthetic": true,
+    "purpose": "Starter semantic golden set; do not overfit exact titles.",
+    "acceptanceFocus": "false_merge",
+    "note": "solution_first entries are intentionally solution-first and must not be blindly merged as one problem."
+  },
+  "ideas": [
+    {
+      "id": "A1",
+      "role": "designer",
+      "frequency": "daily",
+      "body": "След всяка промяна в хидравличните сметки прехвърлям ръчно новите диаметри в чертежите.",
+      "expectedCluster": "calc_to_drawings"
+    },
+    {
+      "id": "A2",
+      "role": "designer",
+      "frequency": "often",
+      "body": "Когато сменим оразмеряването, после поправям същите стойности по планове и профили на няколко места.",
+      "expectedCluster": "calc_to_drawings"
+    },
+    {
+      "id": "A3",
+      "role": "CAD/BIM",
+      "frequency": "daily",
+      "body": "Резултатите от изчисленията не се отразяват автоматично в CAD и ги нанасяме ръчно.",
+      "expectedCluster": "calc_to_drawings"
+    },
+    {
+      "id": "B1",
+      "role": "designer",
+      "frequency": "weekly",
+      "body": "Трудно разбирам коя версия на чертежа е последна, когато няколко човека работим по проекта.",
+      "expectedCluster": "version_control"
+    },
+    {
+      "id": "B2",
+      "role": "project manager",
+      "frequency": "weekly",
+      "body": "Получаваме чертежи по имейл с различни имена и после не е ясно кой файл е актуалният.",
+      "expectedCluster": "version_control"
+    },
+    {
+      "id": "B3",
+      "role": "construction supervision",
+      "frequency": "often",
+      "body": "На обекта понякога работят по стара ревизия, защото последната версия не е стигнала до всички.",
+      "expectedCluster": "version_control"
+    },
+    {
+      "id": "C1",
+      "role": "designer",
+      "frequency": "often",
+      "body": "Губя много време да търся актуални продуктови каталози и технически листове за оборудване.",
+      "expectedCluster": "product_info_search"
+    },
+    {
+      "id": "C2",
+      "role": "supplier",
+      "frequency": "daily",
+      "body": "Проектантите ни питат за едни и същи размери и характеристики, които са разпръснати в няколко каталога.",
+      "expectedCluster": "product_info_search"
+    },
+    {
+      "id": "C3",
+      "role": "technical sales",
+      "frequency": "daily",
+      "body": "Техническите данни за продуктите са в PDF-и и стари файлове и търсенето е бавно.",
+      "expectedCluster": "product_info_search"
+    },
+    {
+      "id": "D1",
+      "role": "designer",
+      "frequency": "monthly",
+      "body": "Съгласуването с общината се бави, защото не знаем предварително какви документи ще поискат.",
+      "expectedCluster": "authority_requirements"
+    },
+    {
+      "id": "D2",
+      "role": "municipality",
+      "frequency": "weekly",
+      "body": "Преписките идват непълни и после връщаме проектантите за липсващи приложения.",
+      "expectedCluster": "authority_requirements"
+    },
+    {
+      "id": "D3",
+      "role": "consultant",
+      "frequency": "monthly",
+      "body": "Преди внасяне няма ясен чеклист дали комплектът за съгласуване е пълен.",
+      "expectedCluster": "authority_requirements"
+    },
+    {
+      "id": "E1",
+      "role": "designer",
+      "frequency": "often",
+      "body": "КСС се актуализира ръчно след всяка промяна в проекта и лесно се пропуска позиция.",
+      "expectedCluster": "boq_updates"
+    },
+    {
+      "id": "E2",
+      "role": "quantity surveyor",
+      "frequency": "often",
+      "body": "При ревизия на чертежите трябва отново да сверявам количествата и КСС.",
+      "expectedCluster": "boq_updates"
+    },
+    {
+      "id": "E3",
+      "role": "contractor",
+      "frequency": "weekly",
+      "body": "Количествата по проекта и тези в последната КСС често не съвпадат след промени.",
+      "expectedCluster": "boq_updates"
+    },
+    {
+      "id": "F1",
+      "role": "operator",
+      "frequency": "daily",
+      "body": "При авария търсим на ръка в различни системи къде е точният спирателен кран.",
+      "expectedCluster": "asset_location"
+    },
+    {
+      "id": "F2",
+      "role": "GIS specialist",
+      "frequency": "daily",
+      "body": "Информацията за арматурата е разделена между GIS, стари планове и таблици.",
+      "expectedCluster": "asset_location"
+    },
+    {
+      "id": "F3",
+      "role": "maintenance",
+      "frequency": "often",
+      "body": "На терен губим време да намерим кой елемент от мрежата трябва да бъде изолиран.",
+      "expectedCluster": "asset_location"
+    },
+    {
+      "id": "G1",
+      "role": "designer",
+      "frequency": "weekly",
+      "body": "Координацията между ВиК и другите специалности става с много имейли и ръчни проверки за конфликти.",
+      "expectedCluster": "discipline_coordination"
+    },
+    {
+      "id": "G2",
+      "role": "BIM specialist",
+      "frequency": "weekly",
+      "body": "Конфликтите между трасетата се откриват късно, защото моделите не се координират навреме.",
+      "expectedCluster": "discipline_coordination"
+    },
+    {
+      "id": "G3",
+      "role": "project manager",
+      "frequency": "weekly",
+      "body": "Трудно следя дали архитектура, конструкция и ВиК работят по една и съща последна информация.",
+      "expectedCluster": "discipline_coordination"
+    },
+    {
+      "id": "H1",
+      "role": "designer",
+      "frequency": "monthly",
+      "body": "Търся дълго коя наредба и кой член важат за конкретния казус.",
+      "expectedCluster": "regulation_search"
+    },
+    {
+      "id": "H2",
+      "role": "consultant",
+      "frequency": "monthly",
+      "body": "Проверяването на нормативни изисквания отнема време, защото информацията е в много документи.",
+      "expectedCluster": "regulation_search"
+    },
+    {
+      "id": "H3",
+      "role": "designer",
+      "frequency": "monthly",
+      "body": "Често отварям няколко наредби, за да намеря точното изискване за проекта.",
+      "expectedCluster": "regulation_search"
+    },
+    {
+      "id": "I1",
+      "role": "supplier",
+      "frequency": "daily",
+      "body": "Подготвяме едни и същи технически оферти ръчно за много сходни запитвания.",
+      "expectedCluster": "quotation_repetition"
+    },
+    {
+      "id": "I2",
+      "role": "technical sales",
+      "frequency": "daily",
+      "body": "Еднакви продуктови комбинации се калкулират наново при почти всяко запитване.",
+      "expectedCluster": "quotation_repetition"
+    },
+    {
+      "id": "I3",
+      "role": "supplier",
+      "frequency": "daily",
+      "body": "Копираме едни и същи характеристики от каталозите в оферти отново и отново.",
+      "expectedCluster": "quotation_repetition"
+    },
+    {
+      "id": "J1",
+      "role": "contractor",
+      "frequency": "often",
+      "body": "Промените на обекта не стигат навреме до проектанта и после екзекутивите се правят по спомени.",
+      "expectedCluster": "site_change_capture"
+    },
+    {
+      "id": "J2",
+      "role": "site engineer",
+      "frequency": "daily",
+      "body": "Корекциите по трасето се записват по чатове и снимки и после трудно се събират за екзекутивите.",
+      "expectedCluster": "site_change_capture"
+    },
+    {
+      "id": "J3",
+      "role": "designer",
+      "frequency": "monthly",
+      "body": "Получаваме информация за изпълнените промени късно и в различен формат.",
+      "expectedCluster": "site_change_capture"
+    },
+    {
+      "id": "K1",
+      "role": "operator",
+      "frequency": "monthly",
+      "body": "Планираме профилактика по календар, без лесен начин да съберем историята на авариите за актива.",
+      "expectedCluster": "maintenance_history"
+    },
+    {
+      "id": "K2",
+      "role": "maintenance",
+      "frequency": "weekly",
+      "body": "Историята на ремонтите е в няколко файла и не се вижда бързо какво е правено по даден актив.",
+      "expectedCluster": "maintenance_history"
+    },
+    {
+      "id": "K3",
+      "role": "asset manager",
+      "frequency": "weekly",
+      "body": "За един и същ актив трябва да проверявам няколко места, за да видя аварии, ремонти и подмени.",
+      "expectedCluster": "maintenance_history"
+    },
+    {
+      "id": "L1",
+      "role": "designer",
+      "frequency": "often",
+      "body": "Входните данни от възложителя идват на части и започваме проекта преди да имаме всичко.",
+      "expectedCluster": "input_data_completeness"
+    },
+    {
+      "id": "L2",
+      "role": "consultant",
+      "frequency": "often",
+      "body": "Липсва ясен списък кои изходни данни са получени и кои още чакат.",
+      "expectedCluster": "input_data_completeness"
+    },
+    {
+      "id": "L3",
+      "role": "client",
+      "frequency": "monthly",
+      "body": "Не винаги е ясно какви входни данни трябва да предоставим на проектанта в началото.",
+      "expectedCluster": "input_data_completeness"
+    },
+    {
+      "id": "M1",
+      "role": "operator",
+      "frequency": "daily",
+      "body": "Сигналите от граждани идват по телефон, имейл и други канали и ги обединяваме ръчно.",
+      "expectedCluster": "customer_signal_intake"
+    },
+    {
+      "id": "M2",
+      "role": "municipality",
+      "frequency": "daily",
+      "body": "Един и същ проблем се подава през няколко канала и се получават дублирани сигнали.",
+      "expectedCluster": "customer_signal_intake"
+    },
+    {
+      "id": "M3",
+      "role": "operator",
+      "frequency": "daily",
+      "body": "Трудно разбираме кои сигнали са за една и съща авария, когато са подадени от различни места.",
+      "expectedCluster": "customer_signal_intake"
+    },
+    {
+      "id": "N1",
+      "role": "designer",
+      "frequency": "weekly",
+      "body": "При избор на помпа сравнявам ръчно няколко каталога и работни точки.",
+      "expectedCluster": "equipment_selection"
+    },
+    {
+      "id": "N2",
+      "role": "supplier",
+      "frequency": "daily",
+      "body": "Получаваме непълни параметри и после уточняваме по няколко пъти какво оборудване е подходящо.",
+      "expectedCluster": "equipment_selection"
+    },
+    {
+      "id": "N3",
+      "role": "designer",
+      "frequency": "weekly",
+      "body": "Подборът на оборудване отнема време, защото трябва да съпоставя проектните параметри с много продуктови серии.",
+      "expectedCluster": "equipment_selection"
+    },
+    {
+      "id": "O1",
+      "role": "operator",
+      "frequency": "daily",
+      "body": "Полевите екипи записват показания на хартия и после някой ги въвежда в системата.",
+      "expectedCluster": "field_data_entry"
+    },
+    {
+      "id": "O2",
+      "role": "maintenance",
+      "frequency": "daily",
+      "body": "След обход въвеждаме повторно същите данни от бележките в Excel.",
+      "expectedCluster": "field_data_entry"
+    },
+    {
+      "id": "O3",
+      "role": "operator",
+      "frequency": "daily",
+      "body": "Данните от терен не влизат директно в системата и има двойно въвеждане.",
+      "expectedCluster": "field_data_entry"
+    },
+    {
+      "id": "P1",
+      "role": "designer",
+      "frequency": "monthly",
+      "body": "Искам автоматично да ми се генерира целият проект с ИИ.",
+      "expectedCluster": "solution_first"
+    },
+    {
+      "id": "P2",
+      "role": "supplier",
+      "frequency": "weekly",
+      "body": "Трябва ни чатбот за каталозите.",
+      "expectedCluster": "solution_first"
+    },
+    {
+      "id": "P3",
+      "role": "municipality",
+      "frequency": "monthly",
+      "body": "Искаме обща платформа за всички преписки.",
+      "expectedCluster": "solution_first"
+    }
+  ],
+  "mustNotMergeClusterPairs": [
+    [
+      "calc_to_drawings",
+      "boq_updates"
+    ],
+    [
+      "version_control",
+      "discipline_coordination"
+    ],
+    [
+      "product_info_search",
+      "quotation_repetition"
+    ],
+    [
+      "authority_requirements",
+      "regulation_search"
+    ],
+    [
+      "asset_location",
+      "maintenance_history"
+    ],
+    [
+      "site_change_capture",
+      "version_control"
+    ],
+    [
+      "equipment_selection",
+      "product_info_search"
+    ],
+    [
+      "field_data_entry",
+      "customer_signal_intake"
+    ]
+  ]
+}

@@ -79,6 +79,21 @@ export interface ThemeSourceIdea {
   body: string;
 }
 
+export const THEME_REVIEW_STATUSES = ["pending", "review_ready", "approved", "rework", "audit_unavailable"] as const;
+export type ThemeReviewStatus = (typeof THEME_REVIEW_STATUSES)[number];
+
+export interface ThemeAuditRecord {
+  status: "pass" | "fail" | "split_recommended" | "unavailable";
+  reasonCodes: string[];
+  summary: string;
+}
+
+export interface ThemeAuditOverride {
+  actorEmail: string;
+  reason: string;
+  at: string;
+}
+
 export interface Theme {
   id: string;
   campaignId: string;
@@ -94,6 +109,12 @@ export interface Theme {
   formulationNote?: string;
   /** Idea ids and original text captured when the theme was combined. */
   sourceIdeas?: ThemeSourceIdea[];
+  /** Audience decision. Missing means not approved. */
+  reviewStatus?: ThemeReviewStatus;
+  /** Concise JAV decision. Never a private chain of thought. */
+  audit?: ThemeAuditRecord | null;
+  /** Recorded when an operator continues without JAV. */
+  auditOverride?: ThemeAuditOverride | null;
 }
 
 export interface ThemeIdeaLink {

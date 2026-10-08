@@ -20,6 +20,7 @@ const theme: Theme = {
   ideaCount: 1,
   organizationCount: 1,
   createdAt: new Date().toISOString(),
+  reviewStatus: "approved",
 };
 
 function mockStore(runs: Array<{ judgeType: JudgeType; status: "succeeded" | "failed" | "running" }>): {

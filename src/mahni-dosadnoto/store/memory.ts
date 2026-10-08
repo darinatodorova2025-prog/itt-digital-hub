@@ -14,6 +14,8 @@ import {
   type InterestSignal,
   type Participant,
   type Theme,
+  type ThemeAuditRecord,
+  type ThemeReviewStatus,
   type Vote,
 } from "../types";
 import {
@@ -31,7 +33,9 @@ import { validateClusteringAgainstIdeas } from "../validation";
 import { aggregateAiJury, overlapCount, rankHumanThemes, type ThemeScoreRow } from "../tie-break";
 import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "./types";
 import { clusteringCommitTheme, clusteringCommitWildcard, hydrateThemeTrace } from "../ai/formulation";
-import { draftsFromThemes, extractSources, mergeDrafts, toLiveReviewItem, type ReviewDraft } from "../review";
+import { draftsFromThemes, currentPublicReview, extractSources, mergeDrafts, type ReviewDraft } from "../review";
+import { publicExcerpt } from "../public-excerpt";
+import { isVotingTheme, votingTransitionAllowed } from "../review-status";
 import { sanitizePlainText } from "../sanitize";
 
 type SessionRow = { tokenHash: string; participantId: string; expiresAt: number };
@@ -208,6 +212,7 @@ export class MemoryMahniStore implements MahniStore {
     if (!participant) throw new Error("unauthorized");
     const theme = this.themes.get(themeId);
     if (!theme || theme.campaignId !== campaign.id) throw new Error("invalid_theme");
+    if (!isVotingTheme(theme)) throw new Error("invalid_theme");
     const existingForTheme = this.votesForParticipant(participant.id).find((v) => v.themeId === themeId);
     if (existingForTheme) return { vote: existingForTheme, votesUsed: this.votesForParticipant(participant.id).length, duplicate: true };
     const used = this.votesForParticipant(participant.id).length;
@@ -336,10 +341,11 @@ export class MemoryMahniStore implements MahniStore {
     const recent = ideaList
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 8)
-      .map((i) => ({ body: i.body, createdAt: i.createdAt }));
+      .map((i) => ({ body: publicExcerpt(i.body, { organization: i.organization, max: 180 }), createdAt: i.createdAt }));
     const voteCounts = this.themeVoteCounts();
     const campaignThemes = [...this.themes.values()].filter((theme) => theme.campaignId === campaign.id);
-    const themes = campaignThemes
+    const ballot = campaignThemes.filter(isVotingTheme);
+    const themes = ballot
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((t) => ({
         id: t.id,
@@ -350,7 +356,7 @@ export class MemoryMahniStore implements MahniStore {
         ideaCount: t.ideaCount,
         organizationCount: t.organizationCount,
       }));
-    const ranked = rankHumanThemes(this.buildThemeScores());
+    const ranked = rankHumanThemes(this.buildThemeScores().filter((row) => isVotingTheme(row.theme)));
     const humanTop3 = ranked.slice(0, 3).map((r, idx) => ({
       rank: idx + 1,
       id: r.theme.id,
@@ -360,7 +366,7 @@ export class MemoryMahniStore implements MahniStore {
     const juryPicks = [...this.juryVotes.values()];
     const aiAgg = aggregateAiJury(
       juryPicks.map((p) => ({ themeId: p.themeId, rank: p.rank })),
-      campaignThemes,
+      campaignThemes.filter(isVotingTheme),
     );
     const aiTop3 = aiAgg.slice(0, 3).map((r, idx) => ({
       rank: idx + 1,
@@ -403,7 +409,7 @@ export class MemoryMahniStore implements MahniStore {
       juryReady: campaign.phase === "AI_JURY" ? juryProgress.succeeded : null,
       juryTotal: campaign.phase === "AI_JURY" ? juryProgress.total : null,
       juryLenses: publicJuryLenses(campaign.phase, juryProgress),
-      review: campaign.phase === "ANALYZING" ? (await this.listThemes()).map(toLiveReviewItem) : null,
+      review: campaign.phase === "ANALYZING" ? currentPublicReview(await this.listThemes(), ideaList) : null,
     };
   }
 
@@ -413,6 +419,10 @@ export class MemoryMahniStore implements MahniStore {
     if (to === "RESULTS") {
       const runs = await this.listJuryResults();
       assertJuryCompleteForResults(summarizeJuryProgress(runs));
+    }
+    if (to === "VOTING") {
+      const ready = votingTransitionAllowed([...this.themes.values()].filter((theme) => theme.campaignId === campaign.id));
+      if (!ready.ok) throw new Error(ready.reason);
     }
     if (campaign.phase === to) return campaign;
     campaign.phase = to;
@@ -458,7 +468,12 @@ export class MemoryMahniStore implements MahniStore {
     return run;
   }
 
-  async completeAnalysisRun(runId: string, output: ClusteringOutput, meta: { provider: string; model: string }) {
+  async completeAnalysisRun(
+    runId: string,
+    output: ClusteringOutput,
+    meta: { provider: string; model: string },
+    reviews?: Array<{ reviewStatus: ThemeReviewStatus; audit: ThemeAuditRecord | null }>,
+  ) {
     const campaign = this.campaignOrThrow();
     const run = this.analysisRuns.get(runId);
     if (!run) throw new Error("run_not_found");
@@ -480,6 +495,7 @@ export class MemoryMahniStore implements MahniStore {
         const idea = this.ideas.get(id);
         if (idea) orgs.add(normalizeOrg(idea.organization));
       }
+      const stamp = reviews?.[order];
       const row: Theme = {
         id: randomUUID(),
         campaignId: campaign.id,
@@ -487,13 +503,17 @@ export class MemoryMahniStore implements MahniStore {
         title: committed.title,
         description: committed.description,
         isAiWildcard: false,
-        sortOrder: order++,
+        sortOrder: order,
         ideaCount: theme.ideaIds.length,
         organizationCount: orgs.size,
         createdAt: nowIso(),
         formulationNote: committed.formulationNote,
         sourceIdeas: committed.sourceIdeas,
+        reviewStatus: stamp?.reviewStatus ?? "review_ready",
+        audit: stamp?.audit ?? null,
+        auditOverride: null,
       };
+      order += 1;
       this.themes.set(row.id, row);
       this.themeLinks.set(row.id, new Set(theme.ideaIds));
     }
@@ -511,6 +531,9 @@ export class MemoryMahniStore implements MahniStore {
       createdAt: nowIso(),
       formulationNote: wildcard.formulationNote,
       sourceIdeas: [],
+      reviewStatus: "pending",
+      audit: null,
+      auditOverride: null,
     };
     this.themes.set(wc.id, wc);
     this.themeLinks.set(wc.id, new Set());
@@ -662,9 +685,95 @@ export class MemoryMahniStore implements MahniStore {
         createdAt: nowIso(),
         formulationNote: draft.formulationNote,
         sourceIdeas: draft.sources.map((source) => ({ id: source.id, body: source.body })),
+        reviewStatus: draft.reviewStatus,
+        audit: null,
+        auditOverride: null,
       });
       this.themeLinks.set(draft.id, new Set(draft.sources.map((source) => source.id)));
     }
+  }
+
+  private themeInReview(themeId: string): Theme {
+    const campaign = this.campaignOrThrow();
+    if (campaign.phase !== "ANALYZING") throw new Error("not_analyzing");
+    const theme = this.themes.get(themeId);
+    if (!theme || theme.campaignId !== campaign.id || theme.isAiWildcard) throw new Error("invalid_theme");
+    return theme;
+  }
+
+  async approveAudienceTheme(themeId: string) {
+    const theme = this.themeInReview(themeId);
+    if (theme.reviewStatus !== "review_ready") throw new Error("not_review_ready");
+    theme.reviewStatus = "approved";
+  }
+
+  async recordAuditOverride(themeId: string, actorEmail: string, reason: string) {
+    const theme = this.themeInReview(themeId);
+    if (theme.reviewStatus !== "audit_unavailable") throw new Error("not_override");
+    const clean = reason.trim();
+    if (clean.length < 8) throw new Error("override_reason");
+    theme.auditOverride = { actorEmail, reason: clean.slice(0, 400), at: nowIso() };
+    theme.reviewStatus = "review_ready";
+  }
+
+  async markThemeRework(themeId: string) {
+    const theme = this.themeInReview(themeId);
+    if (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "rework") throw new Error("not_review_ready");
+    theme.reviewStatus = "rework";
+  }
+
+  async replaceReviewTheme(
+    themeId: string,
+    replacements: Array<{
+      title: string;
+      description: string;
+      formulationNote: string;
+      ideaIds: string[];
+      reviewStatus: ThemeReviewStatus;
+      audit: ThemeAuditRecord | null;
+    }>,
+  ) {
+    const theme = this.themeInReview(themeId);
+    const campaign = this.campaignOrThrow();
+    const existing = new Set(this.themeLinks.get(themeId) ?? []);
+    const nextIds = replacements.flatMap((item) => item.ideaIds);
+    if (nextIds.length !== existing.size || new Set(nextIds).size !== nextIds.length || nextIds.some((id) => !existing.has(id))) {
+      throw new Error("invalid_theme");
+    }
+    for (const id of nextIds) {
+      const idea = this.ideas.get(id);
+      if (!idea || idea.campaignId !== campaign.id) throw new Error("invalid_theme");
+    }
+    const analysisRunId = theme.analysisRunId;
+    this.themes.delete(themeId);
+    this.themeLinks.delete(themeId);
+    replacements.forEach((item, index) => {
+      const id = randomUUID();
+      const sources = item.ideaIds.map((ideaId) => ({ id: ideaId, body: this.ideas.get(ideaId)?.body ?? "" }));
+      const orgs = new Set(item.ideaIds.map((ideaId) => normalizeOrg(this.ideas.get(ideaId)?.organization ?? "")).filter((org) => org.length > 0));
+      this.themes.set(id, {
+        id,
+        campaignId: campaign.id,
+        analysisRunId,
+        title: item.title,
+        description: item.description,
+        isAiWildcard: false,
+        sortOrder: theme.sortOrder + index,
+        ideaCount: item.ideaIds.length,
+        organizationCount: orgs.size,
+        createdAt: nowIso(),
+        formulationNote: item.formulationNote,
+        sourceIdeas: sources,
+        reviewStatus: item.reviewStatus,
+        audit: item.audit,
+        auditOverride: null,
+      });
+      this.themeLinks.set(id, new Set(item.ideaIds));
+    });
+    const ordered = [...this.themes.values()].filter((item) => item.campaignId === campaign.id).sort((a, b) => a.sortOrder - b.sortOrder);
+    ordered.forEach((item, index) => {
+      item.sortOrder = index;
+    });
   }
 
   async listIdeasAdmin() {

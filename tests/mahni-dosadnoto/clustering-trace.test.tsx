@@ -1,7 +1,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CombiningReview } from "@/mahni-dosadnoto/CombiningReview";
+import { AudienceReviewCard } from "@/mahni-dosadnoto/CombiningReview";
+import { SYNTHESIZE_SYSTEM } from "@/mahni-dosadnoto/ai/synthesize";
 import { completeClusteringJson } from "@/mahni-dosadnoto/ai/clustering";
 import { CLUSTERING_MODEL } from "@/mahni-dosadnoto/ai/clustering-model";
 import { clusteringUserPrompt } from "@/mahni-dosadnoto/ai/prompts";
@@ -99,6 +100,9 @@ describe("mahni clustering trace", () => {
       wildcard: { title: "Отвъд залата", description: "Отделно предложение от модела тук." },
     });
     await store.completeAnalysisRun(run.id, output, { provider: "openai", model: CLUSTERING_MODEL });
+    for (const theme of await store.listThemes()) {
+      if (!theme.isAiWildcard) await store.approveAudienceTheme(theme.id);
+    }
 
     const themes = await store.listThemes();
     const grouped = themes.find((theme) => !theme.isAiWildcard);
@@ -124,32 +128,32 @@ describe("mahni clustering trace", () => {
     expect(rebuilt?.formulationNote).toContain("Ръчно преписване на протоколи");
   });
 
-  it("asks the combining prompt for a formulation note", () => {
-    const prompt = clusteringUserPrompt([{ id: IDEA_ID, body: "а", organization: "А" }]);
-    expect(prompt).toContain("formulationNote");
+  it("asks synthesis for a formulation note and does not demand a theme count", () => {
+    const prompt = clusteringUserPrompt([{ id: IDEA_ID, body: "а", role: "Инженер", frequency: "Всеки ден" }]);
+    expect(prompt).not.toContain("8–12");
+    expect(prompt).not.toContain("organization");
+    expect(SYNTHESIZE_SYSTEM).toContain("formulationNote");
   });
 
-  it("renders the live review with combine inactive until several ideas are selected", () => {
+  it("renders the projector review as a read-only question", () => {
     const html = renderToStaticMarkup(
-      createElement(CombiningReview, {
-        items: [
-          {
-            id: "11111111-1111-4111-8111-111111111111",
-            title: "Ръчни протоколи",
-            description: "Хората преписват протоколи на ръка.",
-            formulationNote: "Заглавието следва идеите за преписване.",
-            isAiWildcard: false,
-            sources: [{ id: IDEA_ID, body: "Ръчно преписване на протоколи всеки понеделник" }],
-          },
-        ],
-        onExtract: async () => ({ openedId: IDEA_ID }),
-        onCombine: async () => ({ openedId: IDEA_ID }),
+      createElement(AudienceReviewCard, {
+        card: {
+          id: "11111111-1111-4111-8111-111111111111",
+          title: "Ръчни протоколи",
+          description: "Хората преписват протоколи на ръка.",
+          ideaCount: 1,
+          organizationCount: 1,
+          mapping: "1 идея -> 1 тема",
+          excerpts: ["Ръчно преписване на протоколи всеки понеделник"],
+          question: "Това представя ли правилно тези идеи?",
+        },
       }),
     );
-    expect(html).toContain("Комбинирани идеи");
-    expect(html).toContain("Комбинирай");
-    expect(html).toContain("disabled");
+    expect(html).toContain("1 идея -&gt; 1 тема");
     expect(html).toContain("Ръчни протоколи");
-    expect(html).toContain("Изберете комбинирана идея отгоре");
+    expect(html).toContain("Това представя ли правилно тези идеи?");
+    expect(html).not.toContain("checkbox");
+    expect(html).not.toContain("Комбинирай");
   });
 });

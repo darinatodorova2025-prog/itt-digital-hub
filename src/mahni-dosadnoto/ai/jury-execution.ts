@@ -6,6 +6,7 @@ import { JUDGE_TYPES } from "../types";
 import { juryOutputSchemaFor, juryPickCount, type JuryOutput } from "../validation";
 import type { MahniStore } from "../store/types";
 import { summarizeJuryProgress } from "../jury-status";
+import { isVotingTheme } from "../review-status";
 import { completeJson, readMahniAiConfig } from "./provider";
 import { JUDGE_PROMPTS, juryUserPrompt } from "./prompts";
 import { isTransientAiError } from "./transient-errors";
@@ -97,7 +98,7 @@ function picksFit(
 }
 
 export async function runJuryWithResilience(store: MahniStore, options: RunJuryOptions = {}): Promise<RunJuryResult> {
-  const themes = await store.listThemes();
+  const themes = (await store.listThemes()).filter(isVotingTheme);
   const themePayload = themes.map((theme) => ({
     id: theme.id,
     title: theme.title,

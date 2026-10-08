@@ -2840,3 +2840,47 @@
     display: inline;
   }
 }
+
+.md-audience {
+  max-width: 52rem;
+  margin: 0 auto;
+  color: #f7f8fd;
+}
+
+.md-audience-kicker,
+.md-audience-notice,
+.md-audience-map,
+.md-audience-count,
+.md-audience-question {
+  margin: 0 0 1rem;
+}
+
+.md-audience h2 {
+  margin: 0 0 0.8rem;
+  color: #fff;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1.05;
+}
+
+.md-audience p {
+  font-size: 1.25rem;
+  line-height: 1.45;
+}
+
+.md-audience ul {
+  margin: 0 0 1.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.md-audience li {
+  margin: 0 0 0.6rem;
+  padding-left: 1rem;
+  border-left: 2px solid rgba(247, 248, 253, 0.35);
+}
+
+.md-audience-question {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 650;
+}
+

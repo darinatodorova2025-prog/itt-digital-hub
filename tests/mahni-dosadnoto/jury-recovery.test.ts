@@ -24,6 +24,7 @@ async function seedThemes() {
       ideaCount: 1,
       organizationCount: 1,
       createdAt: new Date().toISOString(),
+      reviewStatus: "approved",
     };
     store.themes.set(id, theme);
   }

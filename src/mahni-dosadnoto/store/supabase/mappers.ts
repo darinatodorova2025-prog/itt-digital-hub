@@ -1,4 +1,6 @@
 import { parseSourceIdeas } from "../../ai/formulation";
+import { isThemeReviewStatus } from "../../review-status";
+import type { ThemeAuditOverride, ThemeAuditRecord } from "../../types";
 import type {
   AiJuryRun,
   AiJuryVote,
@@ -90,6 +92,21 @@ export function mapIdea(row: Record<string, unknown>): Idea {
   };
 }
 
+function parseAuditRecord(value: unknown): ThemeAuditRecord | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as { status?: unknown; reasonCodes?: unknown; summary?: unknown };
+  if (row.status !== "pass" && row.status !== "fail" && row.status !== "split_recommended" && row.status !== "unavailable") return null;
+  const reasonCodes = Array.isArray(row.reasonCodes) ? row.reasonCodes.filter((code): code is string => typeof code === "string").slice(0, 12) : [];
+  return { status: row.status, reasonCodes, summary: typeof row.summary === "string" ? row.summary.slice(0, 400) : "" };
+}
+
+function parseAuditOverride(value: unknown): ThemeAuditOverride | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as { actorEmail?: unknown; reason?: unknown; at?: unknown };
+  if (typeof row.actorEmail !== "string" || typeof row.reason !== "string" || typeof row.at !== "string") return null;
+  return { actorEmail: row.actorEmail, reason: row.reason, at: row.at };
+}
+
 export function mapTheme(row: Record<string, unknown>): Theme {
   return {
     id: String(row.id),
@@ -104,6 +121,9 @@ export function mapTheme(row: Record<string, unknown>): Theme {
     createdAt: String(row.created_at),
     formulationNote: typeof row.formulation_note === "string" ? row.formulation_note : "",
     sourceIdeas: parseSourceIdeas(row.source_ideas),
+    reviewStatus: isThemeReviewStatus(row.review_status) ? row.review_status : "pending",
+    audit: parseAuditRecord(row.audit_record),
+    auditOverride: parseAuditOverride(row.audit_override),
   };
 }
 
@@ -182,6 +202,9 @@ export function mapPostgresError(error: { message?: string; code?: string }): st
   if (msg.includes("unauthorized")) return "unauthorized";
   if (msg.includes("not_closed")) return "not_closed";
   if (msg.includes("invalid_theme")) return "invalid_theme";
+  if (msg.includes("review_open")) return "review_open";
+  if (msg.includes("not_review_ready")) return "not_review_ready";
+  if (msg.includes("not_override")) return "not_override";
   if (msg.includes("invalid_transition")) return "invalid_transition";
   if (error.code === "23505") return "duplicate";
   return "store_error";

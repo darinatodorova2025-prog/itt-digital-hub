@@ -37,21 +37,24 @@ describe("mahni live review edits", () => {
     });
     await store.completeAnalysisRun(run.id, output, { provider: "openai", model: "gpt-6.1-sol" });
 
-    const before = (await store.getPublicLiveSnapshot()).review ?? [];
+    const before = await store.listThemes();
     const combined = before.find((item) => !item.isAiWildcard);
     if (!combined) throw new Error("missing combination");
-    expect(combined.sources.map((source) => source.body)).toEqual([first.idea.body, second.idea.body]);
+    expect(combined.sourceIdeas?.map((source) => source.body)).toEqual([first.idea.body, second.idea.body]);
     expect(combined.formulationNote).toContain("ръчен протокол");
+    const live = await store.getPublicLiveSnapshot();
+    expect(live.review?.excerpts.join(" ")).toContain("Преписваме протоколите");
+    expect(JSON.stringify(live.review)).not.toContain("review@example.test");
 
     const extracted = await store.extractReviewIdeas(combined.id, [second.idea.id]);
-    const review = (await store.getPublicLiveSnapshot()).review ?? [];
+    const review = await store.listThemes();
     const parent = review.find((item) => item.id === combined.id);
-    const standalone = review.find((item) => item.sources.length === 1 && item.sources[0]?.id === second.idea.id);
+    const standalone = review.find((item) => item.sourceIdeas?.length === 1 && item.sourceIdeas[0]?.id === second.idea.id);
     expect(extracted.openedId).toBe(combined.id);
-    expect(parent?.sources.map((source) => source.id)).toEqual([first.idea.id]);
+    expect(parent?.sourceIdeas?.map((source) => source.id)).toEqual([first.idea.id]);
     expect(standalone?.title).toBe(second.idea.body);
     expect(standalone?.formulationNote).toContain("Извадена от");
-    expect(review.filter((item) => item.sources.some((source) => source.id === second.idea.id))).toHaveLength(1);
+    expect(review.filter((item) => item.sourceIdeas?.some((source) => source.id === second.idea.id))).toHaveLength(1);
 
     await expect(store.extractReviewIdeas(combined.id, [second.idea.id])).rejects.toThrow("invalid_theme");
 
@@ -61,10 +64,10 @@ describe("mahni live review edits", () => {
       description: "Преписването и търсенето са една работа.",
       formulationNote: "Двата оригинални текста са събрани отново в едно изречение.",
     });
-    const after = (await store.getPublicLiveSnapshot()).review ?? [];
+    const after = await store.listThemes();
     const again = after.find((item) => item.id === merged.openedId);
     expect(again?.title).toBe("Една тема за протоколите");
-    expect(again?.sources.map((source) => source.id).sort()).toEqual([first.idea.id, second.idea.id].sort());
+    expect(again?.sourceIdeas?.map((source) => source.id).sort()).toEqual([first.idea.id, second.idea.id].sort());
     expect(after.filter((item) => !item.isAiWildcard)).toHaveLength(1);
   });
 

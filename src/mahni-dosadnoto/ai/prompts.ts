@@ -1,21 +1,13 @@
-import { clusteringThemeBounds } from "../validation";
-
-export const CLUSTERING_SYSTEM = `Ти си аналитик на процеси за българска ВиК/инженерна конференция.
-Групирай реални проблеми от участници в ясни теми на български.
-Броят на темите е зададен в заявката. Не създавай повече теми от идеите и не прави тема без реална идея.
-Всяка тема: title, description (мин. 10 символа), ideaIds (само подадени UUID), formulationNote.
-formulationNote е на български, 1–3 изречения: кои подадени идеи са обединени и как от техния текст е стигнато до title и description.
-Не добавяй имена, организации, числа или резултати, които ги няма в подадените идеи.
-Всяка идея е в точно една тема.
-Не променяй текста на идеите.
-След темите добави wildcard с title, description и formulationNote — AI предложение извън подадените идеи. В неговата formulationNote кажи, че не идва от подадена идея.`;
-
-export function clusteringUserPrompt(ideas: Array<{ id: string; body: string; organization: string }>) {
-  const { min, max } = clusteringThemeBounds(ideas.length);
-  const band = min === max ? String(min) : `${min}–${max}`;
+export function clusteringUserPrompt(ideas: Array<{ id: string; body: string; role?: string; frequency?: string | null }>) {
   return JSON.stringify({
-    instruction: `Върни JSON с полета themes[] и wildcard. Направи ${band} теми. Всяка идея влиза в точно една тема. Всяка тема и wildcard включват formulationNote: как е стигнато до формулировката.`,
-    ideas,
+    instruction:
+      "Няма целеви брой теми. Групирай само когато един кратък проблем е верен за всяка идея. Използвай body, role и frequency. Не използвай организация.",
+    ideas: ideas.map((idea) => ({
+      id: idea.id,
+      body: idea.body,
+      role: idea.role ?? "",
+      frequency: idea.frequency ?? null,
+    })),
   });
 }
 

@@ -9,6 +9,8 @@ import type { JuryProgress } from "@/mahni-dosadnoto/jury-status";
 import { LENS_COPY, operatorPhaseNote, operatorPhaseTitle, storyForPhase } from "@/mahni-dosadnoto/presentation";
 import { CheckIcon, OrgIcon, PeopleIcon, StageGlyph } from "@/mahni-dosadnoto/icons";
 import { AdminRail } from "@/mahni-dosadnoto/journey";
+import { votingTransitionAllowed } from "@/mahni-dosadnoto/review-status";
+import { AudienceReviewDesk } from "@/mahni-dosadnoto/AudienceReviewDesk";
 import {
   mdAdminSnapshot,
   mdCloseCollection,
@@ -17,6 +19,10 @@ import {
   mdCloseVoting,
   mdExportCsv,
   mdOpenVoting,
+  mdApproveAudienceTheme,
+  mdCombineReviewThemes,
+  mdOverrideAudit,
+  mdSplitAudienceTheme,
   mdResetDemo,
   mdRetryJury,
   mdRevealResults,
@@ -91,7 +97,8 @@ export function MahniAdminDashboard({ initial }: Props) {
   }, [busy, confirm, campaign.phase]);
 
   const analysisFailed = !analysisReady && !analysisRunning && latestAnalysis?.status === "failed";
-  const primary = recommendedAction(campaign.phase, analysisReady, analysisRunning, analysisFailed, jury);
+  const votingReady = votingTransitionAllowed(snapshot.themes).ok;
+  const primary = recommendedAction(campaign.phase, analysisReady, analysisRunning, analysisFailed, jury, snapshot.counts.ideas, votingReady);
   const active = campaign.phase !== "DRAFT" && campaign.phase !== "CLOSED";
   const stage = storyForPhase(campaign.phase);
   const voteById = new Map(snapshot.live.themes.map((theme) => [theme.id, theme.voteCount]));
@@ -189,11 +196,38 @@ export function MahniAdminDashboard({ initial }: Props) {
             <p className="md-ops-note">Няма следваща стъпка.</p>
           )}
           {analysisRunning && campaign.phase === "ANALYZING" ? <p className="md-ops-note">Подреждането тече.</p> : null}
+          {snapshot.counts.ideas === 0 && campaign.phase === "ANALYZING" ? <p className="md-ops-note">Няма подадени идеи. Подреждането не се стартира.</p> : null}
+          {analysisReady && campaign.phase === "ANALYZING" && !votingReady ? (
+            <p className="md-ops-note">Изборът се отваря, когато всяка реална тема е одобрена от залата.</p>
+          ) : null}
           {analysisFailed && campaign.phase === "ANALYZING" ? (
             <p className="md-ops-note">Подреждането не завърши. Фазата остава същата. Повторете действието.</p>
           ) : null}
         </div>
       </section>
+
+      {campaign.phase === "ANALYZING" ? (
+        <AudienceReviewDesk
+          themes={snapshot.themes}
+          busy={busy.length > 0}
+          onApprove={async (themeId) => {
+            await mdApproveAudienceTheme(themeId);
+            await refresh();
+          }}
+          onSplit={async (themeId) => {
+            await mdSplitAudienceTheme(themeId);
+            await refresh();
+          }}
+          onOverride={async (themeId, reason) => {
+            await mdOverrideAudit(themeId, reason);
+            await refresh();
+          }}
+          onCombine={async (themeIds) => {
+            await mdCombineReviewThemes(themeIds);
+            await refresh();
+          }}
+        />
+      ) : null}
 
       <AdminRail stage={stage} />
 
@@ -608,6 +642,8 @@ function recommendedAction(
   analysisRunning: boolean,
   analysisFailed: boolean,
   jury: JuryProgress,
+  ideaCount: number,
+  votingReady: boolean,
 ): { id: ActionId; label: string; disabled?: boolean } | null {
   switch (phase) {
     case "DRAFT":
@@ -615,7 +651,8 @@ function recommendedAction(
     case "COLLECTING":
       return { id: "close-collect", label: ACTION_LABEL["close-collect"] };
     case "ANALYZING":
-      if (analysisReady) return { id: "vote", label: ACTION_LABEL.vote };
+      if (ideaCount === 0) return { id: "analysis", label: "Няма идеи за подреждане", disabled: true };
+      if (analysisReady) return { id: "vote", label: ACTION_LABEL.vote, disabled: !votingReady };
       if (analysisRunning) return { id: "analysis", label: "Подреждането тече", disabled: true };
       if (analysisFailed) return { id: "analysis", label: "Повтори подреждането" };
       return { id: "analysis", label: ACTION_LABEL.analysis };

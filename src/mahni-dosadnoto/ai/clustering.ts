@@ -4,8 +4,8 @@ import { CLUSTERING_MODEL } from "./clustering-model";
 
 type FetchLike = typeof fetch;
 
-const CLUSTERING_TIMEOUT_MS = 60_000;
-const CLUSTERING_MAX_OUTPUT_TOKENS = 12_000;
+const CLUSTERING_TIMEOUT_MS = 180_000;
+const CLUSTERING_MAX_OUTPUT_TOKENS = 16_000;
 
 function modelMatches(returned: string, requested: string): boolean {
   return returned === requested || returned.startsWith(`${requested}-`);
@@ -15,6 +15,14 @@ function readModel(payload: unknown): string | null {
   if (!payload || typeof payload !== "object" || !("model" in payload)) return null;
   const model = (payload as { model?: unknown }).model;
   return typeof model === "string" ? model : null;
+}
+
+function safeProviderDetail(payload: unknown, status: number): string {
+  const error = payload && typeof payload === "object" ? (payload as { error?: { code?: unknown; type?: unknown; message?: unknown } }).error : undefined;
+  const type = typeof error?.type === "string" ? error.type : "";
+  const code = typeof error?.code === "string" ? error.code : "";
+  const message = typeof error?.message === "string" ? error.message.replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]").slice(0, 180) : "";
+  return ["OpenAI API request failed", String(status), type, code, message].filter((part) => part.length > 0).join(" ");
 }
 
 function readText(payload: unknown): string {
@@ -82,7 +90,7 @@ export async function completeClusteringJson<T>(
       throw new AiActProviderError("rate_limited", "OpenAI API rate limited", "openai");
     }
     if (!response.ok) {
-      throw new AiActProviderError("provider_error", "OpenAI API request failed", "openai");
+      throw new AiActProviderError("provider_error", safeProviderDetail(payload, response.status), "openai");
     }
 
     const returned = readModel(payload);

@@ -14,6 +14,8 @@ import {
   type JudgeType,
   type Participant,
   type Theme,
+  type ThemeAuditRecord,
+  type ThemeReviewStatus,
   type ThemeSourceIdea,
 } from "../../types";
 import {
@@ -27,7 +29,9 @@ import { validateClusteringAgainstIdeas } from "../../validation";
 import { aggregateAiJury, overlapCount, rankHumanThemes } from "../../tie-break";
 import { assertJuryCompleteForResults, publicJuryLenses, summarizeJuryProgress } from "../../jury-status";
 import { clusteringCommitTheme, clusteringCommitWildcard, hydrateThemeTrace } from "../../ai/formulation";
-import { draftsFromThemes, extractSources, mergeDrafts, toLiveReviewItem, type ReviewDraft } from "../../review";
+import { draftsFromThemes, currentPublicReview, extractSources, mergeDrafts, type ReviewDraft } from "../../review";
+import { publicExcerpt } from "../../public-excerpt";
+import { isVotingTheme, votingTransitionAllowed } from "../../review-status";
 import { sanitizePlainText } from "../../sanitize";
 import type { MahniStore, ParticipantContext, PublicLiveSnapshot } from "../types";
 import {
@@ -88,69 +92,27 @@ async function hydrateStoredThemes(sb: ReturnType<typeof client>, themes: Theme[
   return themes.map((theme) => hydrateThemeTrace(theme, linked.get(theme.id) ?? []));
 }
 
-function missingTraceColumn(message: string): boolean {
-  return message.includes("formulation_note") || message.includes("source_ideas");
-}
-
-function organizationCount(sources: ReviewDraft["sources"]): number {
-  return new Set(sources.map((source) => source.organization.trim().toLocaleLowerCase("bg-BG")).filter((org) => org.length > 0)).size;
-}
-
-async function writeThemeRow(sb: ReturnType<typeof client>, campaignId: string, draft: ReviewDraft, exists: boolean) {
-  const base = {
-    campaign_id: campaignId,
-    analysis_run_id: draft.analysisRunId,
-    title: draft.title,
-    description: draft.description,
-    is_ai_wildcard: draft.isAiWildcard,
-    sort_order: draft.sortOrder,
-    idea_count: draft.sources.length,
-    organization_count: organizationCount(draft.sources),
-  };
-  const trace = {
-    formulation_note: draft.formulationNote,
-    source_ideas: draft.sources.map((source) => ({ id: source.id, body: source.body })),
-  };
-  const write = exists
-    ? () => sb.from("md_themes").update({ ...base, ...trace }).eq("id", draft.id)
-    : () => sb.from("md_themes").insert({ id: draft.id, ...base, ...trace });
-  const writeBase = exists
-    ? () => sb.from("md_themes").update(base).eq("id", draft.id)
-    : () => sb.from("md_themes").insert({ id: draft.id, ...base });
-  const first = await write();
-  if (!first.error) return;
-  if (!missingTraceColumn(first.error.message)) throw new MahniStoreUnavailableError(first.error.message);
-  const second = await writeBase();
-  if (second.error) throw new MahniStoreUnavailableError(second.error.message);
-}
-
-async function replaceThemeLinks(sb: ReturnType<typeof client>, draft: ReviewDraft) {
-  const removed = await sb.from("md_theme_idea_links").delete().eq("theme_id", draft.id);
-  if (removed.error) throw new MahniStoreUnavailableError(removed.error.message);
-  if (draft.sources.length === 0) return;
-  const inserted = await sb.from("md_theme_idea_links").insert(
-    draft.sources.map((source) => ({ theme_id: draft.id, idea_id: source.id })),
-  );
-  if (inserted.error) throw new MahniStoreUnavailableError(inserted.error.message);
-}
-
 async function persistReviewDrafts(campaignId: string, previousIds: string[], drafts: ReviewDraft[]) {
   const sb = client();
-  const previous = new Set(previousIds);
-  for (const draft of drafts) {
-    await writeThemeRow(sb, campaignId, draft, previous.has(draft.id));
-  }
-  for (const draft of drafts.filter((item) => !previous.has(item.id))) {
-    await replaceThemeLinks(sb, draft);
-  }
-  for (const draft of drafts.filter((item) => previous.has(item.id))) {
-    await replaceThemeLinks(sb, draft);
-  }
   const nextIds = new Set(drafts.map((draft) => draft.id));
   const removed = previousIds.filter((id) => !nextIds.has(id));
-  if (removed.length === 0) return;
-  const deleted = await sb.from("md_themes").delete().in("id", removed);
-  if (deleted.error) throw new MahniStoreUnavailableError(deleted.error.message);
+  const { error } = await sb.rpc("md_replace_review_themes", {
+    p_campaign_id: campaignId,
+    p_remove_ids: removed,
+    p_themes: drafts.map((draft) => ({
+      id: draft.id,
+      analysisRunId: draft.analysisRunId,
+      title: draft.title,
+      description: draft.description,
+      formulationNote: draft.formulationNote,
+      isAiWildcard: draft.isAiWildcard,
+      sortOrder: draft.sortOrder,
+      ideaIds: draft.sources.map((source) => source.id),
+      sourceIdeas: draft.sources.map((source) => ({ id: source.id, body: source.body })),
+      reviewStatus: draft.reviewStatus,
+    })),
+  });
+  if (error) throw new MahniStoreUnavailableError(error.message);
 }
 
 function throwMapped(error: { message?: string; code?: string }): never {
@@ -346,11 +308,23 @@ export class SupabaseMahniStore implements MahniStore {
     if (!data) throw new Error("invalid_theme");
   }
 
+  private async assertVotingTheme(campaignId: string, themeId: string) {
+    const sb = client();
+    const { data, error } = await sb
+      .from("md_themes")
+      .select("id, is_ai_wildcard, review_status")
+      .eq("id", themeId)
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    if (error) throw new MahniStoreUnavailableError();
+    if (!data || data.is_ai_wildcard || data.review_status !== "approved") throw new Error("invalid_theme");
+  }
+
   async castVote(sessionToken: string, themeId: string, idempotencyKey?: string) {
     const campaign = await this.ensureCampaign();
     const participant = await this.resolveParticipant(sessionToken);
     if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
-    await this.assertThemeInCampaign(campaign.id, themeId);
+    await this.assertVotingTheme(campaign.id, themeId);
     const scope = idempotencyKey ? `vote:${participant.id}:${idempotencyKey}` : "";
     const sb = client();
     const { data, error } = await sb.rpc("md_cast_vote", {
@@ -469,8 +443,9 @@ export class SupabaseMahniStore implements MahniStore {
       interestByTheme.get(tid)!.add(normalizeOrg(String(sig.organization)));
     }
 
+    const ballot = themes.filter(isVotingTheme);
     const ranked = rankHumanThemes(
-      themes.map((theme) => ({
+      ballot.map((theme) => ({
         theme,
         voteCount: voteCounts.get(theme.id) ?? 0,
         interestOrgCount: interestByTheme.get(theme.id)?.size ?? 0,
@@ -481,7 +456,7 @@ export class SupabaseMahniStore implements MahniStore {
     const juryRuns = await this.listJuryResults();
     const juryProgress = summarizeJuryProgress(juryRuns);
     const juryPicks = juryRuns.flatMap((run) => run.picks.map((p) => ({ themeId: p.themeId, rank: p.rank })));
-    const aiAgg = aggregateAiJury(juryPicks, themes);
+    const aiAgg = aggregateAiJury(juryPicks, ballot);
 
     let countdownSeconds: number | null = null;
     if (campaign.phase === "FINALIZING" && campaign.votingEndsAt) {
@@ -511,11 +486,11 @@ export class SupabaseMahniStore implements MahniStore {
       },
       recentIdeas:
         campaign.showRecentIdeas && campaign.phase === "COLLECTING"
-          ? (ideaRows ?? []).map((r) => ({ body: String(r.body), createdAt: String(r.created_at) }))
+          ? (ideaRows ?? []).map((r) => ({ body: publicExcerpt(String(r.body), { max: 180 }), createdAt: String(r.created_at) }))
           : [],
       analysisStage: campaign.phase === "ANALYZING" ? (latestRun?.stage ? String(latestRun.stage) : "reading") : null,
       themes: showThemes
-        ? themes.map((t) => ({
+        ? ballot.map((t) => ({
             id: t.id,
             title: t.title,
             description: t.description,
@@ -544,7 +519,7 @@ export class SupabaseMahniStore implements MahniStore {
       juryReady: campaign.phase === "AI_JURY" ? juryProgress.succeeded : null,
       juryTotal: campaign.phase === "AI_JURY" ? juryProgress.total : null,
       juryLenses: publicJuryLenses(campaign.phase, juryProgress),
-      review: campaign.phase === "ANALYZING" ? (await this.listThemes()).map(toLiveReviewItem) : null,
+      review: campaign.phase === "ANALYZING" ? currentPublicReview(await this.listThemes(), await this.listIdeasAdmin()) : null,
     };
   }
 
@@ -554,6 +529,10 @@ export class SupabaseMahniStore implements MahniStore {
     if (to === "RESULTS") {
       const runs = await this.listJuryResults();
       assertJuryCompleteForResults(summarizeJuryProgress(runs));
+    }
+    if (to === "VOTING") {
+      const ready = votingTransitionAllowed(await this.listThemes());
+      if (!ready.ok) throw new Error(ready.reason);
     }
     if (campaign.phase === to && !options) return campaign;
 
@@ -613,7 +592,12 @@ export class SupabaseMahniStore implements MahniStore {
     return mapAnalysisRun(data);
   }
 
-  async completeAnalysisRun(runId: string, output: ClusteringOutput, meta: { provider: string; model: string }) {
+  async completeAnalysisRun(
+    runId: string,
+    output: ClusteringOutput,
+    meta: { provider: string; model: string },
+    reviews?: Array<{ reviewStatus: ThemeReviewStatus; audit: ThemeAuditRecord | null }>,
+  ) {
     const campaign = await this.ensureCampaign();
     const sb = client();
     const { data: ideas } = await sb.from("md_ideas").select("id, body").eq("campaign_id", campaign.id);
@@ -622,7 +606,11 @@ export class SupabaseMahniStore implements MahniStore {
     const valid = validateClusteringAgainstIdeas(output, ideaIds);
     if (!valid.ok) throw new Error(valid.reason);
 
-    const themesPayload = output.themes.map((theme) => clusteringCommitTheme(theme, ideaRows));
+    const themesPayload = output.themes.map((theme, index) => ({
+      ...clusteringCommitTheme(theme, ideaRows),
+      reviewStatus: reviews?.[index]?.reviewStatus ?? "review_ready",
+      audit: reviews?.[index]?.audit ?? null,
+    }));
 
     const { error } = await sb.rpc("md_commit_clustering", {
       p_run_id: runId,
@@ -733,6 +721,81 @@ export class SupabaseMahniStore implements MahniStore {
     const planned = mergeDrafts(drafts, themeIds, result, randomUUID());
     await persistReviewDrafts(campaignId, drafts.map((theme) => theme.id), planned.themes);
     return { openedId: planned.openedId };
+  }
+
+  private async setThemeReview(themeId: string, status: ThemeReviewStatus, override: { actorEmail: string; reason: string; at: string } | null) {
+    const campaign = await this.ensureCampaign();
+    if (campaign.phase !== "ANALYZING") throw new Error("not_analyzing");
+    const sb = client();
+    const { error } = await sb.rpc("md_set_theme_review", {
+      p_theme_id: themeId,
+      p_campaign_id: campaign.id,
+      p_status: status,
+      p_override: override,
+    });
+    if (error) throwMapped(error);
+  }
+
+  async approveAudienceTheme(themeId: string) {
+    const theme = (await this.listThemes()).find((item) => item.id === themeId);
+    if (!theme || theme.isAiWildcard || theme.reviewStatus !== "review_ready") throw new Error(theme ? "not_review_ready" : "invalid_theme");
+    await this.setThemeReview(themeId, "approved", null);
+  }
+
+  async recordAuditOverride(themeId: string, actorEmail: string, reason: string) {
+    const theme = (await this.listThemes()).find((item) => item.id === themeId);
+    if (!theme || theme.isAiWildcard) throw new Error("invalid_theme");
+    if (theme.reviewStatus !== "audit_unavailable") throw new Error("not_override");
+    const clean = reason.trim();
+    if (clean.length < 8) throw new Error("override_reason");
+    await this.setThemeReview(themeId, "review_ready", { actorEmail, reason: clean.slice(0, 400), at: new Date().toISOString() });
+  }
+
+  async markThemeRework(themeId: string) {
+    const theme = (await this.listThemes()).find((item) => item.id === themeId);
+    if (!theme || theme.isAiWildcard) throw new Error("invalid_theme");
+    if (theme.reviewStatus !== "review_ready" && theme.reviewStatus !== "rework") throw new Error("not_review_ready");
+    await this.setThemeReview(themeId, "rework", theme.auditOverride ?? null);
+  }
+
+  async replaceReviewTheme(
+    themeId: string,
+    replacements: Array<{
+      title: string;
+      description: string;
+      formulationNote: string;
+      ideaIds: string[];
+      reviewStatus: ThemeReviewStatus;
+      audit: ThemeAuditRecord | null;
+    }>,
+  ) {
+    const { campaignId, drafts } = await this.reviewDrafts();
+    const theme = drafts.find((item) => item.id === themeId && !item.isAiWildcard);
+    if (!theme) throw new Error("invalid_theme");
+    const existing = theme.sources.map((source) => source.id);
+    const nextIds = replacements.flatMap((item) => item.ideaIds);
+    if (nextIds.length !== existing.length || new Set(nextIds).size !== nextIds.length || nextIds.some((id) => !existing.includes(id))) {
+      throw new Error("invalid_theme");
+    }
+    const ideas = await this.listIdeasAdmin();
+    const ideaById = new Map(ideas.map((idea) => [idea.id, idea]));
+    const created = replacements.map((item, index) => ({
+      id: randomUUID(),
+      analysisRunId: theme.analysisRunId,
+      title: item.title,
+      description: item.description,
+      formulationNote: item.formulationNote,
+      isAiWildcard: false,
+      sortOrder: theme.sortOrder + index,
+      reviewStatus: item.reviewStatus,
+      sources: item.ideaIds.map((id) => ({
+        id,
+        body: ideaById.get(id)?.body ?? "",
+        organization: ideaById.get(id)?.organization ?? "",
+      })),
+    }));
+    const rest = drafts.filter((item) => item.id !== themeId);
+    await persistReviewDrafts(campaignId, drafts.map((item) => item.id), [...rest, ...created].map((item, index) => ({ ...item, sortOrder: index })));
   }
 
   private async reviewDrafts(): Promise<{ campaignId: string; drafts: ReviewDraft[] }> {

@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { getAdminSession, requireRole } from "@/lib/auth/session";
 import { getMahniStore } from "@/mahni-dosadnoto/store";
 import type { EventPhase } from "@/mahni-dosadnoto/types";
+import { combineIfCompatible } from "@/mahni-dosadnoto/ai/combine-selection";
+import { completeClusteringJson } from "@/mahni-dosadnoto/ai/clustering";
+import { resplitCluster } from "@/mahni-dosadnoto/ai/pipeline";
+import { asSolComplete } from "@/mahni-dosadnoto/ai/sol";
 import { runClusteringAnalysis, runFullJury } from "@/mahni-dosadnoto/ai/runner";
 import { runJuryWithResilience } from "@/mahni-dosadnoto/ai/jury-execution";
 import { computeWinningOrganizations } from "@/mahni-dosadnoto/admin/winners";
@@ -71,8 +75,69 @@ export async function mdCloseVoting() {
 
 export async function mdRunAnalysis() {
   await assertAdmin();
+  const store = getMahniStore();
+  const ideas = await store.listIdeasAdmin();
+  if (ideas.length === 0) throw new Error("no_ideas");
   await runClusteringAnalysis();
   revalidatePath("/admin/mahni-dosadnoto");
+}
+
+export async function mdApproveAudienceTheme(themeId: string) {
+  await assertAdmin();
+  const store = getMahniStore();
+  await store.approveAudienceTheme(themeId);
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
+}
+
+export async function mdOverrideAudit(themeId: string, reason: string) {
+  const session = await assertAdmin();
+  const store = getMahniStore();
+  await store.recordAuditOverride(themeId, session.email, reason);
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
+}
+
+export async function mdSplitAudienceTheme(themeId: string) {
+  await assertAdmin();
+  const store = getMahniStore();
+  const [themes, ideas] = await Promise.all([store.listThemes(), store.listIdeasAdmin()]);
+  const theme = themes.find((item) => item.id === themeId);
+  if (!theme || theme.isAiWildcard) throw new Error("invalid_theme");
+  await store.markThemeRework(themeId);
+  const byId = new Map(ideas.map((idea) => [idea.id, idea]));
+  const semantic = (theme.sourceIdeas ?? []).map((source) => {
+    const idea = byId.get(source.id);
+    return { id: source.id, body: source.body, role: idea?.role ?? "", frequency: idea?.frequency ?? null };
+  });
+  try {
+    const replacements = await resplitCluster(semantic, theme.audit?.reasonCodes ?? ["audience_split"], asSolComplete(completeClusteringJson));
+    await store.replaceReviewTheme(themeId, replacements);
+  } catch {
+    throw new Error("split_failed");
+  }
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
+}
+
+export async function mdCombineReviewThemes(themeIds: string[]) {
+  await assertAdmin();
+  const store = getMahniStore();
+  const [themes, ideas] = await Promise.all([store.listThemes(), store.listIdeasAdmin()]);
+  const selected = themeIds.map((id) => themes.find((theme) => theme.id === id));
+  if (selected.some((theme) => !theme || theme.isAiWildcard)) throw new Error("invalid_theme");
+  const byId = new Map(ideas.map((idea) => [idea.id, idea]));
+  const semantic = selected.flatMap((theme) =>
+    (theme?.sourceIdeas ?? []).map((source) => {
+      const idea = byId.get(source.id);
+      return { id: source.id, body: source.body, role: idea?.role ?? "", frequency: idea?.frequency ?? null };
+    }),
+  );
+  const result = await combineIfCompatible(semantic, asSolComplete(completeClusteringJson));
+  if (!result.mergeable) throw new Error("not_mergeable");
+  await store.mergeReviewThemes(themeIds, result);
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
 }
 
 export async function mdRunJury() {
