@@ -18,6 +18,7 @@ import { LensBoard } from "@/mahni-dosadnoto/lenses";
 import { AudienceReviewCard } from "@/mahni-dosadnoto/CombiningReview";
 import { toPublicReviewCard, type LiveReviewItem } from "@/mahni-dosadnoto/review";
 import { REVIEW_PREVIEW_ITEMS, REVIEW_PREVIEW_KEY } from "@/mahni-dosadnoto/review-preview";
+import { mdApproveAudienceTheme, mdSplitAudienceTheme } from "@/app/admin/(console)/mahni-dosadnoto/actions";
 
 /** Stable theme thumbnails for the participant Top 3 result cards. */
 const RESULT_THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-river.webp", "/event/mahni/thumb-aerial.webp"];
@@ -25,9 +26,11 @@ const RESULT_THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-rive
 export function MahniLiveScreen({
   initialSnapshot,
   preview = false,
+  operator = false,
 }: {
   initialSnapshot: PublicLiveSnapshot | null;
   preview?: boolean;
+  operator?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState<PublicLiveSnapshot | null>(initialSnapshot);
   const [compact, setCompact] = useState(false);
@@ -116,7 +119,22 @@ export function MahniLiveScreen({
       <div className={showReview && !paused ? "md-live-body is-review" : "md-live-body"}>
         {paused ? <PauseHold /> : null}
         {paused ? null : showReview && card ? (
-          <AudienceReviewCard card={card} notice={realReview ? undefined : "Локален преглед. Живото събитие не се променя."} />
+          <>
+            <AudienceReviewCard card={card} notice={realReview ? undefined : "Локален преглед. Живото събитие не се променя."} />
+            {operator && realReview ? (
+              <HallReviewControls
+                themeId={card.id}
+                onBusy={(busy) => {
+                  pausePoll.current = busy;
+                }}
+                onDone={async () => {
+                  const res = await fetch("/api/mahni-dosadnoto/live", { cache: "no-store" });
+                  const data = await res.json();
+                  setSnapshot(data.snapshot ?? null);
+                }}
+              />
+            ) : null}
+          </>
         ) : null}
         {paused || showReview ? null : snapshot.phase === "COLLECTING" ? <Collecting snapshot={snapshot} /> : null}
         {paused || showReview ? null : snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
@@ -126,6 +144,50 @@ export function MahniLiveScreen({
         {paused || showReview ? null : snapshot.phase === "RESULTS" || snapshot.phase === "CLOSED" ? <Results snapshot={snapshot} /> : null}
         {paused || showReview ? null : snapshot.phase === "DRAFT" ? <Holding /> : null}
       </div>
+    </div>
+  );
+}
+
+function HallReviewControls({
+  themeId,
+  onBusy,
+  onDone,
+}: {
+  themeId: string;
+  onBusy: (busy: boolean) => void;
+  onDone: () => Promise<void>;
+}) {
+  const [pending, setPending] = useState("");
+  const [error, setError] = useState("");
+
+  async function run(id: "approve" | "split") {
+    setError("");
+    setPending(id);
+    onBusy(true);
+    try {
+      if (id === "approve") await mdApproveAudienceTheme(themeId);
+      else await mdSplitAudienceTheme(themeId);
+      await onDone();
+    } catch (caught) {
+      const code = caught instanceof Error ? caught.message : "";
+      setError(code === "split_failed" ? "Разделянето не завърши. Темата остава за нов опит." : "Решението не беше записано.");
+    } finally {
+      onBusy(false);
+      setPending("");
+    }
+  }
+
+  return (
+    <div className="md-audience-actions">
+      <button type="button" className="md-ops-btn" disabled={pending.length > 0} aria-busy={pending === "approve"} onClick={() => void run("approve")}>
+        {pending === "approve" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
+        ОДОБРЕНО ОТ ЗАЛАТА
+      </button>
+      <button type="button" className="md-ops-btn" disabled={pending.length > 0} aria-busy={pending === "split"} onClick={() => void run("split")}>
+        {pending === "split" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
+        ТРЯБВА ДА СЕ РАЗДЕЛИ
+      </button>
+      {error ? <p className="md-audience-error">{error}</p> : null}
     </div>
   );
 }

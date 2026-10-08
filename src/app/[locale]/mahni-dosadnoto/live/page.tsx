@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/i18n";
 import { MahniLiveScreen } from "@/mahni-dosadnoto/MahniLiveScreen";
 import { getLiveInitialSnapshot } from "@/mahni-dosadnoto/server/initial-state";
+import { getAdminSession, requireRole } from "@/lib/auth/session";
 import type { PublicLiveSnapshot } from "@/mahni-dosadnoto/store/types";
 import type { EventPhase } from "@/mahni-dosadnoto/types";
 
@@ -47,10 +48,12 @@ export default async function MahniLivePage({ params, searchParams }: Params) {
 
   const preload = snapshot ? sceneImageFor(snapshot.phase) : null;
 
+  const operator = requireRole(await getAdminSession(), "editor");
+
   return (
     <>
       {preload ? <link rel="preload" as="image" href={preload} /> : null}
-      <MahniLiveScreen initialSnapshot={snapshot} preview={preview} />
+      <MahniLiveScreen initialSnapshot={snapshot} preview={preview} operator={operator} />
     </>
   );
 }
