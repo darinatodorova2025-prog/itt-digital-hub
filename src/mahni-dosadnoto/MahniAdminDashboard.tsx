@@ -74,6 +74,7 @@ export function MahniAdminDashboard({ initial }: Props) {
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<ConfirmId | null>(null);
   const [query, setQuery] = useState("");
+  const [csv, setCsv] = useState("");
   const [tab, setTab] = useState("ops-room");
   const campaign = snapshot.campaign;
   const jury = snapshot.juryProgress;
