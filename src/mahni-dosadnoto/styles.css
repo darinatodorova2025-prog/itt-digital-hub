@@ -988,7 +988,7 @@
 
 .md-result-hero-img {
   object-fit: cover;
-  object-position: center 42%;
+  object-position: center;
 }
 
 .md-result-grid {
@@ -1030,27 +1030,20 @@
   align-items: start;
 }
 
-/* Participant Top 3 as elevated cards with a photo, matching the concept. */
+/* Participant Top 3 as elevated cards. */
 .md-result-primary .md-rank > li {
-  grid-template-columns: auto 4.5rem minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   padding: 0.9rem 1.05rem;
   border: 1px solid var(--md-line);
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 10px 24px rgba(4, 14, 49, 0.06);
-  align-items: center;
+  align-items: start;
 }
 
 .md-result-primary .md-rank > li.is-shared {
   border-color: rgba(0, 44, 255, 0.4);
   box-shadow: 0 12px 28px rgba(0, 44, 255, 0.1);
-}
-
-.md-rank-photo {
-  width: 4.5rem;
-  height: 4.5rem;
-  object-fit: cover;
-  border-radius: 12px;
 }
 
 .md-rank b,

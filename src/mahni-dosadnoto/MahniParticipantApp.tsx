@@ -25,8 +25,6 @@ type Context = ParticipantInitialContext;
 
 type View = "register" | "ideas" | "analyzing" | "vote" | "finalizing" | "jury" | "results" | "waiting";
 
-const THUMBS = ["/event/mahni/thumb-basin.webp", "/event/mahni/thumb-river.webp", "/event/mahni/thumb-aerial.webp"];
-
 /** Matches the participant idea-body limit in validation.ts. */
 const IDEA_MAX = 500;
 
@@ -785,23 +783,16 @@ function ResultsView({
           Участниците определиха най-важните теми.
         </p>
         <div className="md-result-hero-photo" aria-hidden="true">
-          <Image src="/event/mahni/aerial.webp" alt="" fill sizes="(max-width: 840px) 100vw, 1088px" className="md-result-hero-img" />
+          <Image src="/event/mahni/result.webp" alt="" fill sizes="(max-width: 840px) 100vw, 1088px" className="md-result-hero-img" />
         </div>
       </header>
       <div className="md-result-grid">
         <section className="md-result-primary">
           <h2 className="md-result-primary-title">Изборът на участниците</h2>
           <ol className="md-rank">
-            {snapshot.humanTop3.map((row, index) => (
+            {snapshot.humanTop3.map((row) => (
               <li key={row.id} className={aiIds.has(row.id) ? "is-shared" : undefined}>
                 <b>{String(row.rank).padStart(2, "0")}</b>
-                <Image
-                  src={THUMBS[index % THUMBS.length]!}
-                  alt=""
-                  width={72}
-                  height={72}
-                  className="md-rank-photo"
-                />
                 <div className="md-rank-copy">
                   <span>
                     {row.title}
