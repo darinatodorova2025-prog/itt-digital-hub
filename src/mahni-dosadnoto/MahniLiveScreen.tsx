@@ -527,17 +527,18 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
             ))}
           </ol>
         </section>
-        <section className="is-secondary">
-          <h2>Независим поглед от ИИ</h2>
-          <ol className="md-live-choice is-quiet">
-            {snapshot.aiTop3.map((row) => (
-              <li key={row.id} className={humanIds.has(row.id) ? "is-shared" : undefined}>
-                <b>{String(row.rank).padStart(2, "0")}</b>
-                <span>{row.title}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
+        {snapshot.aiTop3.length > 0 ? (
+          <section className="is-secondary">
+            <ol className="md-live-choice is-quiet">
+              {snapshot.aiTop3.map((row) => (
+                <li key={row.id} className={humanIds.has(row.id) ? "is-shared" : undefined}>
+                  <b>{String(row.rank).padStart(2, "0")}</b>
+                  <span>{row.title}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ) : null}
       </div>
       <div className="md-live-close">
         {headline && body ? (
