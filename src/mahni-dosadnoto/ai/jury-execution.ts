@@ -7,13 +7,12 @@ import { juryOutputSchemaFor, juryPickCount, type JuryOutput } from "../validati
 import type { MahniStore } from "../store/types";
 import { summarizeJuryProgress } from "../jury-status";
 import { isVotingTheme } from "../review-status";
-import { completeJson, readMahniAiConfig } from "./provider";
+import { completeClusteringJson } from "./clustering";
 import { JUDGE_PROMPTS, juryUserPrompt } from "./prompts";
 import { isTransientAiError } from "./transient-errors";
 
-/** One provider call is bounded to 20s. A run still marked running after this is abandoned. */
-export const JURY_CALL_TIMEOUT_MS = 20_000;
-export const JURY_STALE_MS = 30_000;
+/** A Sol call can run for minutes. Do not start a second run while one is still working. */
+export const JURY_STALE_MS = 200_000;
 export const JURY_ACTION_BUDGET_MS = 45_000;
 
 export type JuryRunDisposition = "skip_succeeded" | "skip_fresh" | "retry";
@@ -70,15 +69,7 @@ async function callProvider(
   const schema = juryOutputSchemaFor(count);
   const system = JUDGE_PROMPTS[judge];
   const user = juryUserPrompt(themes);
-  try {
-    return await completeJson(schema, system, user, undefined, JURY_CALL_TIMEOUT_MS);
-  } catch (error) {
-    const config = readMahniAiConfig();
-    if (config.provider === "google" && config.openaiKeyConfigured && isTransientAiError(error)) {
-      return await completeJson(schema, system, user, "openai", JURY_CALL_TIMEOUT_MS);
-    }
-    throw error;
-  }
+  return completeClusteringJson(schema, system, user);
 }
 
 function picksFit(

@@ -50,7 +50,7 @@ function answer(called: JudgeType[]): (judge: JudgeType) => Promise<{ data: Jury
 describe("jury recovery", () => {
   it("treats a stale running judge as retryable and a fresh one as in flight", () => {
     const now = Date.parse("2026-09-28T10:30:00.000Z");
-    expect(juryRunDisposition({ status: "running", startedAt: "2026-09-28T10:28:00.000Z" }, now)).toBe("retry");
+    expect(juryRunDisposition({ status: "running", startedAt: "2026-09-28T10:26:00.000Z" }, now)).toBe("retry");
     expect(juryRunDisposition({ status: "running", startedAt: "2026-09-28T10:29:50.000Z" }, now)).toBe("skip_fresh");
     expect(juryRunDisposition({ status: "succeeded", startedAt: "2026-09-28T10:00:00.000Z" }, now)).toBe("skip_succeeded");
     expect(juryRunDisposition({ status: "failed", startedAt: "2026-09-28T10:00:00.000Z" }, now)).toBe("retry");
@@ -60,7 +60,7 @@ describe("jury recovery", () => {
     const { store } = await seedThemes();
     const called: JudgeType[] = [];
     const stale = await store.startJuryRun("innovation");
-    stale.startedAt = new Date(Date.now() - 120_000).toISOString();
+    stale.startedAt = new Date(Date.now() - 210_000).toISOString();
     stale.status = "running";
     const fresh = await store.startJuryRun("business_value");
     fresh.startedAt = new Date().toISOString();

@@ -45,8 +45,8 @@ function readText(payload: unknown): string {
 }
 
 /**
- * Reads and combines ideas through the Responses API.
- * Jury calls stay on the shared provider and are not routed here.
+ * Reads ideas, combines them into themes, and runs the second-look jury
+ * through the Responses API on gpt-6.1-sol.
  */
 export async function completeClusteringJson<T>(
   schema: z.ZodType<T>,
