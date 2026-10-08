@@ -16,6 +16,7 @@ export function handleStoreError(error: unknown) {
   }
   const message = error instanceof Error ? error.message : "failed";
   if (message === "not_collecting") return jsonError("not_collecting", 409);
+  if (message === "paused") return jsonError("paused", 409);
   if (message === "not_voting" || message === "vote_limit") return jsonError(message, 409);
   if (message === "unauthorized") return jsonError("unauthorized", 401);
   if (message === "invalid_theme") return jsonError("invalid_theme", 400);

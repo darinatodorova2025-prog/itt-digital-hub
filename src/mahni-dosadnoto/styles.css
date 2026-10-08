@@ -2879,8 +2879,96 @@
   border-left: 2px solid rgba(247, 248, 253, 0.35);
 }
 
-.md-audience-question {
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
+.md-ops button,
+.md-ops-btn,
+.md-ops-primary,
+.md-ops-link,
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 3rem;
+  width: auto;
+  margin-top: 0;
+  padding: 0.65rem 1.15rem;
+  border: 0;
+  border-radius: 18px;
+  background: #fff;
+  color: #040e31;
+  font: inherit;
+  font-size: 0.98rem;
   font-weight: 650;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(4, 14, 49, 0.1), 0 2px 6px rgba(4, 14, 49, 0.06);
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
 }
+
+.md-ops button:hover:not(:disabled),
+.md-ops-link:hover,
+.admin-btn:hover:not(:disabled) {
+  background: #e7edff;
+  color: #002cff;
+}
+
+.md-ops button:active:not(:disabled),
+.md-ops-link:active,
+.admin-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 3px 8px rgba(4, 14, 49, 0.14);
+}
+
+.md-ops button:focus-visible,
+.md-ops-link:focus-visible,
+.admin-btn:focus-visible {
+  outline: 2px solid #002cff;
+  outline-offset: 3px;
+}
+
+.md-ops button:disabled,
+.admin-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+  box-shadow: 0 6px 14px rgba(4, 14, 49, 0.06);
+}
+
+.md-ops-spin {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: 0 0 auto;
+  border: 2px solid rgba(4, 14, 49, 0.22);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: md-ops-spin 0.7s linear infinite;
+}
+
+@keyframes md-ops-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.md-ops-control {
+  margin-top: 1rem;
+}
+
+.md-ops-control-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+}
+
+.admin-nav .admin-btn.secondary,
+.admin-nav .admin-btn.secondary:hover {
+  border-color: transparent;
+}
+
 

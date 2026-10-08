@@ -228,6 +228,11 @@ a.admin-card:hover {
   box-shadow: 0 8px 18px rgba(0, 44, 255, 0.18);
 }
 
+.admin-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 3px 8px rgba(4, 14, 49, 0.14);
+}
+
 .admin-btn:hover {
   background: var(--admin-signal-2);
   border-color: var(--admin-signal-2);
@@ -239,16 +244,22 @@ a.admin-card:hover {
 }
 
 .admin-btn.secondary {
-  background: var(--admin-white);
-  color: var(--admin-ink);
-  border-color: var(--admin-line);
-  box-shadow: 0 8px 18px rgba(4, 14, 49, 0.06);
+  background: #fff;
+  color: #040e31;
+  border-color: transparent;
+  box-shadow: 0 14px 28px rgba(4, 14, 49, 0.1), 0 2px 6px rgba(4, 14, 49, 0.06);
 }
 
 .admin-btn.secondary:hover {
-  background: var(--admin-marine-tint);
-  color: var(--admin-signal-ink);
-  border-color: var(--admin-signal);
+  background: #e7edff;
+  color: #002cff;
+  border-color: transparent;
+}
+
+.admin-nav .admin-btn.secondary:hover {
+  background: #e7edff;
+  color: #002cff;
+  border-color: transparent;
 }
 
 .admin-nav .admin-btn.secondary {
@@ -259,8 +270,8 @@ a.admin-card:hover {
 }
 
 .admin-nav .admin-btn.secondary:hover {
-  background: var(--admin-marine-tint);
-  color: var(--admin-signal);
+  background: #e7edff;
+  color: #002cff;
   border-color: transparent;
 }
 

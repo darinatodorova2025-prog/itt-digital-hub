@@ -189,6 +189,42 @@ export async function mdPrepareNextEvent(isDemo: boolean) {
   revalidatePath("/bg/mahni-dosadnoto/live");
 }
 
+export async function mdSetEventPaused(paused: boolean) {
+  await assertAdmin();
+  const store = getMahniStore();
+  await store.setEventPaused(paused);
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
+}
+
+export async function mdReopenCollection() {
+  await assertAdmin();
+  const store = getMahniStore();
+  await store.reopenCollection();
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
+}
+
+export async function mdStopEvent() {
+  await assertAdmin();
+  const store = getMahniStore();
+  await store.stopEvent();
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
+}
+
+export async function mdRestartEvent(isDemo: boolean) {
+  await assertAdmin();
+  const store = getMahniStore();
+  await store.restartEvent({ isDemo });
+  revalidatePath("/admin/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto");
+  revalidatePath("/bg/mahni-dosadnoto/live");
+}
+
 export async function mdToggleRecentIdeas(show: boolean) {
   await assertAdmin();
   const store = getMahniStore();

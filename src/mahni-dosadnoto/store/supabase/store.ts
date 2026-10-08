@@ -271,6 +271,7 @@ export class SupabaseMahniStore implements MahniStore {
     const campaign = await this.ensureCampaign();
     const participant = await this.resolveParticipant(sessionToken);
     if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
+    if (campaign.paused) throw new Error("paused");
     if (!ideasAllowed(campaign.phase)) throw new Error("not_collecting");
     const scope = idempotencyKey ? `idea:${participant.id}:${idempotencyKey}` : "";
     const sb = client();
@@ -324,6 +325,7 @@ export class SupabaseMahniStore implements MahniStore {
     const campaign = await this.ensureCampaign();
     const participant = await this.resolveParticipant(sessionToken);
     if (!participant || participant.campaignId !== campaign.id) throw new Error("unauthorized");
+    if (campaign.paused) throw new Error("paused");
     await this.assertVotingTheme(campaign.id, themeId);
     const scope = idempotencyKey ? `vote:${participant.id}:${idempotencyKey}` : "";
     const sb = client();
@@ -476,6 +478,7 @@ export class SupabaseMahniStore implements MahniStore {
 
     return {
       phase: campaign.phase,
+      paused: campaign.paused === true,
       title: campaign.title,
       showRecentIdeas: campaign.showRecentIdeas,
       stats: {
@@ -550,6 +553,42 @@ export class SupabaseMahniStore implements MahniStore {
     if (error) throwMapped(error);
     this.campaignCache = mapCampaign(data as never);
     return this.campaignCache;
+  }
+
+  private async patchCampaign(patch: Record<string, unknown>, allowMissingPause = false) {
+    const campaign = await this.ensureCampaign();
+    const sb = client();
+    const write = async (body: Record<string, unknown>) =>
+      sb.from("md_event_campaigns").update({ ...body, updated_at: new Date().toISOString() }).eq("id", campaign.id).select("*").single();
+    let result = await write(patch);
+    if (result.error && allowMissingPause && String(result.error.message).includes("paused")) {
+      const rest = { ...patch };
+      delete rest.paused;
+      result = await write(rest);
+    }
+    if (result.error || !result.data) {
+      if (String(result.error?.message ?? "").includes("paused")) throw new Error("pause_unavailable");
+      throw new MahniStoreUnavailableError(result.error?.message);
+    }
+    this.campaignCache = mapCampaign(result.data as never);
+    return this.campaignCache;
+  }
+
+  async setEventPaused(paused: boolean) {
+    return this.patchCampaign({ paused });
+  }
+
+  async reopenCollection() {
+    return this.patchCampaign({ phase: "COLLECTING", voting_ends_at: null, paused: false }, true);
+  }
+
+  async stopEvent() {
+    return this.patchCampaign({ phase: "CLOSED", paused: false }, true);
+  }
+
+  async restartEvent(options: { isDemo: boolean }) {
+    await this.patchCampaign({ phase: "CLOSED", paused: false }, true);
+    return this.prepareNextCampaign(options);
   }
 
   async setShowRecentIdeas(show: boolean) {

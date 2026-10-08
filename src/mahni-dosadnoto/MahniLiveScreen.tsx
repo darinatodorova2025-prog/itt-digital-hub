@@ -96,6 +96,7 @@ export function MahniLiveScreen({
   }
 
   const quiet = snapshot.phase === "FINALIZING";
+  const paused = snapshot.paused === true;
   const stage = storyForPhase(snapshot.phase);
   const realReview = snapshot.phase === "ANALYZING" ? snapshot.review : null;
   const previewCard = preview && !realReview ? toPublicReviewCard({
@@ -112,17 +113,18 @@ export function MahniLiveScreen({
   return (
     <div className={`md-live ${sceneClass(showReview ? "ANALYZING" : snapshot.phase)}`}>
       {quiet && !showReview ? null : <LiveHeader stage={stage} />}
-      <div className={showReview ? "md-live-body is-review" : "md-live-body"}>
-        {showReview && card ? (
+      <div className={showReview && !paused ? "md-live-body is-review" : "md-live-body"}>
+        {paused ? <PauseHold /> : null}
+        {paused ? null : showReview && card ? (
           <AudienceReviewCard card={card} notice={realReview ? undefined : "Локален преглед. Живото събитие не се променя."} />
         ) : null}
-        {showReview ? null : snapshot.phase === "COLLECTING" ? <Collecting snapshot={snapshot} /> : null}
-        {showReview ? null : snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
-        {showReview ? null : snapshot.phase === "VOTING" ? <Voting snapshot={snapshot} limit={compact ? 4 : 5} /> : null}
-        {showReview ? null : snapshot.phase === "FINALIZING" ? <Countdown snapshot={snapshot} /> : null}
-        {showReview ? null : snapshot.phase === "AI_JURY" ? <Jury snapshot={snapshot} /> : null}
-        {showReview ? null : snapshot.phase === "RESULTS" || snapshot.phase === "CLOSED" ? <Results snapshot={snapshot} /> : null}
-        {showReview ? null : snapshot.phase === "DRAFT" ? <Holding /> : null}
+        {paused || showReview ? null : snapshot.phase === "COLLECTING" ? <Collecting snapshot={snapshot} /> : null}
+        {paused || showReview ? null : snapshot.phase === "ANALYZING" ? <Analyzing snapshot={snapshot} /> : null}
+        {paused || showReview ? null : snapshot.phase === "VOTING" ? <Voting snapshot={snapshot} limit={compact ? 4 : 5} /> : null}
+        {paused || showReview ? null : snapshot.phase === "FINALIZING" ? <Countdown snapshot={snapshot} /> : null}
+        {paused || showReview ? null : snapshot.phase === "AI_JURY" ? <Jury snapshot={snapshot} /> : null}
+        {paused || showReview ? null : snapshot.phase === "RESULTS" || snapshot.phase === "CLOSED" ? <Results snapshot={snapshot} /> : null}
+        {paused || showReview ? null : snapshot.phase === "DRAFT" ? <Holding /> : null}
       </div>
     </div>
   );
@@ -347,6 +349,15 @@ function Results({ snapshot }: { snapshot: PublicLiveSnapshot }) {
           <span>От резултат към действие — организациите зад водещите теми могат да продължат разговора с ITT Digital Hub.</span>
         </p>
       </div>
+    </div>
+  );
+}
+
+function PauseHold() {
+  return (
+    <div className="md-live-hold">
+      <h1 className="md-display">Пауза</h1>
+      <p className="md-live-lead">Операторът спря за момент. Продължаваме от същото място.</p>
     </div>
   );
 }

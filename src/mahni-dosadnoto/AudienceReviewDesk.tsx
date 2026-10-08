@@ -23,10 +23,12 @@ export function AudienceReviewDesk({
   const [reason, setReason] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+  const [pending, setPending] = useState("");
   const approved = real.filter((theme) => theme.reviewStatus === "approved").length;
 
-  async function run(action: () => Promise<void>, failure: string) {
+  async function run(id: string, action: () => Promise<void>, failure: string) {
     setMessage("");
+    setPending(id);
     try {
       await action();
     } catch (error) {
@@ -38,6 +40,8 @@ export function AudienceReviewDesk({
             ? "Разделянето не завърши. Темата остава за нов опит."
             : failure,
       );
+    } finally {
+      setPending("");
     }
   }
 
@@ -65,23 +69,26 @@ export function AudienceReviewDesk({
             <form
               onSubmit={(event) => {
                 event.preventDefault();
-                void run(() => onOverride(current.id, reason), "Решението не беше записано.");
+                void run("override", () => onOverride(current.id, reason), "Решението не беше записано.");
               }}
             >
               <label>
                 Изрично решение за продължаване без одит
                 <textarea value={reason} onChange={(event) => setReason(event.target.value)} minLength={8} required />
               </label>
-              <button type="submit" className="md-ops-btn" disabled={busy || reason.trim().length < 8}>
+              <button type="submit" className="md-ops-btn" disabled={busy || pending.length > 0 || reason.trim().length < 8} aria-busy={pending === "override"}>
+                {pending === "override" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
                 Запиши решението и пусни темата към залата
               </button>
             </form>
           ) : (
             <div className="md-ops-advanced-row">
-              <button type="button" className="md-ops-primary" disabled={busy || current.reviewStatus !== "review_ready"} onClick={() => void run(() => onApprove(current.id), "Одобрението не беше записано.")}>
+              <button type="button" className="md-ops-btn" disabled={busy || pending.length > 0 || current.reviewStatus !== "review_ready"} aria-busy={pending === "approve"} onClick={() => void run("approve", () => onApprove(current.id), "Одобрението не беше записано.")}>
+                {pending === "approve" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
                 ОДОБРЕНО ОТ ЗАЛАТА
               </button>
-              <button type="button" className="md-ops-btn" disabled={busy || current.reviewStatus !== "review_ready"} onClick={() => void run(() => onSplit(current.id), "Разделянето не завърши.")}>
+              <button type="button" className="md-ops-btn" disabled={busy || pending.length > 0 || current.reviewStatus !== "review_ready"} aria-busy={pending === "split"} onClick={() => void run("split", () => onSplit(current.id), "Разделянето не завърши.")}>
+                {pending === "split" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
                 ТРЯБВА ДА СЕ РАЗДЕЛИ
               </button>
             </div>
@@ -111,9 +118,11 @@ export function AudienceReviewDesk({
           <button
             type="button"
             className="md-ops-btn"
-            disabled={busy || picked.length < 2}
-            onClick={() => void run(() => onCombine(picked), "Обединяването не завърши.")}
+            disabled={busy || pending.length > 0 || picked.length < 2}
+            aria-busy={pending === "combine"}
+            onClick={() => void run("combine", () => onCombine(picked), "Обединяването не завърши.")}
           >
+            {pending === "combine" ? <span className="md-ops-spin" aria-hidden="true" /> : null}
             Провери дали са един проблем
           </button>
         </div>

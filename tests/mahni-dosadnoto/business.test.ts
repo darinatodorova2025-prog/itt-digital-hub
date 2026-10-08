@@ -95,6 +95,31 @@ describe("mahni-dosadnoto store", () => {
     await expect(store.castVote("tok", themes[3]!.id)).rejects.toThrow("vote_limit");
   });
 
+  it("reopens sharing and pauses without walking the later phases", async () => {
+    const store = resetMemoryStoreForTests();
+    await store.ensureCampaign();
+    await store.transitionPhase("COLLECTING");
+    await store.registerParticipant(
+      { firstName: "A", lastName: "B", organization: "O", role: "R", email: "back@test.example", marketingConsent: false },
+      "tok",
+    );
+    await store.transitionPhase("ANALYZING");
+    await expect(store.submitIdea("tok", "Закъсняла идея", null)).rejects.toThrow("not_collecting");
+    await store.reopenCollection();
+    const idea = await store.submitIdea("tok", "Закъсняла идея", null);
+    expect(idea.idea.body).toBe("Закъсняла идея");
+    await store.setEventPaused(true);
+    await expect(store.submitIdea("tok", "По време на пауза", null)).rejects.toThrow("paused");
+    const live = await store.getPublicLiveSnapshot();
+    expect(live.paused).toBe(true);
+    expect(live.phase).toBe("COLLECTING");
+    await store.stopEvent();
+    expect((await store.getCampaign())?.phase).toBe("CLOSED");
+    const next = await store.restartEvent({ isDemo: true });
+    expect(next.phase).toBe("DRAFT");
+    expect(next.isDemo).toBe(true);
+  });
+
   it("blocks RESULTS when jury is incomplete", async () => {
     const store = resetMemoryStoreForTests();
     await store.ensureCampaign();

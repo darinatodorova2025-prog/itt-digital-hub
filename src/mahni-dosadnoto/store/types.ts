@@ -5,6 +5,7 @@ import type { Idea, Participant, Theme, Vote, FollowupRequest, AnalysisRun, AiJu
 
 export type PublicLiveSnapshot = {
   phase: EventPhase;
+  paused: boolean;
   title: string;
   showRecentIdeas: boolean;
   stats: { participants: number; organizations: number; ideas: number; votes: number };
@@ -68,6 +69,14 @@ export interface MahniStore {
   getPublicLiveSnapshot(): Promise<PublicLiveSnapshot>;
 
   transitionPhase(to: EventPhase, options?: { votingEndsAt?: string | null }): Promise<EventCampaign>;
+  /** Hold the room and the phones without changing the phase. */
+  setEventPaused(paused: boolean): Promise<EventCampaign>;
+  /** Let the same participants submit ideas again. */
+  reopenCollection(): Promise<EventCampaign>;
+  /** End the live event from any phase. */
+  stopEvent(): Promise<EventCampaign>;
+  /** Archive the current run and open an empty draft, from any phase. */
+  restartEvent(options: { isDemo: boolean }): Promise<EventCampaign>;
   setShowRecentIdeas(show: boolean): Promise<EventCampaign>;
   lockHumanResult(): Promise<EventCampaign>;
 

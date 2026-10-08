@@ -25,6 +25,7 @@ type CampaignRow = {
   voting_ends_at: string | null;
   human_result_locked_at: string | null;
   is_demo: boolean;
+  paused?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -39,6 +40,7 @@ export function mapCampaign(row: CampaignRow): EventCampaign {
     votingEndsAt: row.voting_ends_at,
     humanResultLockedAt: row.human_result_locked_at,
     isDemo: row.is_demo,
+    paused: row.paused === true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

@@ -19,6 +19,10 @@ import {
   mdCloseVoting,
   mdExportCsv,
   mdOpenVoting,
+  mdReopenCollection,
+  mdRestartEvent,
+  mdSetEventPaused,
+  mdStopEvent,
   mdApproveAudienceTheme,
   mdCombineReviewThemes,
   mdOverrideAudit,
@@ -60,11 +64,15 @@ type ActionId =
   | "results"
   | "closed";
 
+type OperatorId = "pause" | "resume" | "reopen" | "stop" | "restart-rehearsal" | "restart-real";
+
+type ConfirmId = ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real" | OperatorId;
+
 export function MahniAdminDashboard({ initial }: Props) {
   const [snapshot, setSnapshot] = useState(initial);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [confirm, setConfirm] = useState<ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real" | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmId | null>(null);
   const [query, setQuery] = useState("");
   const [csv, setCsv] = useState("");
   const campaign = snapshot.campaign;
@@ -107,7 +115,7 @@ export function MahniAdminDashboard({ initial }: Props) {
   );
   const liveRank = [...snapshot.live.themes].sort((a, b) => b.voteCount - a.voteCount || a.title.localeCompare(b.title, "bg"));
 
-  async function execute(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real") {
+  async function execute(id: ConfirmId) {
     setBusy(id);
     setError("");
     setConfirm(null);
@@ -119,14 +127,16 @@ export function MahniAdminDashboard({ initial }: Props) {
       setBusy("");
       await refresh();
       setError(
-        id === "analysis"
-          ? "Подреждането не завърши. Фазата остава „Подреждаме“. Натиснете „Повтори подреждането“."
-          : "Действието не завърши. Обновете страницата и проверете фазата.",
+        id === "pause" || id === "resume"
+          ? "Паузата не беше записана. Обновете базата с последната миграция и опитайте отново."
+          : id === "analysis"
+            ? "Подреждането не завърши. Фазата остава „Подреждаме“. Натиснете „Повтори подреждането“."
+            : "Действието не завърши. Обновете страницата и проверете фазата.",
       );
     }
   }
 
-  function ask(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real") {
+  function ask(id: ConfirmId) {
     if (needsConfirm(id)) setConfirm(id);
     else void execute(id);
   }
@@ -150,7 +160,7 @@ export function MahniAdminDashboard({ initial }: Props) {
         <div className={active ? "md-ops-status is-on" : "md-ops-status"}>
           <p className={active ? "md-ops-live is-on" : "md-ops-live"}>
             <i />
-            {campaign.phase === "CLOSED" ? "Събитието е приключено" : campaign.phase === "DRAFT" ? "Очаква старт" : "Събитието е активно"}
+            {campaign.paused ? "Пауза" : campaign.phase === "CLOSED" ? "Събитието е приключено" : campaign.phase === "DRAFT" ? "Очаква старт" : "Събитието е активно"}
           </p>
           {active ? (
             <p className="md-ops-rec">
@@ -189,9 +199,9 @@ export function MahniAdminDashboard({ initial }: Props) {
         <div className="md-ops-next">
           <p className="md-ops-kicker">Следващо действие</p>
           {primary ? (
-            <button type="button" className="md-ops-primary" disabled={!!busy || primary.disabled} onClick={() => ask(primary.id)}>
-              {busy === primary.id ? "Изпълнява се…" : primary.label}
-            </button>
+            <OpsButton id={primary.id} busy={busy} disabled={primary.disabled} onClick={() => ask(primary.id)}>
+              {primary.label}
+            </OpsButton>
           ) : (
             <p className="md-ops-note">Няма следваща стъпка.</p>
           )}
@@ -204,6 +214,28 @@ export function MahniAdminDashboard({ initial }: Props) {
             <p className="md-ops-note">Подреждането не завърши. Фазата остава същата. Повторете действието.</p>
           ) : null}
         </div>
+      </section>
+
+      <section className="md-ops-control" aria-label="Контрол на събитието">
+        <p className="md-ops-kicker">Контрол</p>
+        <div className="md-ops-control-row">
+          <OpsButton id={campaign.paused ? "resume" : "pause"} busy={busy} onClick={() => ask(campaign.paused ? "resume" : "pause")}>
+            {campaign.paused ? "Продължи" : "Пауза"}
+          </OpsButton>
+          <OpsButton id="reopen" busy={busy} disabled={campaign.phase === "COLLECTING" && !campaign.paused} onClick={() => ask("reopen")}>
+            Върни към споделяне
+          </OpsButton>
+          <OpsButton id="stop" busy={busy} disabled={campaign.phase === "CLOSED"} onClick={() => ask("stop")}>
+            Спри събитието
+          </OpsButton>
+          <OpsButton id="restart-rehearsal" busy={busy} onClick={() => ask("restart-rehearsal")}>
+            Нов старт · репетиция
+          </OpsButton>
+          <OpsButton id="restart-real" busy={busy} onClick={() => ask("restart-real")}>
+            Нов старт · реално
+          </OpsButton>
+        </div>
+        {campaign.paused ? <p className="md-ops-note">Пауза. Залата и телефоните чакат. Фазата остава същата.</p> : null}
       </section>
 
       {campaign.phase === "ANALYZING" ? (
@@ -236,9 +268,9 @@ export function MahniAdminDashboard({ initial }: Props) {
           <summary>Други действия</summary>
           <div className="md-ops-advanced-row">
             {advancedActions(campaign.phase, primary?.id ?? null, jury).map((id) => (
-              <button key={id} type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask(id)}>
-                {ACTION_LABEL[id]}
-              </button>
+            <OpsButton key={id} id={id} busy={busy} onClick={() => ask(id)}>
+              {ACTION_LABEL[id]}
+            </OpsButton>
             ))}
           </div>
         </details>
@@ -248,12 +280,12 @@ export function MahniAdminDashboard({ initial }: Props) {
         <div className="md-ops-confirm" role="alertdialog" aria-label="Потвърждение">
           <p>{confirmCopy(confirm)}</p>
           <div className="md-ops-confirm-actions">
-            <button type="button" className="md-ops-primary" disabled={!!busy} onClick={() => void execute(confirm)}>
+            <OpsButton id={confirm} busy={busy} onClick={() => void execute(confirm)}>
               Потвърди
-            </button>
-            <button type="button" className="md-ops-btn" onClick={() => setConfirm(null)}>
+            </OpsButton>
+            <OpsButton id="cancel-confirm" busy="" onClick={() => setConfirm(null)}>
               Отказ
-            </button>
+            </OpsButton>
           </div>
         </div>
       ) : null}
@@ -276,9 +308,18 @@ export function MahniAdminDashboard({ initial }: Props) {
           <a className="md-ops-link" href="/bg/mahni-dosadnoto/live" target="_blank" rel="noreferrer">
             Отвори екрана
           </a>
-          <button type="button" className="md-ops-btn" onClick={() => void mdToggleRecentIdeas(!campaign.showRecentIdeas).then(() => refresh())}>
+          <OpsButton
+            id="recent"
+            busy={busy}
+            onClick={() => {
+              setBusy("recent");
+              void mdToggleRecentIdeas(!campaign.showRecentIdeas)
+                .then(() => refresh())
+                .finally(() => setBusy(""));
+            }}
+          >
             Последни идеи: {campaign.showRecentIdeas ? "включени" : "изключени"}
-          </button>
+          </OpsButton>
         </div>
       </section>
 
@@ -308,9 +349,9 @@ export function MahniAdminDashboard({ initial }: Props) {
             ))}
           </ul>
           {campaign.phase === "AI_JURY" && !jury.complete && primary?.id !== "retry-jury" ? (
-            <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("retry-jury")}>
+            <OpsButton id="retry-jury" busy={busy} onClick={() => ask("retry-jury")}>
               Повтори неуспешните
-            </button>
+            </OpsButton>
           ) : null}
           <details>
             <summary>Покажи технически детайли</summary>
@@ -512,12 +553,12 @@ export function MahniAdminDashboard({ initial }: Props) {
           <h2>Подготви ново събитие</h2>
           <p>Затвореното събитие и данните му остават запазени. Новото започва празно и чака старт.</p>
           <div className="md-ops-demo-actions">
-            <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("prepare-rehearsal")}>
+            <OpsButton id="prepare-rehearsal" busy={busy} onClick={() => ask("prepare-rehearsal")}>
               Репетиция
-            </button>
-            <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("prepare-real")}>
+            </OpsButton>
+            <OpsButton id="prepare-real" busy={busy} onClick={() => ask("prepare-real")}>
               Реално събитие
-            </button>
+            </OpsButton>
           </div>
         </section>
       ) : null}
@@ -527,23 +568,54 @@ export function MahniAdminDashboard({ initial }: Props) {
         <h2>Демо / репетиция</h2>
         <p>Тези действия пипат само демо записи и стоят отделно от основното следващо действие.</p>
         <div className="md-ops-demo-actions">
-          <button type="button" className="md-ops-btn" disabled={!!busy} onClick={() => ask("seed")}>
+          <OpsButton id="seed" busy={busy} onClick={() => ask("seed")}>
             Зареди демо данни
-          </button>
-          <button type="button" className="md-ops-btn danger" disabled={!!busy} onClick={() => ask("reset")}>
+          </OpsButton>
+          <OpsButton id="reset" busy={busy} onClick={() => ask("reset")}>
             Изчисти демо данните
-          </button>
+          </OpsButton>
         </div>
       </section>
 
       <section className="md-ops-section" id="ops-export">
         <h2>Експорт</h2>
-        <button type="button" className="md-ops-btn" onClick={() => void mdExportCsv().then(setCsv)}>
+        <OpsButton
+          id="export"
+          busy={busy}
+          onClick={() => {
+            setBusy("export");
+            void mdExportCsv()
+              .then(setCsv)
+              .finally(() => setBusy(""));
+          }}
+        >
           Генерирай CSV
-        </button>
+        </OpsButton>
         {csv ? <textarea className="md-ops-csv" readOnly value={csv} /> : null}
       </section>
     </div>
+  );
+}
+
+function OpsButton({
+  id,
+  busy,
+  disabled,
+  onClick,
+  children,
+}: {
+  id: string;
+  busy: string;
+  disabled?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const loading = busy === id;
+  return (
+    <button type="button" className="md-ops-btn" disabled={Boolean(disabled) || loading || (busy.length > 0 && !loading)} aria-busy={loading} onClick={onClick}>
+      {loading ? <span className="md-ops-spin" aria-hidden="true" /> : null}
+      {children}
+    </button>
   );
 }
 
@@ -583,7 +655,7 @@ async function drainJury(run: () => Promise<{ succeeded: number; complete: boole
   }
 }
 
-const actionRunners: Record<ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real", () => Promise<void>> = {
+const actionRunners: Record<ConfirmId, () => Promise<void>> = {
   collect: () => mdStartCollecting(),
   "close-collect": () => mdCloseCollection(),
   analysis: () => mdRunAnalysis(),
@@ -598,9 +670,15 @@ const actionRunners: Record<ActionId | "seed" | "reset" | "prepare-rehearsal" | 
   reset: () => mdResetDemo(),
   "prepare-rehearsal": () => mdPrepareNextEvent(true),
   "prepare-real": () => mdPrepareNextEvent(false),
+  pause: () => mdSetEventPaused(true),
+  resume: () => mdSetEventPaused(false),
+  reopen: () => mdReopenCollection(),
+  stop: () => mdStopEvent(),
+  "restart-rehearsal": () => mdRestartEvent(true),
+  "restart-real": () => mdRestartEvent(false),
 };
 
-function needsConfirm(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real"): boolean {
+function needsConfirm(id: ConfirmId): boolean {
   return (
     id === "closed" ||
     id === "seed" ||
@@ -609,16 +687,28 @@ function needsConfirm(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "p
     id === "close-vote" ||
     id === "final" ||
     id === "prepare-rehearsal" ||
-    id === "prepare-real"
+    id === "prepare-real" ||
+    id === "reopen" ||
+    id === "stop" ||
+    id === "restart-rehearsal" ||
+    id === "restart-real"
   );
 }
 
-function confirmCopy(id: ActionId | "seed" | "reset" | "prepare-rehearsal" | "prepare-real"): string {
+function confirmCopy(id: ConfirmId): string {
   switch (id) {
     case "prepare-rehearsal":
       return "Ще се отвори нова празна репетиция. Затвореното събитие остава запазено и няма да бъде изтрито.";
     case "prepare-real":
       return "Ще се отвори ново празно реално събитие. Затвореното събитие остава запазено и няма да бъде изтрито.";
+    case "reopen":
+      return "Същите участници отново ще могат да подават идеи. Фазата става „Споделяме“.";
+    case "stop":
+      return "Събитието спира веднага. Залата вижда края. Участниците и идеите остават запазени.";
+    case "restart-rehearsal":
+      return "Това събитие се запазва и се отваря нова празна репетиция.";
+    case "restart-real":
+      return "Това събитие се запазва и се отваря ново празно реално събитие.";
     case "seed":
       return "Ще бъдат добавени демо участници и идеи, а фазата ще стане „Споделяме“.";
     case "reset":

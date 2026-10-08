@@ -42,6 +42,8 @@ export interface EventCampaign {
   votingEndsAt: string | null;
   humanResultLockedAt: string | null;
   isDemo: boolean;
+  /** Operator hold. The phase stays; the room and the phones wait. */
+  paused?: boolean;
   createdAt: string;
   updatedAt: string;
 }

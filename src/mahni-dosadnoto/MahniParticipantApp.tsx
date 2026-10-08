@@ -170,7 +170,7 @@ export function MahniParticipantApp({
       });
       const data = await res.json();
       if (!data.ok) {
-        setError(data.error === "not_collecting" ? "Събирането приключи." : "Не успяхме да запишем идеята.");
+        setError(data.error === "paused" ? "Пауза. Изчакваме оператора." : data.error === "not_collecting" ? "Събирането приключи." : "Не успяхме да запишем идеята.");
         return;
       }
       setIdeaBody("");
@@ -274,6 +274,17 @@ export function MahniParticipantApp({
 
   const recognized = Boolean(ctx.participant);
   const showingIntro = showIntro || (!recognized && view === "register" && !entered);
+  if (snapshot?.paused && !showingIntro) {
+    return (
+      <div className="md-app">
+        <EventHeader stage={stage} showTitle showBack onBack={() => { setEntered(false); setShowIntro(true); }} />
+        <section className="md-reveal">
+          <h1 className="md-question md-display">Пауза</h1>
+          <p className="md-support">Операторът спря за момент. Продължаваме от същото място.</p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className={view === "results" ? "md-app is-results" : "md-app"}>

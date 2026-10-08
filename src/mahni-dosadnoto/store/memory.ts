@@ -76,6 +76,7 @@ export class MemoryMahniStore implements MahniStore {
       votingEndsAt: null,
       humanResultLockedAt: null,
       isDemo: false,
+      paused: false,
       createdAt: t,
       updatedAt: t,
     };
@@ -168,6 +169,7 @@ export class MemoryMahniStore implements MahniStore {
   async submitIdea(sessionToken: string, body: string, frequency: string | null, idempotencyKey?: string) {
     const campaign = this.campaignOrThrow();
     if (!ideasAllowed(campaign.phase)) throw new Error("not_collecting");
+    if (campaign.paused) throw new Error("paused");
     const participant = this.currentParticipant(sessionToken);
     if (!participant) throw new Error("unauthorized");
     if (idempotencyKey) {
@@ -208,6 +210,7 @@ export class MemoryMahniStore implements MahniStore {
     this.maybeAutoCloseVoting();
     const campaign = this.campaignOrThrow();
     if (!votingAllowed(campaign.phase, campaign.votingEndsAt)) throw new Error("not_voting");
+    if (campaign.paused) throw new Error("paused");
     const participant = this.currentParticipant(sessionToken);
     if (!participant) throw new Error("unauthorized");
     const theme = this.themes.get(themeId);
@@ -383,6 +386,7 @@ export class MemoryMahniStore implements MahniStore {
     const showResults = campaign.phase === "RESULTS" || campaign.phase === "CLOSED";
     return {
       phase: campaign.phase,
+      paused: campaign.paused === true,
       title: campaign.title,
       showRecentIdeas: campaign.showRecentIdeas,
       stats: {
@@ -432,6 +436,37 @@ export class MemoryMahniStore implements MahniStore {
       campaign.votingEndsAt = new Date(Date.now() + 45_000).toISOString();
     }
     return campaign;
+  }
+
+  async setEventPaused(paused: boolean) {
+    const campaign = this.campaignOrThrow();
+    campaign.paused = paused;
+    campaign.updatedAt = nowIso();
+    return campaign;
+  }
+
+  async reopenCollection() {
+    const campaign = this.campaignOrThrow();
+    campaign.phase = "COLLECTING";
+    campaign.paused = false;
+    campaign.votingEndsAt = null;
+    campaign.updatedAt = nowIso();
+    return campaign;
+  }
+
+  async stopEvent() {
+    const campaign = this.campaignOrThrow();
+    campaign.phase = "CLOSED";
+    campaign.paused = false;
+    campaign.updatedAt = nowIso();
+    return campaign;
+  }
+
+  async restartEvent(options: { isDemo: boolean }) {
+    const current = await this.ensureCampaign();
+    current.phase = "CLOSED";
+    current.paused = false;
+    return this.prepareNextCampaign(options);
   }
 
   async setShowRecentIdeas(show: boolean) {
@@ -830,6 +865,7 @@ export class MemoryMahniStore implements MahniStore {
       votingEndsAt: null,
       humanResultLockedAt: null,
       isDemo: options.isDemo,
+      paused: false,
       createdAt: t,
       updatedAt: t,
     };
