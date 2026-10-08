@@ -825,6 +825,22 @@
   opacity: 1;
 }
 
+.md-pick.is-busy,
+.md-pick.is-busy:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+
+.md-pick .md-ops-spin {
+  border-color: rgba(0, 44, 255, 0.28);
+  border-top-color: var(--md-signal);
+}
+
+.md-pick.is-on .md-ops-spin {
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+}
+
 .md-interest,
 .md-follow {
   margin-top: 0.2rem;

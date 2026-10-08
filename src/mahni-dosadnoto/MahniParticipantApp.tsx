@@ -96,10 +96,12 @@ export function MahniParticipantApp({
   const [expanded, setExpanded] = useState<string | null>(null);
   const formId = useId();
   const focusIdea = useRef(false);
+  const voteBusy = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      if (voteBusy.current) return;
       try {
         const next = await fetchContext();
         const liveRes = await fetch("/api/mahni-dosadnoto/live", { cache: "no-store" });
@@ -184,11 +186,19 @@ export function MahniParticipantApp({
   }
 
   async function vote(themeId: string) {
-    if (!ctx) return;
+    if (!ctx || voteBusy.current) return;
     const already = ctx.votedThemeIds.includes(themeId);
     if (!already && ctx.votesRemaining <= 0) return;
+    const previous = ctx;
+    voteBusy.current = true;
     setError("");
     setPending(themeId);
+    setCtx({
+      ...ctx,
+      votedThemeIds: already ? ctx.votedThemeIds.filter((id) => id !== themeId) : [...ctx.votedThemeIds, themeId],
+      votesUsed: ctx.votesUsed + (already ? -1 : 1),
+      votesRemaining: ctx.votesRemaining + (already ? 1 : -1),
+    });
     try {
       const res = await fetch("/api/mahni-dosadnoto/vote", {
         method: already ? "DELETE" : "POST",
@@ -197,6 +207,7 @@ export function MahniParticipantApp({
       });
       const data = await res.json();
       if (!data.ok) {
+        setCtx(previous);
         setError(
           data.error === "paused"
             ? "Пауза. Изчакваме оператора."
@@ -208,8 +219,16 @@ export function MahniParticipantApp({
         );
         return;
       }
-      await reload();
+      try {
+        await reload();
+      } catch {
+        // The mark is already on screen. The next refresh will confirm it.
+      }
+    } catch {
+      setCtx(previous);
+      setError("Гласът не беше записан.");
     } finally {
+      voteBusy.current = false;
       setPending("");
     }
   }
@@ -459,13 +478,13 @@ export function MahniParticipantApp({
                     </div>
                     <button
                       type="button"
-                      className={voted ? "md-pick is-on" : "md-pick"}
+                      className={`${voted ? "md-pick is-on" : "md-pick"}${pending === theme.id ? " is-busy" : ""}`}
                       aria-pressed={voted}
-                      aria-label={voted ? `Махни гласа за ${theme.title}` : `Гласувай за ${theme.title}`}
-                      disabled={(!voted && ctx.votesRemaining <= 0) || pending === theme.id}
+                      aria-label={pending === theme.id ? `Записва се гласът за ${theme.title}` : voted ? `Махни гласа за ${theme.title}` : `Гласувай за ${theme.title}`}
+                      disabled={pending.length > 0 || (!voted && ctx.votesRemaining <= 0)}
                       onClick={() => void vote(theme.id)}
                     >
-                      {voted ? <CheckIcon size={18} /> : <span className="md-pick-plus" aria-hidden="true">+</span>}
+                      {pending === theme.id ? <span className="md-ops-spin" aria-hidden="true" /> : voted ? <CheckIcon size={18} /> : <span className="md-pick-plus" aria-hidden="true">+</span>}
                     </button>
                   </div>
                   {theme.description ? (
