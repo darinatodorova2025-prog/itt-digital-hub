@@ -3006,6 +3006,9 @@
 
 .md-ops-control {
   margin-top: 1rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 2px dashed #002cff;
+  border-radius: 18px;
 }
 
 .md-ops-control-row {
