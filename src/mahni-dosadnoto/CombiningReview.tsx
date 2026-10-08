@@ -7,7 +7,7 @@ export function AudienceReviewCard({ card, notice }: { card: PublicReviewCard; n
       {notice ? <p className="md-audience-notice">{notice}</p> : null}
       <p className="md-audience-map">{card.mapping}</p>
       <h2>{card.title}</h2>
-      <p>{card.description}</p>
+      <p className="md-audience-body">{card.description}</p>
       <p className="md-audience-count">
         {card.ideaCount} {card.ideaCount === 1 ? "предложение" : "предложения"}
         {card.organizationCount > 0 ? ` · ${card.organizationCount} ${card.organizationCount === 1 ? "организация" : "организации"}` : ""}

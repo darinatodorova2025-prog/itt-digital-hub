@@ -144,13 +144,13 @@ describe("mahni clustering trace", () => {
           description: "Хората преписват протоколи на ръка.",
           ideaCount: 1,
           organizationCount: 1,
-          mapping: "1 идея -> 1 тема",
+          mapping: "1 идея → 1 тема",
           excerpts: ["Ръчно преписване на протоколи всеки понеделник"],
           question: "Това представя ли правилно тези идеи?",
         },
       }),
     );
-    expect(html).toContain("1 идея -&gt; 1 тема");
+    expect(html).toContain("1 идея → 1 тема");
     expect(html).toContain("Ръчни протоколи");
     expect(html).toContain("Това представя ли правилно тези идеи?");
     expect(html).not.toContain("checkbox");

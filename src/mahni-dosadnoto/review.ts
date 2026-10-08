@@ -27,8 +27,8 @@ export type PublicReviewCard = {
 export const AUDIENCE_QUESTION = "Това представя ли правилно тези идеи?";
 
 export function reviewMapping(ideaCount: number): string {
-  if (ideaCount <= 1) return "1 идея -> 1 тема";
-  return `${ideaCount} идеи -> 1 обща тема`;
+  if (ideaCount <= 1) return "1 идея → 1 тема";
+  return `${ideaCount} идеи → 1 обща тема`;
 }
 
 export function toPublicReviewCard(

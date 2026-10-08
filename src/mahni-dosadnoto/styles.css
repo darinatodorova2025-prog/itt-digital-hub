@@ -1603,7 +1603,79 @@
 
 .md-live-body.is-review {
   justify-content: flex-start;
+  align-items: flex-start;
   overflow: auto;
+  padding-top: clamp(0.6rem, 2vh, 1.4rem);
+}
+
+.md-audience {
+  width: min(34rem, 46vw);
+  margin: 0;
+  display: grid;
+  justify-items: start;
+  gap: 0.7rem;
+  color: #f7f8fd;
+}
+
+.md-audience-kicker,
+.md-audience-notice {
+  margin: 0;
+  max-width: 32rem;
+  color: rgba(247, 248, 253, 0.88);
+  font-size: clamp(1.05rem, 1.35vw, 1.35rem);
+  line-height: 1.45;
+}
+
+.md-audience-map {
+  margin: 0.85rem 0 0;
+  color: #fff;
+  font-size: clamp(1.2rem, 1.6vw, 1.65rem);
+  font-weight: 650;
+}
+
+.md-audience h2 {
+  margin: 0.15rem 0 0;
+  color: #fff;
+  font-size: clamp(2.8rem, 4.6vw, 4.4rem);
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.md-audience-body {
+  margin: 0.2rem 0 0;
+  max-width: 32rem;
+  font-size: clamp(1.2rem, 1.5vw, 1.55rem);
+  line-height: 1.4;
+}
+
+.md-audience-count {
+  margin: 0;
+  color: rgba(247, 248, 253, 0.82);
+  font-size: clamp(1.05rem, 1.3vw, 1.3rem);
+}
+
+.md-audience ul {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.md-audience li {
+  margin: 0;
+  padding: 0.15rem 0 0.15rem 0.9rem;
+  border-left: 2px solid rgba(247, 248, 253, 0.45);
+  color: #fff;
+  font-size: clamp(1.15rem, 1.45vw, 1.5rem);
+  line-height: 1.35;
+}
+
+.md-audience-question {
+  margin: 1.35rem 0 0;
+  max-width: 28rem;
+  color: #fff;
+  font-size: clamp(1.55rem, 2.1vw, 2.15rem);
+  font-weight: 650;
+  line-height: 1.25;
 }
 
 .md-review {
@@ -2943,44 +3015,6 @@
   .md-rail .is-current em {
     display: inline;
   }
-}
-
-.md-audience {
-  max-width: 52rem;
-  margin: 0 auto;
-  color: #f7f8fd;
-}
-
-.md-audience-kicker,
-.md-audience-notice,
-.md-audience-map,
-.md-audience-count,
-.md-audience-question {
-  margin: 0 0 1rem;
-}
-
-.md-audience h2 {
-  margin: 0 0 0.8rem;
-  color: #fff;
-  font-size: clamp(2rem, 4vw, 3.4rem);
-  line-height: 1.05;
-}
-
-.md-audience p {
-  font-size: 1.25rem;
-  line-height: 1.45;
-}
-
-.md-audience ul {
-  margin: 0 0 1.4rem;
-  padding: 0;
-  list-style: none;
-}
-
-.md-audience li {
-  margin: 0 0 0.6rem;
-  padding-left: 1rem;
-  border-left: 2px solid rgba(247, 248, 253, 0.35);
 }
 
 .md-ops button,
