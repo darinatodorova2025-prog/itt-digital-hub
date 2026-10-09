@@ -1370,17 +1370,25 @@
 
 .md-live.md-scene-collect h1 {
   max-width: none;
-  font-size: clamp(3.29rem, 4.69vw, 5.25rem);
-  line-height: 1.08;
+  font-size: clamp(4.15rem, 5.9vw, 6.7rem);
+  line-height: 1.02;
   white-space: nowrap;
 }
 
 .md-live.md-scene-collect .md-live-lead {
-  max-width: 36rem;
-  margin-top: 1.7rem;
-  font-size: clamp(1.05rem, 1.15vw, 1.28rem);
+  max-width: 22em;
+  margin-top: 1.35rem;
+  font-size: clamp(1.28rem, 1.55vw, 1.72rem);
   font-weight: 500;
-  line-height: 1.65;
+  line-height: 1.4;
+}
+
+.md-scene-collect .md-live-metrics strong {
+  font-size: clamp(4.4rem, 7vw, 6.8rem);
+}
+
+.md-scene-collect .md-live-metrics span {
+  font-size: clamp(1.2rem, 1.55vw, 1.55rem);
 }
 
 .md-scene-night {
@@ -1574,6 +1582,10 @@
   align-items: center;
 }
 
+.md-scene-collect .md-live-collect {
+  grid-template-columns: minmax(16rem, 0.72fr) minmax(22rem, 1.28fr);
+}
+
 .md-live-metrics {
   display: flex;
   gap: clamp(1.4rem, 3.4vw, 3.2rem);
@@ -1617,9 +1629,9 @@
 }
 
 .md-qr {
-  justify-self: end;
-  width: min(26rem, 44vh);
-  padding: 1.15rem 1.15rem 0.95rem;
+  justify-self: center;
+  width: min(100%, 38rem, 64vh);
+  padding: 1.45rem 1.45rem 1.1rem;
   border-radius: 22px;
   background: #fff;
   color: var(--md-ink);
@@ -2467,8 +2479,8 @@
     min-height: 30vh;
   }
 
-  .md-qr {
-    width: min(16rem, 28vh);
+  .md-scene-collect .md-qr {
+    width: min(100%, 30rem, 54vh);
   }
 
   .md-live-jury .md-lenses li {
