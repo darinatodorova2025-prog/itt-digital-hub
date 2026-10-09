@@ -1,81 +1,58 @@
-# ITT Digital Hub · Conference card
+# ITT Digital Hub conference card · final print production
 
-Standalone editable React/TypeScript + Vite artwork and Chromium → pdf-lib print pipeline. This folder uses the repository's existing `Tools/` directory (macOS is case-insensitive). It has its own package and does not add website routes or change production code.
+Standalone React/TypeScript + Vite preview and Chromium/pdf-lib print tooling. This tool does not modify production website routes or deploy anything.
 
-## Run
-
-Node 22+ and npm are required. Dependencies are pinned in `package-lock.json`.
+## Run and export
 
 ```bash
-cd '/Users/ivan.todorov/Documents/Projects/Ivan/ITT Digital Hub website/Tools/conference-card'
 npm ci
-npx playwright install chromium
 npm run dev
-```
-
-Open http://127.0.0.1:4176/. Front, back, both and A4 modes use the same `Card` components as the exporter. Guides are preview-only. The A4 view opens at 50%; select 100% to view its actual CSS physical size. A 100 mm ruler calibrates the current monitor at browser zoom 100%, stored locally. Recalibrate after moving to another monitor or changing browser zoom. This never changes the PDF.
-
-## Complete print package
-
-```bash
+# http://127.0.0.1:4176/
 npm run print:package
 ```
 
-This type-checks, runs geometry tests, rebuilds from current source, renders with Chromium at scale 1, adds exact PDF boxes, imposes both sheets, renders all pages at 300 dpi and runs preflight. Requires Poppler (`brew install poppler`) or the bundled Codex Poppler runtime. Optionally set `CONFERENCE_POPPLER_BIN` to a directory containing `pdftoppm`, `pdftotext`, `pdffonts`. Nothing is deployed.
+The default browser view is **A4 landscape, 4 × 2 cards, short-edge duplex** at 40% screen zoom: page 1 fronts, page 2 backs. Individual front/back/both views, preview-only bleed/trim/safety guides and numbered proof remain available. The alternative **4-up portrait / long-edge** preset has its own selector.
 
-| Command                      | Purpose                                                        |
-| ---------------------------- | -------------------------------------------------------------- |
-| `npm run build`              | TypeScript check and Vite build                                |
-| `npm test`                   | Geometry, duplex transforms, crop clearances, QR approval gate |
-| `npm run export:individual`  | Both individual bleed PDFs                                     |
-| `npm run export:duplex`      | A4 duplex and numbered registration proof                      |
-| `npm run export:calibration` | Two-page printer calibration                                   |
-| `npm run render`             | 300 dpi PNGs for exported PDF pages                            |
-| `npm run preflight`          | Verify an existing complete package and its source hash        |
-| `npm run print:package`      | Rebuild and verify the complete package                        |
-| `npm run print:proof`        | Safe proof package while QR is pending; PROOF labels           |
+`npm run print:package` type-checks, tests, exports five PDFs, renders every page at 300 dpi and runs digital preflight. Node 22+, Playwright Chromium and Poppler are required; all artwork fonts/assets are local. Poppler uses the Codex bundled runtime, system PATH or `CONFERENCE_POPPLER_BIN`.
 
-Partial exports do not certify a complete package. Regenerate `print:package` before handoff. `output/print/` contains five PDFs, browser captures, 300 dpi page renders, `design-preview.png`, `manifest.json`, `preflight.json`, and `PREFLIGHT.md`. `output/proof/` is separate. `tmp/` is only for intermediate tooling. Outputs are ignored by Git and reproducible.
+| Command | Result |
+| --- | --- |
+| `npm run print:package` | Verified 8-up package in `output/print/` |
+| `npm run print:4up` | Verified alternative 4-up package in `output/4up/` |
+| `npm run export:individual` | Preserved individual PDFs |
+| `npm run export:duplex` | Production master + numbered registration proof |
+| `npm run export:calibration` | Two-page calibration sheet |
+| `npm run render` | 300 dpi renders for current default manifest |
+| `npm run preflight` | Verify complete 8-up package and current source hash |
+| `npm run build` / `npm test` | TypeScript/Vite build / geometry tests |
 
-## Edit with Codex
+8-up outputs:
 
-| File                                    | Responsibility                                                                                                                          |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/components.tsx`                    | FrontCard, BackCard, BrandHeader, QRSection, ChallengeSteps, RewardSection, AssessmentQuestions, Conclusion, ContactFooter, Card, Sheet |
-| `src/tokens.css`                        | Colors, headline sizes, QR size, panel radius, assessment row gap                                                                       |
-| `src/card.css`                          | Physical artwork layout in mm and pt                                                                                                    |
-| `src/main.tsx`, `src/preview.css`       | Preview controls and screen-only styling                                                                                                |
-| `config/content.json`                   | Exact approved Bulgarian copy and optional verified phone                                                                               |
-| `config/qr.json`                        | QR destination, independently confirmed URL, evidence, 4-module quiet zone                                                              |
-| `config/print.json`, `src/geometry.mjs` | Trim, bleed, A4 slots, duplex transform, crop marks, printer offsets                                                                    |
-| `scripts/export.mjs`                    | Chromium PDFs and vector imposition                                                                                                     |
-| `scripts/preflight.mjs`                 | Artifact and layout validation                                                                                                          |
-| `PRINT-INSTRUCTIONS.md`                 | Practical Bulgarian printing guidance                                                                                                   |
+- `conference-card-A4-8up-duplex-PRINT.pdf`: exactly two 297 × 210 mm pages, eight cards each, no proof overlays.
+- `conference-card-A4-8up-registration-proof.pdf`: all F1/B1 through F8/B8, asymmetric through-paper fiducials; test only.
+- `conference-card-A4-8up-calibration.pdf`: asymmetric A–D crosses, trim outlines, 100 mm ruler; test only.
+- Existing individual `conference-card-front.pdf` and `conference-card-back.pdf`: retained byte-for-byte, 71 × 96 mm MediaBox/BleedBox with 65 × 90 mm TrimBox.
 
-For example, “make the front headline 10% larger” changes `--front-heading`; “increase the QR” changes `--qr-size`; “reduce back row spacing” changes `.back-workbench .assessment li` padding; “change radius” changes `--panel-radius`. Larger elements may require redistributing space. The preflight rejects overflow, content overlap and safety violations. Preview refreshes immediately; after a visual change regenerate the package and visually inspect new PDF renders.
+## Approved artwork preservation
 
-Both sides use one continuous navy gradient, native editable text and a real logo at the same position and size: 23 × 4.7917 mm at x/y 7 mm in bleed coordinates. The PNG's transparent top padding is compensated so the visible mark reaches the 4 mm safe boundary. Both headings are exactly 18 px (13.5 pt). The front retains the blank eyebrow row; its supporting line has been removed. A 23 mm QR sits beside the participation steps. The reward reads “TOP 3 идеи за автоматизиране” and “получават безплатен ИИ одит за организацията или лична консултация”, with the audit phrase in blue and semibold. Its body has 1.7 mm space above it. Only the website remains at the lowest safe front position.
+The user approved and locked both designs on 2026-10-08. `src/card.css`, `src/tokens.css`, content, QR, logo/font assets and Card components remain unchanged. The approved individual PDFs and their 300 dpi renders are retained in `validation/approved/`. The exporter embeds those native/vector PDFs at scale 1; it never rasterizes or resizes the cards. Browser and layout/font checks still render the editable Card source.
 
-The back has six outlined checkbox rows and a light blue interpretation panel. The invitation is a separate block below this panel. The instruction has been removed. Back contacts stack website, office email and phone, aligned left in muted color at 7.5 pt with regular weight. Body/questions/interpretation are 8 pt; invitation 8.5 pt. Trim remains 65 × 90 mm, bleed 3 mm and safety at least 4 mm, with the user-approved 3 mm bottom margin for back contacts. QR destination, PDF export and imposition are unchanged. The original reference raster is not used in final artwork.
+`validation/approved/source-lock.json` records the approved source and PDF hashes. Preflight rejects source drift, changed individual PDF bytes, changed individual renders, scaled placement matrices and imposed artwork that differs from the approved renders. Any later artwork edit requires a new user-approved baseline; do not silently refresh this lock during print-production work.
 
-## QR policy and assets
+The 4 mm safety and approved 3 mm bottom-contact exception are retained. The final questions have checkbox/divider only; no enclosing row outlines. The front has four participation steps, ending in “Спечели”; the sixth back question is “Има ли чести грешки?”.
 
-The destination was found in `scripts/mahni-dosadnoto-qr.ts`, `docs/mahni-dosadnoto/REHEARSAL.md`, and the functional `public/event/mahni-dosadnoto-qr.svg`, then checked live on 2026-10-08. The original asset is preserved as evidence. The generated vector QR encodes the exact same URL with a proper four-module quiet zone. Preflight independently decodes both the original QR and the final PDF, including all four A4 placements.
+## Geometry and duplex contract
 
-To replace the URL, edit `url`. This immediately disables production export until `confirmedUrl` is set to the same independently verified destination and `evidence` records the source. A pending URL shows a labeled development placeholder; `print:proof` remains available. Do not “confirm” an invented destination.
+Trim 65 × 90 mm, bleed 3 mm, full artwork 71 × 96 mm. `config/print.json` defaults to A4 297 × 210 mm, 4 columns × 2 rows, zero gutter, short-edge, X/Y back offsets. `config/print-4up.json` retains A4 210 × 297 mm, 2 × 2, 14/16 mm gutters, long-edge.
 
-Official PNG lockups were copied without redrawing from `public/brand/`; effective logo resolution exceeds 600 dpi. The supplied kit TTFs failed Cyrillic coverage (actual browser glyph fallback to Helvetica). Only the tool copies were replaced by complete official IBM Plex Sans WOFF2 files from `@ibm/plex-sans@1.1.0`, npm shasum `44a45a8e269870221c431eb4e8023dca6ed21ceb`. The complete Regular WOFF2 was also losslessly converted to TrueType for pdf-lib labels; this avoids WOFF subset rendering defects in PDF readers. Its converted TTF is vendored; regeneration needs no Python dependency. License is in `public/assets/IBM-PLEX-LICENSE.txt`. Source: https://github.com/IBM/plex . Cards use `lang="bg"` and localized Bulgarian glyph forms. Runtime fonts are local; export needs no font network fetch.
+8-up bleed origins are X **6.5, 77.5, 148.5, 219.5** and Y **9, 105** mm. Footprints occupy 284 × 192 mm; no overlaps or internal marks. Only external trim ticks are drawn, 1 mm long, 0.5 mm beyond bleed, 0.25 pt. Minimum guide-to-paper clearance is 5 mm.
 
-## Geometry contract
+`src/geometry.mjs` chooses the actual physical hinge from paper orientation plus duplex mode. A vertical hinge (landscape short-edge / portrait long-edge) maps `back.x = W − front.x − 71`, leaves Y unchanged and keeps artwork upright. A horizontal hinge (landscape long-edge / portrait short-edge) maps `back.y = H − front.y − 96`, leaves X unchanged and rotates artwork 180°. The actual logo/text is never mirrored. X/Y offsets apply afterwards to backs and their trim guides only.
 
-65 × 90 mm trim, 3 mm bleed, 71 × 96 mm MediaBox/BleedBox, centered TrimBox. A4 210 × 297 mm; bleed-slot top-left positions are (27,44.5), (112,44.5), (27,156.5), (112,156.5) mm. Important artwork has at least 4 mm safety on both sides, except the approved 3 mm bottom margin for back contacts in `config/artwork.json`. The artwork CSS variable is captured in the export and independently checked against the 4 mm minimum. Crop marks are 4 mm long, 1 mm beyond bleed, 0.25 pt thick.
+For the default, front row identities 1 2 3 4 / 5 6 7 8 correspond to back sheet order 4 3 2 1 / 8 7 6 5. Tests independently model the physical hinge, all identities and asymmetric markers. PDF checks inspect real translation/rotation/scale matrices, actual crop coordinates and overlays; proof labels and fiducials use the same placement identity.
 
-Coordinates are in top-left mm. Long-edge: `back.x = paper.width - front.x - full.width`, `back.y = front.y`. Short-edge: `back.y = paper.height - front.y - full.height`, `back.x = front.x`, artwork rotation 180°. Back offsets are added afterwards. Card graphics are never horizontally mirrored. All layouts and crop marks use this shared configuration. The proof IDs expose slot identity even when repeated artwork appears identical.
+## Release validation and limits
 
-Chromium subpoint page rounding is normalized to exact boxes; a 0.12 mm vector extension at the outermost bleed edge uses computed artwork background colors to prevent thin white seams. Text/artwork scale remains 1. The PDF→PNG/browser comparison allows antialiasing differences; it does not replace human review. Geometric transform tolerance is 0.01 mm, distinct from printer registration.
+`preflight.json` / `PREFLIGHT.md` record PDF page boxes, number of cards, source preservation, embedded fonts/Unicode and actual browser glyph fonts, text completeness, artwork ranges/safety, bleed, crop clearance/coverage, front/back registration, all eight QR scans and comparisons of all 16 imposed cards against approved individual renders. `VISUAL-REVIEW.md` records inspection of the actual high-resolution pages.
 
-## Release checks
-
-`preflight.json` records the actual PDF boxes, text extraction, font embedding and real glyph fonts (no Cyrillic fallback), QR decoding, PDF placement matrices, crop clearance, safety, overlap, missing assets, and PDF/browser raster comparison. A source digest rejects stale exports. `VISUAL-REVIEW.md` records human visual review of the latest renders; repeat it after changes.
-
-Digital preflight does not approve a physical print run. Use calibration, a numbered proof and one cut card. Output is RGB digital-print PDF, not CMYK, PDF/X or an ICC-certified press file. See `PRINT-INSTRUCTIONS.md`.
+Output is RGB digital-print PDF, without CMYK, PDF/X or ICC certification. Digital geometry tolerance is 0.01 mm; physical duplex registration remains printer-dependent. First use calibration, then all eight numbered pairs, then one cut card on the actual stock. **19 duplex copies = 152 finished cards before waste.** Printer margins must permit the 5 mm guide boundary at 100%; otherwise use a print shop/larger carrier or the 4-up preset. See Bulgarian `PRINT-INSTRUCTIONS.md` for exact settings and cut coordinates.

@@ -16,7 +16,8 @@
     "preflight": "node scripts/preflight.mjs",
     "print:package": "npm run typecheck && npm test && npm run export && npm run render && npm run preflight",
     "print:proof": "npm run typecheck && npm test && npm run export:proof && npm run render -- --proof && npm run preflight -- --proof",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "print:4up": "npm run typecheck && npm test && node scripts/export.mjs --preset 4up && node scripts/render.mjs --preset 4up && node scripts/preflight.mjs --preset 4up"
   },
   "dependencies": {
     "qrcode": "1.5.4",

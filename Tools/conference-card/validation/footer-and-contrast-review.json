@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-08",
+  "authorization": "User requested centered back contacts and stronger blue headline contrast on both sides",
+  "preservation": {
+    "front": {
+      "changedPixels": 352876,
+      "outsideAuthorizedRegions": 0
+    },
+    "back": {
+      "changedPixels": 277494,
+      "outsideAuthorizedRegions": 0
+    }
+  },
+  "headlineColors": {
+    "foreground": "#6290ff",
+    "base": "#01091f",
+    "gradientHighlight": "#07183d",
+    "minimumContrast": 5.7599188883413674,
+    "baseContrast": 6.558156277588757
+  },
+  "viewportWidths": [
+    1440,
+    1280,
+    768,
+    390
+  ],
+  "allContactLinesCentered": true,
+  "preflight": {
+    "eightUp": "152/152",
+    "fourUp": "136/136"
+  }
+}

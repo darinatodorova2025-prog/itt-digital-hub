@@ -5,14 +5,17 @@ import { chromium } from "playwright";
 import { PDFDocument, rgb, degrees } from "pdf-lib";
 import {
   full,
-  print,
+  presets,
+  backPoint,
   slots,
   cropSegments,
   MM,
   qrReady,
 } from "../src/geometry.mjs";
 import fontkit from "@pdf-lib/fontkit";
-import { root, out, proof, readJson, sourceHash } from "./common.mjs";
+import { root, out, proof, preset, readJson, sourceHash, assertApprovedArtwork } from "./common.mjs";
+const print = presets[preset];
+const names = preset === "8up" ? {duplex:"conference-card-A4-8up-duplex-PRINT.pdf", registration:"conference-card-A4-8up-registration-proof.pdf", calibration:"conference-card-A4-8up-calibration.pdf"} : {duplex:"conference-card-A4-duplex.pdf", registration:"conference-card-A4-registration-proof.pdf", calibration:"conference-card-A4-calibration.pdf"};
 const qr = await readJson("config/qr.json");
 if (!proof && !qrReady(qr))
   throw new Error(
@@ -23,6 +26,7 @@ const all = !process.argv.includes("--only");
 const makeIndividual = all || only === "individual";
 const makeDuplex = all || only === "duplex";
 const makeCalibration = all || only === "calibration";
+await assertApprovedArtwork();
 if (!makeIndividual && !makeDuplex && !makeCalibration)
   throw new Error("Unknown --only value");
 await fs.mkdir(out, { recursive: true });
@@ -272,7 +276,10 @@ try {
           color: navy,
         });
       }
-      documents[side] = await doc.save();
+      // The approved individual PDFs are retained byte-for-byte and embedded at scale 1.
+      // Fresh browser rendering still feeds layout/font/asset checks; the source lock
+      // and raster comparison reject any change to the approved artwork.
+      documents[side] = proof ? await doc.save() : await fs.readFile(path.join(root, "validation/approved", `${side}.pdf`));
       if (makeIndividual) {
         const name = `conference-card-${side}.pdf`;
         await fs.writeFile(path.join(out, name), documents[side]);
@@ -287,167 +294,73 @@ try {
   }
   if (makeDuplex) {
     const doc = await PDFDocument.create();
-    const embedded = {
-      front: await doc.embedPdf(documents.front, [0]),
-      back: await doc.embedPdf(documents.back, [0]),
-    };
-    for (const side of ["front", "back"]) {
-      const p = doc.addPage([print.paper.width * MM, print.paper.height * MM]);
-      for (const s of slots(side)) {
-        const x = s.x + (s.rotation === 180 ? s.width : 0),
-          y =
-            print.paper.height -
-            s.y -
-            s.height +
-            (s.rotation === 180 ? s.height : 0);
+    const embedded = {front: await doc.embedPdf(documents.front,[0]), back: await doc.embedPdf(documents.back,[0])};
+    for (const side of ["front","back"]) {
+      const p = doc.addPage([print.paper.width*MM,print.paper.height*MM]);
+      for (const s of slots(side,print)) {
         p.drawPage(embedded[side][0], {
-          x: x * MM,
-          y: y * MM,
-          width: s.width * MM,
-          height: s.height * MM,
-          rotate: degrees(s.rotation),
+          x:(s.x+(s.rotation===180?s.width:0))*MM,
+          y:(print.paper.height-s.y-s.height+(s.rotation===180?s.height:0))*MM,
+          width:s.width*MM,height:s.height*MM,rotate:degrees(s.rotation),
         });
-        for (const segment of cropSegments(s))
-          line(p, segment, print.crop.lineWidthPt);
+        for (const segment of cropSegments(s,print)) line(p,segment,print.crop.lineWidthPt);
       }
     }
-    doc.setTitle(`ITT · A4 duplex · ${print.duplex}${proof ? " · PROOF" : ""}`);
-    const name = "conference-card-A4-duplex.pdf";
-    const duplexBytes = await doc.save();
-    await fs.writeFile(path.join(out, name), duplexBytes);
-    artifacts.push(name);
-    const numbered = await PDFDocument.load(duplexBytes);
-    const proofFont = await labelFont(numbered);
-    // Numbered asymmetric proof uses the same embedded artwork and placements.
-    for (const [pageIndex, side] of ["front", "back"].entries()) {
-      const p = numbered.getPage(pageIndex);
-      for (const s of slots(side)) {
-        const rotated = s.rotation === 180;
-        const x = (s.x + (rotated ? s.width - 8 : 8)) * MM,
-          y = (print.paper.height - s.y - (rotated ? s.height - 10 : 10)) * MM;
-        p.drawRectangle({
-          x: rotated ? x - 34 : x,
-          y: rotated ? y - 13 : y - 3,
-          width: 34,
-          height: 16,
-          color: rgb(1, 0.91, 0.3),
-        });
-        p.drawText(`${side === "front" ? "F" : "B"}${s.id} ^`, {
-          x: rotated ? x - 3 : x + 3,
-          y: rotated ? y - 1 : y + 1,
-          font: proofFont,
-          size: 11,
-          color: navy,
-          rotate: degrees(s.rotation),
-        });
+    doc.setTitle(`ITT · A4 ${preset} duplex · ${print.duplex}`);
+    doc.setSubject("Approved artwork; RGB digital print; actual size 100%; physical printer calibration required");
+    const bytes=await doc.save();
+    await fs.writeFile(path.join(out,names.duplex),bytes);artifacts.push(names.duplex);
+    const numbered=await PDFDocument.load(bytes),font=await labelFont(numbered);
+    for (const [pageIndex,side] of ["front","back"].entries()) {
+      const p=numbered.getPage(pageIndex);
+      for (const s of slots(side,print)) {
+        const cx=(s.x+s.width/2)*MM,cy=(print.paper.height-s.y-s.height/2)*MM;
+        p.drawRectangle({x:cx-24,y:cy-10,width:48,height:20,color:rgb(1,0.91,0.3)});
+        p.drawText(`${side==='front'?'F':'B'}${s.id} ^`,{x:cx-18,y:cy-4,font,size:12,color:navy,rotate:degrees(s.rotation)});
+        // Exact asymmetric fiducial: same physical point/arms through the paper.
+        const f=slots('front',print).find(f=>f.id===s.id);
+        const map=point=>side==='front'?point:backPoint(point,print);
+        for (const [a,b] of [[[f.x+7,f.y+84],[f.x+13,f.y+84]],[[f.x+8,f.y+80],[f.x+8,f.y+86]],[[f.x+13,f.y+84],[f.x+11,f.y+82]]])
+          line(p,[...map(a),...map(b)],0.7);
       }
-      p.drawText(
-        `PAIRING PROOF / ${side.toUpperCase()} / ${print.duplex} / 100%`,
-        { x: 27 * MM, y: 20 * MM, font: proofFont, size: 8, color: navy },
-      );
+      p.drawText(`PAIRING PROOF / ${side.toUpperCase()} / ${print.duplex} / 100%`,{x:10*MM,y:6*MM,font,size:6,color:navy});
     }
-    const proofName = "conference-card-A4-registration-proof.pdf";
-    await fs.writeFile(path.join(out, proofName), await numbered.save());
-    artifacts.push(proofName);
+    await fs.writeFile(path.join(out,names.registration),await numbered.save());artifacts.push(names.registration);
   }
   if (makeCalibration) {
-    const doc = await PDFDocument.create();
-    const font = await labelFont(doc);
-    const targets = [
-      { id: "A", x: 27, y: 37 },
-      { id: "B", x: 178, y: 52 },
-      { id: "C", x: 39, y: 253 },
-      { id: "D", x: 164, y: 238 },
-    ];
-    for (const side of ["front", "back"]) {
-      const p = doc.addPage([print.paper.width * MM, print.paper.height * MM]);
-      const transform = ([x, y]) =>
-        side === "front"
-          ? [x, y]
-          : print.duplex === "long-edge"
-            ? [
-                print.paper.width - x + print.backOffset.x,
-                y + print.backOffset.y,
-              ]
-            : [
-                x + print.backOffset.x,
-                print.paper.height - y + print.backOffset.y,
-              ];
-      function mappedLine(a, b, width) {
-        line(p, [...transform(a), ...transform(b)], width);
-      }
+    const doc=await PDFDocument.create(),font=await labelFont(doc);
+    const W=print.paper.width,H=print.paper.height;
+    const targets=[{id:'A',x:22,y:29},{id:'B',x:W-27,y:41},{id:'C',x:31,y:H-26},{id:'D',x:W-39,y:H-38}];
+    for (const side of ['front','back']) {
+      const p=doc.addPage([W*MM,H*MM]);
+      const transform=point=>side==='front'?point:backPoint(point,print);
+      const mappedLine=(a,b,width)=>line(p,[...transform(a),...transform(b)],width);
       for (const t of targets) {
-        mappedLine([t.x - 4, t.y], [t.x + 7, t.y], 0.4);
-        mappedLine([t.x, t.y - 6], [t.x, t.y + 3], 0.4);
-        mappedLine([t.x + 7, t.y], [t.x + 5, t.y - 1.5], 0.4);
-        mappedLine([t.x + 7, t.y], [t.x + 5, t.y + 1.5], 0.4);
-        for (const d of [-2, -1, 1, 2]) {
-          mappedLine([t.x + d, t.y - 0.8], [t.x + d, t.y + 0.8], 0.2);
-          mappedLine([t.x - 0.8, t.y + d], [t.x + 0.8, t.y + d], 0.2);
+        mappedLine([t.x-4,t.y],[t.x+7,t.y],0.4);
+        mappedLine([t.x,t.y-6],[t.x,t.y+3],0.4);
+        mappedLine([t.x+7,t.y],[t.x+5,t.y-1.5],0.4);
+        mappedLine([t.x+7,t.y],[t.x+5,t.y+1.5],0.4);
+        for (const d of [-2,-1,1,2]) {
+          mappedLine([t.x+d,t.y-0.8],[t.x+d,t.y+0.8],0.2);
+          mappedLine([t.x-0.8,t.y+d],[t.x+0.8,t.y+d],0.2);
         }
-        const [x, y] = transform([t.x + 2, t.y + 7]);
-        p.drawText(`${t.id} / ${side === "front" ? "FRONT" : "BACK"}`, {
-          x: x * MM,
-          y: (print.paper.height - y) * MM,
-          font,
-          size: 9,
-          color: navy,
-          rotate: degrees(
-            side === "back" && print.duplex === "short-edge" ? 180 : 0,
-          ),
-        });
+        const [x,y]=transform([t.x+2,t.y+7]);
+        p.drawText(`${t.id} / ${side.toUpperCase()}`,{x:x*MM,y:(H-y)*MM,font,size:9,color:navy});
       }
-      for (const s of slots(side)) {
-        for (const segment of cropSegments(s))
-          line(p, segment, print.crop.lineWidthPt);
-        const b = print.bleed;
-        p.drawRectangle({
-          x: (s.x + b) * MM,
-          y: (print.paper.height - s.y - s.height + b) * MM,
-          width: print.trim.width * MM,
-          height: print.trim.height * MM,
-          borderWidth: 0.3,
-          borderColor: navy,
-        });
+      for (const s of slots(side,print)) {
+        for (const segment of cropSegments(s,print))line(p,segment,print.crop.lineWidthPt);
+        p.drawRectangle({x:(s.x+print.bleed)*MM,y:(H-s.y-s.height+print.bleed)*MM,width:65*MM,height:90*MM,borderWidth:0.3,borderColor:navy});
       }
-      const inverted = side === "back" && print.duplex === "short-edge";
-      p.drawText(
-        `${side.toUpperCase()} / TOP ^ / ${print.duplex.toUpperCase()} / ACTUAL SIZE 100%`,
-        {
-          x: (inverted ? 155 : 55) * MM,
-          y: (inverted ? 17 : 280) * MM,
-          size: 11,
-          font,
-          color: navy,
-          rotate: degrees(inverted ? 180 : 0),
-        },
-      );
-      p.drawText(
-        `Back offsets: X ${print.backOffset.x} mm, Y ${print.backOffset.y} mm`,
-        { x: 55 * MM, y: 274 * MM, size: 9, font, color: navy },
-      );
-      p.drawText(
-        "Hold against light. View from BACK. Compare A/B/C/D crosses.",
-        { x: 40 * MM, y: 145 * MM, size: 9, font, color: navy },
-      );
-      p.drawText(
-        "Measure back-minus-front. Add X=-dx, Y=-dy to current offsets.",
-        { x: 40 * MM, y: 140 * MM, size: 9, font, color: navy },
-      );
-      // A known 100 mm scale independent of card geometry.
-      line(p, [55, 170, 155, 170], 0.4);
-      for (const x of [55, 155]) line(p, [x, 168, x, 172], 0.4);
-      p.drawText("100 mm", {
-        x: 95 * MM,
-        y: 120 * MM,
-        size: 9,
-        font,
-        color: navy,
-      });
+      p.drawText(`${side.toUpperCase()} / TOP ^ / ${print.duplex.toUpperCase()} / ACTUAL SIZE 100%`,{x:42*MM,y:(H-18)*MM,size:10,font,color:navy});
+      p.drawText(`Back offsets: X ${print.backOffset.x} mm, Y ${print.backOffset.y} mm`,{x:42*MM,y:(H-23)*MM,size:8,font,color:navy});
+      p.drawText('Hold against light. View from BACK. Compare A/B/C/D crosses.',{x:42*MM,y:(H/2+18)*MM,size:8,font,color:navy});
+      p.drawText('Measure back-minus-front. Add X=-dx, Y=-dy to current offsets.',{x:42*MM,y:(H/2+13)*MM,size:8,font,color:navy});
+      const x=(W-100)/2,y=H/2+15;
+      line(p,[x,y,x+100,y],0.4);
+      for(const xx of [x,x+100])line(p,[xx,y-2,xx,y+2],0.4);
+      p.drawText('100 mm',{x:(W/2-8)*MM,y:(H-y-5)*MM,size:9,font,color:navy});
     }
-    const name = "conference-card-A4-calibration.pdf";
-    await fs.writeFile(path.join(out, name), await doc.save());
-    artifacts.push(name);
+    await fs.writeFile(path.join(out,names.calibration),await doc.save());artifacts.push(names.calibration);
   }
   const digest = await sourceHash();
   const manifest = {
@@ -457,8 +370,10 @@ try {
     generatedAt: new Date().toISOString(),
     qr,
     print,
+    preset,
+    names,
     full,
-    placements: { front: slots("front"), back: slots("back") },
+    placements: { front: slots("front",print), back: slots("back",print) },
     artifacts,
     completePackage: all,
     colorSpace: "RGB; not PDF/X or CMYK",

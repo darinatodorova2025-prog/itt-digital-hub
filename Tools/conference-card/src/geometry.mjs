@@ -1,11 +1,24 @@
 import geometry from "../config/print.json" with { type: "json" };
+import fourUp from "../config/print-4up.json" with { type: "json" };
 export const MM = 72 / 25.4;
 export const print = geometry;
+export const presets = { "8up": print, "4up": fourUp };
+/** The physical hinge is vertical for landscape short-edge / portrait long-edge. */
+export function duplexAxis(config = print) {
+  const landscape = config.paper.width > config.paper.height;
+  return (config.duplex === "short-edge") === landscape ? "x" : "y";
+}
+export function backPoint([x, y], config = print) {
+  return [
+    (duplexAxis(config) === "x" ? config.paper.width - x : x) + config.backOffset.x,
+    (duplexAxis(config) === "y" ? config.paper.height - y : y) + config.backOffset.y,
+  ];
+}
 export const full = {
   width: print.trim.width + 2 * print.bleed,
   height: print.trim.height + 2 * print.bleed,
 };
-/** Top-left mm coordinates. Back text is never mirrored; short-edge rotates 180°. */
+/** Top-left mm coordinates. Flip position across the hinge; artwork never mirrors. */
 export function slots(side = "front", config = print) {
   const w = config.trim.width + 2 * config.bleed,
     h = config.trim.height + 2 * config.bleed;
@@ -18,7 +31,7 @@ export function slots(side = "front", config = print) {
     let y = y0 + Math.floor(i / config.columns) * (h + config.gutter.y);
     let rotation = 0;
     if (side === "back") {
-      if (config.duplex === "long-edge") x = config.paper.width - x - w;
+      if (duplexAxis(config) === "x") x = config.paper.width - x - w;
       else {
         y = config.paper.height - y - h;
         rotation = 180;
@@ -26,7 +39,7 @@ export function slots(side = "front", config = print) {
       x += config.backOffset.x;
       y += config.backOffset.y;
     }
-    return { id: i + 1, x, y, width: w, height: h, rotation };
+    return { id: i + 1, x, y, width: w, height: h, rotation, side };
   });
 }
 export function cropSegments(slot, config = print) {
@@ -46,7 +59,14 @@ export function cropSegments(slot, config = print) {
     lines.push([slot.x - g - l, y, slot.x - g, y]);
     lines.push([slot.x + slot.width + g, y, slot.x + slot.width + g + l, y]);
   }
-  return lines;
+  // Only perimeter/gutter marks that clear EVERY bleed footprint are retained.
+  // Touching 8-up footprints leave no space for internal marks.
+  const all = slots(slot.side || "front", config);
+  return lines.filter(([x1, y1, x2, y2]) =>
+    Math.min(x1, x2) >= 0 && Math.max(x1, x2) <= config.paper.width &&
+    Math.min(y1, y2) >= 0 && Math.max(y1, y2) <= config.paper.height &&
+    all.every(b => Math.max(x1, x2) <= b.x || Math.min(x1, x2) >= b.x + b.width ||
+      Math.max(y1, y2) <= b.y || Math.min(y1, y2) >= b.y + b.height));
 }
 export function qrReady(config) {
   try {

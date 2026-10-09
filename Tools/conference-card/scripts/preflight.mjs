@@ -13,7 +13,7 @@ import {
   slots,
   cropSegments,
   full,
-  print,
+  duplexAxis,
   MM,
   qrReady,
 } from "../src/geometry.mjs";
@@ -24,10 +24,18 @@ function check(name, ok, detail) {
   checks.push({ name, status: ok === null ? "N/A" : ok ? "PASS" : "FAIL", detail });
 }
 const normalize = (text) => text.normalize("NFC").replace(/\s+/g, "");
-const near = (a, b) => Math.abs(a - b) <= print.geometryToleranceMm;
+const near = (a, b) => Math.abs(a - b) <= 0.01;
 const manifest = JSON.parse(
   await fs.readFile(path.join(out, "manifest.json"), "utf8"),
 );
+const print = manifest.print;
+const names = manifest.names;
+const count = print.columns * print.rows;
+const lock = JSON.parse(await fs.readFile(path.join(root,"validation/approved/source-lock.json"),"utf8"));
+const hash = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
+for (const [file, digest] of Object.entries(lock.files))
+  check(`Approved artwork unchanged: ${file}`, hash(await fs.readFile(path.join(root,file))) === digest);
+check("Approved card components unchanged", hash((await fs.readFile(path.join(root,"src/components.tsx"),"utf8")).split("export function Sheet(")[0]) === lock.componentArtwork);
 const content = await readJson("config/content.json");
 const artwork = await readJson("config/artwork.json");
 check(
@@ -53,9 +61,7 @@ check(
     print.bleed === 3 &&
     full.width === 71 &&
     full.height === 96 &&
-    print.paper.width === 210 &&
-    print.paper.height === 297 &&
-    print.columns === 2 &&
+    (manifest.preset === "8up" ? print.paper.width === 297 && print.paper.height === 210 && print.columns === 4 && print.duplex === "short-edge" : print.paper.width === 210 && print.paper.height === 297 && print.columns === 2) &&
     print.rows === 2 &&
     print.safe >= 4,
 );
@@ -72,6 +78,8 @@ const texts = {
   back: [...Object.values(content.back).flat(), content.website].filter(Boolean),
 };
 for (const side of ["front", "back"]) {
+  const bytes = await fs.readFile(path.join(out,`conference-card-${side}.pdf`));
+  check(`${side}: approved individual PDF preserved byte-for-byte`, proof || hash(bytes) === lock.pdfs[side]);
   const layout = layouts[side];
   const nativeCheck = (name, ok, detail) => check(name,
     side === "back" && rasterBack ? null : ok,
@@ -239,6 +247,8 @@ for (const side of ["front", "back"]) {
   const png = PNG.sync.read(
     await fs.readFile(path.join(out, `conference-card-${side}-1.png`)),
   );
+  const approved = PNG.sync.read(await fs.readFile(path.join(root,`validation/approved/${side}.png`)));
+  check(`${side}: approved individual render unchanged`, proof || (png.width === approved.width && png.height === approved.height && png.data.equals(approved.data)));
   const browser = PNG.sync.read(
     await fs.readFile(path.join(out, `browser-${side}.png`)),
   );
@@ -301,9 +311,7 @@ function streams(doc, page) {
     .join("\n");
 }
 for (const name of [
-  "conference-card-A4-duplex.pdf",
-  "conference-card-A4-registration-proof.pdf",
-  "conference-card-A4-calibration.pdf",
+  names.duplex, names.registration, names.calibration,
 ]) {
   const doc = await PDFDocument.load(await fs.readFile(path.join(out, name)));
   check(
@@ -312,7 +320,7 @@ for (const name of [
       doc
         .getPages()
         .every(
-          (p) => near(p.getWidth() / MM, 210) && near(p.getHeight() / MM, 297),
+          (p) => near(p.getWidth() / MM, print.paper.width) && near(p.getHeight() / MM, print.paper.height),
         ),
   );
   const fontRows = command("pdffonts", [path.join(out, name)])
@@ -348,12 +356,10 @@ for (const name of [
       );
       const image = PNG.sync.read(
         await fs.readFile(
-          path.join(out, `conference-card-A4-calibration-${index + 1}.png`),
+          path.join(out, names.calibration.replace(".pdf",`-${index + 1}.png`)),
         ),
       );
-      const inverted = side === "back" && print.duplex === "short-edge";
-      const low = ((inverted ? 278 : 10) * 300) / 25.4,
-        high = ((inverted ? 290 : 22) * 300) / 25.4;
+      const low = (10 * 300) / 25.4, high = (22 * 300) / 25.4;
       let ink = 0;
       for (let y = Math.floor(low); y < Math.floor(high); y++)
         for (let x = 0; x < image.width; x++) {
@@ -390,7 +396,7 @@ for (const name of [
         await fs.readFile(
           path.join(
             out,
-            `conference-card-A4-registration-proof-${index + 1}.png`,
+            names.registration.replace(".pdf",`-${index + 1}.png`),
           ),
         ),
       );
@@ -404,7 +410,7 @@ for (const name of [
           yellow++;
       check(
         `Numbered proof ${side}: actual numbered artwork labels visible`,
-        [1, 2, 3, 4].every((id) =>
+        Array.from({length:count},(_,i)=>i+1).every((id) =>
           txt.includes(`${side === "front" ? "F" : "B"}${id}^`),
         ) && yellow > 2000,
         { yellow },
@@ -412,6 +418,24 @@ for (const name of [
     }
   for (const [index, side] of ["front", "back"].entries()) {
     const s = streams(doc, doc.getPage(index));
+    const drawnLines = [...s.matchAll(/([\d.e+-]+) ([\d.e+-]+) m\s+([\d.e+-]+) ([\d.e+-]+) l/g)].map(m=>m.slice(1).map(Number));
+    const cropLines = slots(side,print).flatMap(slot=>cropSegments(slot,print)).map(l=>[l[0]*MM,(print.paper.height-l[1])*MM,l[2]*MM,(print.paper.height-l[3])*MM]);
+    check(`${name} ${side}: actual PDF crop guide coordinates`,cropLines.every(e=>drawnLines.some(l=>e.every((v,i)=>Math.abs(v-l[i])<0.01*MM))));
+    if(name === names.registration) {
+      const vertical=(print.duplex==="short-edge")===(print.paper.width>print.paper.height);
+      const map=([x,y])=>side==="front"?[x,y]:[
+        (vertical?print.paper.width-x:x)+print.backOffset.x,
+        (vertical?y:print.paper.height-y)+print.backOffset.y];
+      const fiducials=slots("front",print).flatMap(f=>[
+        [[f.x+7,f.y+84],[f.x+13,f.y+84]],
+        [[f.x+8,f.y+80],[f.x+8,f.y+86]],
+        [[f.x+13,f.y+84],[f.x+11,f.y+82]],
+      ].map(([a,b])=>{const [x1,y1]=map(a),[x2,y2]=map(b);return [x1*MM,(print.paper.height-y1)*MM,x2*MM,(print.paper.height-y2)*MM];}));
+      check(`${name} ${side}: all asymmetric fiducials physically pair`,fiducials.every(e=>drawnLines.some(l=>e.every((v,i)=>Math.abs(v-l[i])<0.01*MM))));
+    }
+    if(name === names.duplex) {
+      check(`${name} ${side}: only artwork and perimeter marks, no proof overlays`,drawnLines.length===cropLines.length && !/\bBT\b|\bre\b/.test(s));
+    }
     const extractedPage = normalize(
       command("pdftotext", [
         "-f",
@@ -427,14 +451,14 @@ for (const name of [
       text,
       count: extractedPage.split(normalize(text)).length - 1,
       expected:
-        4 *
+        count *
         texts[side].reduce(
           (sum, value) => sum + value.split(text).length - 1,
           0,
         ),
     }));
     check(
-      `${name} ${side}: four complete copies of correct approved text`,
+      `${name} ${side}: ${count} complete copies of correct approved text`,
       side === "back" && rasterBack ? null : counts.every((c) => c.count === c.expected),
       counts,
     );
@@ -463,16 +487,16 @@ for (const name of [
     });
     check(
       `${name} ${side}: scale 1 without distortion`,
-      draws.length === 4 && unitScale,
+      draws.length === count && unitScale,
     );
     const doCount = (s.match(/\/EmbeddedPdf[^\s]+\s+Do/g) || []).length;
-    check(`${name} ${side}: four embedded artwork placements`, doCount === 4, {
+    check(`${name} ${side}: ${count} embedded artwork placements`, doCount === count, {
       count: doCount,
     });
     const translation = [...s.matchAll(/1 0 0 1 ([\d.-]+) ([\d.-]+) cm/g)].map(
       (m) => [Number(m[1]) / MM, Number(m[2]) / MM],
     );
-    const expected = slots(side).map((slot) => [
+    const expected = slots(side,print).map((slot) => [
       slot.x + (slot.rotation === 180 ? slot.width : 0),
       print.paper.height -
         slot.y -
@@ -490,15 +514,15 @@ for (const name of [
       .length;
     check(
       `${name} ${side}: orientation`,
-      side === "front" || print.duplex === "long-edge"
+      side === "front" || duplexAxis(print) === "x"
         ? hasRotation180 === 0
-        : hasRotation180 === 4,
+        : hasRotation180 === count,
     );
   }
 }
-const front = slots("front"),
-  back = slots("back");
-for (let i = 0; i < 4; i++) {
+const front = slots("front",print),
+  back = slots("back",print);
+for (let i = 0; i < count; i++) {
   const f = front[i],
     b = back[i];
   const bx = b.x - print.backOffset.x,
@@ -506,25 +530,25 @@ for (let i = 0; i < 4; i++) {
   check(
     `Slot ${f.id}: duplex registration within ${print.geometryToleranceMm} mm`,
     near(
-      print.duplex === "long-edge" ? print.paper.width - bx - b.width : bx,
+      duplexAxis(print) === "x" ? print.paper.width - bx - b.width : bx,
       f.x,
     ) &&
       near(
-        print.duplex === "short-edge" ? print.paper.height - by - b.height : by,
+        duplexAxis(print) === "y" ? print.paper.height - by - b.height : by,
         f.y,
       ),
   );
 }
 let cropValid = true;
 for (const side of ["front", "back"])
-  for (const slot of slots(side))
-    for (const [x1, y1, x2, y2] of cropSegments(slot)) {
+  for (const slot of slots(side,print))
+    for (const [x1, y1, x2, y2] of cropSegments(slot,print)) {
       cropValid &&=
         Math.min(x1, x2) >= 0 &&
         Math.max(x1, x2) <= print.paper.width &&
         Math.min(y1, y2) >= 0 &&
         Math.max(y1, y2) <= print.paper.height;
-      for (const b of slots(side))
+      for (const b of slots(side,print))
         cropValid &&=
           Math.max(x1, x2) <= b.x ||
           Math.min(x1, x2) >= b.x + b.width ||
@@ -532,6 +556,34 @@ for (const side of ["front", "back"])
           Math.min(y1, y2) >= b.y + b.height;
     }
 check("Crop marks clear all bleed artwork and paper boundaries", cropValid);
+for (const side of ["front","back"]) {
+  const placements=slots(side,print), lines=placements.flatMap(s=>cropSegments(s,print));
+  check(`${side}: perimeter guides cover every trim edge`, placements.every(s=>
+    [s.x+3,s.x+68].every(x=>lines.some(l=>near(l[0],x)&&near(l[2],x))) &&
+    [s.y+3,s.y+93].every(y=>lines.some(l=>near(l[1],y)&&near(l[3],y)))));
+  check(`${side}: bleed footprints remain on paper without overlap`, placements.every((a,i)=>
+    a.x>=0 && a.y>=0 && a.x+a.width<=print.paper.width && a.y+a.height<=print.paper.height &&
+    placements.slice(i+1).every(b=>a.x+a.width<=b.x||b.x+b.width<=a.x||a.y+a.height<=b.y||b.y+b.height<=a.y)));
+  const imposed=PNG.sync.read(await fs.readFile(path.join(out,names.duplex.replace(".pdf",side==="front"?"-1.png":"-2.png"))));
+  const approved=PNG.sync.read(await fs.readFile(path.join(root,`validation/approved/${side}.png`)));
+  for (const slot of placements) {
+    // Antialiasing changes with fractional sheet origins. Match within 1 pixel;
+    // unit PDF matrices and preserved source PDFs independently enforce exact scale.
+    let difference=0,n=0;
+    for(let y=4;y<approved.height-4;y+=3) for(let x=4;x<approved.width-4;x+=3) {
+      const sx=slot.rotation===180?approved.width-1-x:x,sy=slot.rotation===180?approved.height-1-y:y;
+      const px=Math.round(slot.x*300/25.4)+sx,py=Math.round(slot.y*300/25.4)+sy;
+      const a=(y*approved.width+x)*4;let best=765;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++) {
+        const b=((py+dy)*imposed.width+px+dx)*4;
+        const d=Math.abs(approved.data[a]-imposed.data[b])+Math.abs(approved.data[a+1]-imposed.data[b+1])+Math.abs(approved.data[a+2]-imposed.data[b+2]);
+        best=Math.min(best,d);
+      }
+      difference+=best;n+=3;
+    }
+    check(`${side} slot ${slot.id}: imposed artwork matches approved render`,difference/n<3,{meanChannelDifference:difference/n,limit:3});
+  }
+}
 const frontPng = PNG.sync.read(
   await fs.readFile(path.join(out, "conference-card-front-1.png")),
 );
@@ -565,9 +617,9 @@ try {
 }
 // Each imposed front QR must also decode, ensuring imposition introduced no scaling or corruption.
 const imposed = PNG.sync.read(
-  await fs.readFile(path.join(out, "conference-card-A4-duplex-1.png")),
+  await fs.readFile(path.join(out, names.duplex.replace(".pdf","-1.png"))),
 );
-for (const slot of slots("front")) {
+for (const slot of slots("front",print)) {
   const x = Math.round((slot.x * 300) / 25.4),
     y = Math.round((slot.y * 300) / 25.4),
     w = Math.round((slot.width * 300) / 25.4),
@@ -588,7 +640,7 @@ for (const slot of slots("front")) {
   );
 }
 warnings.push(
-  rasterBack ? "Front typography is unchanged. Back typography is the supplied raster reference." : "Native back typography: headings 18 px / 13.5 pt, instruction/questions/interpretation/email/site 8 pt, invitation 8.5 pt, phone 9 pt. Review a 100% paper proof for personal readability.",
+  "Approved native artwork unchanged: headings 18 px / 13.5 pt; questions/interpretation 8 pt; invitation 8.5 pt; back contacts 7.5 pt. Review a 100% physical proof.",
 );
 warnings.push(
   "RGB digital-print output. No CMYK / PDF-X / print-shop ICC profile claim. Physical printer registration requires calibration.",
@@ -601,7 +653,7 @@ const result = {
       ? "PASS_PROOF"
       : "PASS_DIGITAL_PREFLIGHT",
   requires:
-    "Final design approval and physical paper/calibration proof before the print run",
+    "Design approved; physical printer calibration and one cut proof required before the print run",
   sourceHash: manifest.sourceHash,
   checks,
   warnings,
@@ -613,7 +665,7 @@ await fs.writeFile(
 );
 await fs.writeFile(
   path.join(out, "PREFLIGHT.md"),
-  `# ${result.status}\n\n${checks.filter(c => c.status === "PASS").length} PASS, ${checks.filter(c => c.status === "N/A").length} N/A, ${failed.length} FAIL / ${checks.length} проверки. Геометрична толерантност: ${print.geometryToleranceMm} mm.\n\n${checks.map((c) => `- ${c.status} — ${c.name}${c.status === "FAIL" ? `: ${JSON.stringify(c.detail)}` : ""}`).join("\n")}\n\n## Ограничения\n\n${warnings.map((w) => `- ${w}`).join("\n")}\n\nНужни са визуално одобрение и физическа проба.\n`,
+  `# ${result.status}\n\n${checks.filter(c => c.status === "PASS").length} PASS, ${checks.filter(c => c.status === "N/A").length} N/A, ${failed.length} FAIL / ${checks.length} проверки. Геометрична толерантност: ${print.geometryToleranceMm} mm.\n\n${checks.map((c) => `- ${c.status} — ${c.name}${c.status === "FAIL" ? `: ${JSON.stringify(c.detail)}` : ""}`).join("\n")}\n\n## Ограничения\n\n${warnings.map((w) => `- ${w}`).join("\n")}\n\nДизайнът е одобрен. Нужна е физическа проба за регистрацията на принтера.\n`,
 );
 console.log(
   `${result.status}: ${checks.filter(c => c.status === "PASS").length} PASS, ${checks.filter(c => c.status === "N/A").length} N/A, ${failed.length} FAIL / ${checks.length}`,

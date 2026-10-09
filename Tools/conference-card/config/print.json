@@ -2,12 +2,12 @@
   "trim": { "width": 65, "height": 90 },
   "bleed": 3,
   "safe": 5,
-  "paper": { "width": 210, "height": 297 },
-  "columns": 2,
+  "paper": { "width": 297, "height": 210 },
+  "columns": 4,
   "rows": 2,
-  "gutter": { "x": 14, "y": 16 },
-  "crop": { "gap": 1, "length": 4, "lineWidthPt": 0.25 },
-  "duplex": "long-edge",
+  "gutter": { "x": 0, "y": 0 },
+  "crop": { "gap": 0.5, "length": 1, "lineWidthPt": 0.25 },
+  "duplex": "short-edge",
   "backOffset": { "x": 0, "y": 0 },
   "geometryToleranceMm": 0.01
 }

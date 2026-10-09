@@ -10,9 +10,22 @@ export const root = path.resolve(
   "..",
 );
 export const proof = process.argv.includes("--proof");
-export const out = path.join(root, "output", proof ? "proof" : "print");
+export const preset = process.argv.includes("4up") ? "4up" : "8up";
+export const out = path.join(root, "output", proof ? "proof" : preset === "4up" ? "4up" : "print");
 export async function readJson(file) {
   return JSON.parse(await fs.readFile(path.join(root, file), "utf8"));
+}
+export async function assertApprovedArtwork() {
+  const lock = await readJson("validation/approved/source-lock.json");
+  const digest = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
+  const changed = [];
+  for (const [file, expected] of Object.entries(lock.files))
+    if (digest(await fs.readFile(path.join(root,file))) !== expected) changed.push(file);
+  const component = (await fs.readFile(path.join(root,"src/components.tsx"),"utf8")).split("export function Sheet(")[0];
+  if (digest(component) !== lock.componentArtwork) changed.push("approved Card components");
+  for (const [side,expected] of Object.entries(lock.pdfs))
+    if (digest(await fs.readFile(path.join(root,`validation/approved/${side}.pdf`))) !== expected) changed.push(`${side} approved PDF`);
+  if (changed.length) throw new Error(`Approved artwork changed: ${changed.join(", ")}. Print production requires the approved baseline.`);
 }
 export async function sourceHash() {
   const hash = crypto.createHash("sha256");
@@ -28,7 +41,7 @@ export async function sourceHash() {
       }
     }
   }
-  for (const dir of ["src", "config", "public/assets", "scripts", "tests"])
+  for (const dir of ["src", "config", "public/assets", "scripts", "tests", "validation/approved"])
     await visit(path.join(root, dir));
   for (const file of ["package.json", "package-lock.json", "index.html"])
     hash.update(await fs.readFile(path.join(root, file)));

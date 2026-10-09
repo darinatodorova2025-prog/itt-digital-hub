@@ -1,16 +1,18 @@
 import { useState, type CSSProperties } from "react";
 import { createRoot } from "react-dom/client";
 import { Card, Sheet, type Side } from "./components";
-import { qrReady } from "./geometry.mjs";
+import { qrReady, presets } from "./geometry.mjs";
 import qr from "../config/qr.json";
 import "./card.css";
 import "./preview.css";
 type View = "both" | Side | "sheet";
 function Preview() {
-  const [view, setView] = useState<View>("both");
+  const [view, setView] = useState<View>("sheet");
+  const [preset, setPreset] = useState<"8up" | "4up">("8up");
+  const config = presets[preset];
   const [guides, setGuides] = useState(false);
   const [proof, setProof] = useState(false);
-  const [zoom, setZoom] = useState(150);
+  const [zoom, setZoom] = useState(40);
   const [calibration, setCalibration] = useState(
     Number(localStorage.getItem("itt-card-screen-mm")) || 100,
   );
@@ -56,13 +58,21 @@ function Preview() {
                 aria-pressed={view === id}
                 onClick={() => {
                   setView(id);
-                  if (id === "sheet") setZoom(50);
+                  if (id === "sheet") setZoom(40);
                 }}
               >
                 {label}
               </button>
             ))}
           </div>
+        </fieldset>
+        <fieldset>
+          <legend>Подредба за печат</legend>
+          <div className="view-buttons">
+            <button aria-pressed={preset === "8up"} onClick={() => setPreset("8up")}>8 карти · A4 landscape</button>
+            <button aria-pressed={preset === "4up"} onClick={() => setPreset("4up")}>4 карти · A4 portrait</button>
+          </div>
+          <p className="control-note">{preset === "8up" ? "Къс ръб · 19 двустранни копия = 152 карти" : "Дълъг ръб · 4 карти на лист"}</p>
         </fieldset>
         <fieldset>
           <legend>Проверка</legend>
@@ -94,7 +104,7 @@ function Preview() {
             <input
               aria-label="Мащаб"
               type="range"
-              min="50"
+              min="20"
               max="250"
               step="10"
               value={zoom}
@@ -157,7 +167,7 @@ function Preview() {
         <header className="canvas-heading">
           <span>
             {view === "sheet"
-              ? "A4 · 2 × 2 · long-edge"
+              ? `A4 · ${config.columns} × ${config.rows} · ${config.duplex}`
               : "КЕЕП · ВиК предизвикателство"}
           </span>
           <span>
@@ -195,10 +205,10 @@ function Preview() {
               <div className="preview-item" key={side}>
                 <div className="art-label">
                   {side === "front" ? "01 / ЛИЦА" : "02 / ГЪРБОВЕ"}
-                  <span>210 × 297 mm</span>
+                  <span>{config.paper.width} × {config.paper.height} mm</span>
                 </div>
-                <div className="scaled-sheet">
-                  <Sheet side={side} guides={guides} proof={proof} />
+                <div className="scaled-sheet" style={{ "--sheet-width": `${config.paper.width}mm`, "--sheet-height": `${config.paper.height}mm` } as CSSProperties}>
+                  <Sheet side={side} guides={guides} proof={proof} config={config} />
                 </div>
               </div>
             ))}

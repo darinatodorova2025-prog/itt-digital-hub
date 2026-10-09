@@ -1,0 +1,26 @@
+{
+  "front": {
+    "changedPixels": 4317,
+    "outsideHeadlineText": 0,
+    "regions": [
+      {
+        "x": 6.999055989583333,
+        "y": 16.02796223958333,
+        "width": 56.99703776041666,
+        "height": 16.569531249999997
+      }
+    ]
+  },
+  "back": {
+    "changedPixels": 10135,
+    "outsideHeadlineText": 0,
+    "regions": [
+      {
+        "x": 6.999055989583333,
+        "y": 14.287499999999998,
+        "width": 56.99703776041666,
+        "height": 10.285677083333333
+      }
+    ]
+  }
+}

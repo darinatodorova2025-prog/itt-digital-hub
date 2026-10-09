@@ -224,8 +224,8 @@ details input {
   transform-origin: top left;
 }
 .scaled-sheet {
-  width: calc(210mm * var(--preview-scale));
-  height: calc(297mm * var(--preview-scale));
+  width: calc(var(--sheet-width) * var(--preview-scale));
+  height: calc(var(--sheet-height) * var(--preview-scale));
   box-shadow: 0 10px 25px #040e311c;
 }
 .scaled-sheet > .sheet {

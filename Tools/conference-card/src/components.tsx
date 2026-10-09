@@ -218,18 +218,20 @@ export function Sheet({
   side,
   guides = false,
   proof = false,
+  config = print,
 }: {
   side: Side;
   guides?: boolean;
   proof?: boolean;
+  config?: typeof print;
 }) {
-  const placements = slots(side);
+  const placements = slots(side, config);
   return (
     <div
       className="sheet"
       style={{
-        width: `${print.paper.width}mm`,
-        height: `${print.paper.height}mm`,
+        width: `${config.paper.width}mm`,
+        height: `${config.paper.height}mm`,
       }}
     >
       {placements.map((slot) => (
@@ -251,11 +253,11 @@ export function Sheet({
       ))}
       <svg
         className="sheet-marks"
-        viewBox={`0 0 ${print.paper.width} ${print.paper.height}`}
+        viewBox={`0 0 ${config.paper.width} ${config.paper.height}`}
         aria-hidden="true"
       >
         {placements.flatMap((slot) =>
-          cropSegments(slot).map((line, i) => (
+          cropSegments(slot, config).map((line, i) => (
             <line
               key={`${slot.id}-${i}`}
               x1={line[0]}
@@ -263,7 +265,7 @@ export function Sheet({
               x2={line[2]}
               y2={line[3]}
               stroke="#040e31"
-              strokeWidth={print.crop.lineWidthPt / (72 / 25.4)}
+              strokeWidth={config.crop.lineWidthPt / (72 / 25.4)}
             />
           )),
         )}
