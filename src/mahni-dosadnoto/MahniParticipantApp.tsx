@@ -636,6 +636,14 @@ function Welcome({ onStart }: { onStart: () => void }) {
   );
 }
 
+function RequiredMark() {
+  return (
+    <span className="md-req" aria-hidden="true">
+      *
+    </span>
+  );
+}
+
 function RegisterForm({
   form,
   setForm,
@@ -669,7 +677,7 @@ function RegisterForm({
       >
         <div className="md-fields two">
           <label>
-            <span>Име</span>
+            <span>Име<RequiredMark /></span>
             <input
               name="given-name"
               autoComplete="given-name"
@@ -680,7 +688,7 @@ function RegisterForm({
             />
           </label>
           <label>
-            <span>Фамилия</span>
+            <span>Фамилия<RequiredMark /></span>
             <input
               name="family-name"
               autoComplete="family-name"
@@ -692,7 +700,7 @@ function RegisterForm({
           </label>
         </div>
         <label>
-          <span>Организация</span>
+          <span>Организация<RequiredMark /></span>
           <input
             name="organization"
             autoComplete="organization"
@@ -703,7 +711,7 @@ function RegisterForm({
           />
         </label>
         <label>
-          <span>Длъжност</span>
+          <span>Длъжност<RequiredMark /></span>
           <input
             name="organization-title"
             autoComplete="organization-title"
@@ -714,7 +722,7 @@ function RegisterForm({
           />
         </label>
         <label>
-          <span>Имейл</span>
+          <span>Имейл<RequiredMark /></span>
           <input
             type="email"
             inputMode="email"
@@ -736,6 +744,14 @@ function RegisterForm({
             onChange={(event) => setForm({ ...form, phone: event.target.value })}
           />
         </label>
+        <div className="md-form-notes">
+          <p className="md-required-legend">
+            <RequiredMark /> задължително поле
+          </p>
+          <p className="md-form-privacy">
+            Данните ще бъдат използвани единствено и само за целите на играта и няма да бъдат включвани в маркетингови или други кампании.
+          </p>
+        </div>
         <button type="submit" className="md-btn" disabled={!ready || pending}>
           Продължи
         </button>

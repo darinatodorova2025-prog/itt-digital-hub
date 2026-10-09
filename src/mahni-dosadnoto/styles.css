@@ -423,6 +423,41 @@
   color: var(--md-muted);
 }
 
+.md-form .md-req {
+  margin-left: 0.2em;
+  color: #c4232b;
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 0;
+  text-transform: none;
+  vertical-align: super;
+}
+
+.md-form-notes {
+  display: grid;
+  gap: 0.22rem;
+  margin-top: -0.2rem;
+}
+
+.md-required-legend,
+.md-form-privacy {
+  margin: 0;
+  color: var(--md-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.md-required-legend .md-req {
+  margin-left: 0;
+  margin-right: 0.2em;
+  font-size: 0.95em;
+  vertical-align: 0.05em;
+}
+
 .md-form input,
 .md-textarea,
 .md-ops-search,
