@@ -19,7 +19,7 @@ export function PersonPortrait({
         src={src}
         alt={alt}
         fill
-        sizes="(min-width: 1280px) 240px, (min-width: 768px) 28vw, 30vw"
+        sizes="(min-width: 1280px) 192px, (min-width: 960px) 172px, 204px"
         className="person-portrait-photo"
         style={objectPosition ? { objectPosition } : undefined}
       />

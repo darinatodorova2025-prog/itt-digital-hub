@@ -5,17 +5,17 @@ import type { Person } from "./types";
 export type PersonIntroVariant = "card" | "profile";
 
 /**
- * Public founders only. Names, roles and first-person copy are confirmed;
+ * Public team only. Names, roles and first-person copy are confirmed;
  * unverified employers, years, education and metrics stay out of the record.
  */
 const confirmedPeople: Person[] = [
   {
     slug: "ivan-todorov",
     name: { bg: "Иван Тодоров", en: "Ivan Todorov" },
-    axis: { bg: "Бизнес / Оптимизация", en: "Business / Optimization" },
+    axis: { bg: "Бизнес / Процеси", en: "Business / Processes" },
     role: {
-      bg: "Консултант по бизнес оптимизация и ИИ",
-      en: "Business Optimization & AI Consultant",
+      bg: "Основател и водещ консултант",
+      en: "Founder & Lead Consultant",
     },
     expertise: {
       bg: ["Процеси", "Автоматизация", "Бизнес оптимизация", "Проследимост", "Корпоративни системи"],
@@ -23,10 +23,10 @@ const confirmedPeople: Person[] = [
     },
     cardBio: {
       bg: [
-        "Анализирам работните процеси, изяснявам какво трябва да се подобри и свързвам бизнес нуждите с техническото изпълнение.",
+        "Анализирам работните процеси, откривам къде има нужда от подобрение и превръщам бизнес задачите в ясни изисквания.",
       ],
       en: [
-        "I analyze workflows, identify what needs to improve and connect business requirements with technical implementation.",
+        "I analyze workflows, identify opportunities for improvement and turn business needs into clear requirements.",
       ],
     },
     bio: {
@@ -49,10 +49,10 @@ const confirmedPeople: Person[] = [
   {
     slug: "ivan-tomchev",
     name: { bg: "Иван Томчев", en: "Ivan Tomchev" },
-    axis: { bg: "Системи / Инженеринг", en: "Systems / Engineering" },
+    axis: { bg: "Архитектура / Системи", en: "Architecture / Systems" },
     role: {
-      bg: "Архитект на софтуерни и ИИ системи",
-      en: "Software & AI Systems Architect",
+      bg: "Архитект на софтуерни и ИИ решения",
+      en: "Software & AI Solutions Architect",
     },
     expertise: {
       bg: ["Софтуерна архитектура", "Интеграции", "Инфраструктура", "Локални и облачни модели", "Оркестрация"],
@@ -60,10 +60,10 @@ const confirmedPeople: Person[] = [
     },
     cardBio: {
       bg: [
-        "Проектирам техническата архитектура и изграждам системи, които обединяват софтуер, данни, интеграции и ИИ там, където има практическа полза.",
+        "Проектирам как софтуерът, данните и ИИ да работят заедно, така че решенията да бъдат надеждни и подходящи за конкретната задача.",
       ],
       en: [
-        "I design technical architectures and build systems that bring together software, data, integrations and AI where they provide practical value.",
+        "I design how software, data and AI work together to create reliable solutions tailored to each project's needs.",
       ],
     },
     bio: {
@@ -82,6 +82,38 @@ const confirmedPeople: Person[] = [
       height: 1024,
     },
     projects: ["ai-assisted-solar-operations", "local-ai-orchestration"],
+  },
+  {
+    slug: "nikolay-milkov",
+    name: { bg: "Николай Милков", en: "Nikolay Milkov" },
+    axis: { bg: "Разработка / Приложения", en: "Development / Applications" },
+    role: {
+      bg: "Разработчик на софтуерни приложения",
+      en: "Software Application Developer",
+    },
+    expertise: { bg: [], en: [] },
+    cardBio: {
+      bg: [
+        "Разработвам приложения и функционалности, които превръщат техническия проект в работещ и удобен за използване продукт.",
+      ],
+      en: [
+        "I develop applications and features that turn technical designs into functional, user-friendly products.",
+      ],
+    },
+    bio: {
+      bg: [
+        "Разработвам приложения и функционалности, които превръщат техническия проект в работещ и удобен за използване продукт.",
+      ],
+      en: [
+        "I develop applications and features that turn technical designs into functional, user-friendly products.",
+      ],
+    },
+    portrait: {
+      src: "/images/team/nikolay-milkov-portrait.jpg",
+      width: 819,
+      height: 1024,
+      objectPosition: "center 2%",
+    },
   },
 ];
 
@@ -104,8 +136,13 @@ export const devFixturesEnabled = isDevFixturesEnabled();
 
 export const people: Person[] = devFixturesEnabled ? [...confirmedPeople, ...devFixtures] : confirmedPeople;
 
-/** ITT is two people. No vacant “join us” slot on the public site. */
+/** No vacant “join us” slot on the public site. */
 export const teamUpcomingCount = 0;
+
+/** Confirmed public team in display order. Dev join fixtures stay out. */
+export function teamMembers(): Person[] {
+  return people.filter((person) => !isJoinPlaceholder(person));
+}
 
 export function joinSlotCount(visible: Person[]): number {
   if (visible.some((person) => person.slug === DEV_JOIN_PLACEHOLDER_SLUG)) return 0;

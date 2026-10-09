@@ -8,7 +8,7 @@ CIT was immutable source only. This table records how the copied implementation 
 | `Hero`, `SectionHeading`, `ButtonLink`, `ArrowLink` | Summit homepage framing | ADAPT | Editorial hero, no university video. Eyebrow = Applied AI Consultancy. |
 | Homepage section spy + primary nav | One-page Summit IA | ADAPT | Work, What we solve, Approach, About, Contact. |
 | `ProjectListItem` / `ProjectMeta` / project routes | Selected work | ADAPT | Three honest examples; no wine/tourism; no fabricated metrics. |
-| `PersonPortrait` / team presentation | Two complementary specialists | ADAPT | Ivan Todorov + Ivan Tomchev. No join-us vacancy theatre. |
+| `PersonPortrait` / team presentation | Three team profiles on one desktop row | ADAPT | Ivan Todorov, Ivan Tomchev, Nikolay Milkov. No join-us vacancy theatre. |
 | Ten-stage academic methodology | How we work | REMOVE | Three-step Understand / Design / Build. Unused academic content files are empty. |
 | Pillars (education / research / applied science) | Problems we help solve | ADAPT pattern | Problem classes, not a service catalogue. |
 | Institutional anchor / university photography | Experience across | NEW on existing grid | Textual engagements only. No invented clients or logos. |

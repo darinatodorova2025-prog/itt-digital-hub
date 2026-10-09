@@ -4,7 +4,7 @@ import { href } from "@/lib/paths";
 import { pageMetadata } from "@/lib/metadata";
 import { home } from "@/content/pages";
 import { t } from "@/content/messages";
-import { people } from "@/content/people";
+import { teamMembers } from "@/content/people";
 import { problemClasses } from "@/content/problems";
 import { approachStages } from "@/content/approach";
 import { listPublishedProjects } from "@/lib/cms/repository";
@@ -35,7 +35,7 @@ export default async function HomePage({ params }: Params) {
   const locale: Locale = isLocale(raw) ? raw : "bg";
   const m = t(locale);
   const c = home;
-  const founders = people.filter((person) => person.slug === "ivan-todorov" || person.slug === "ivan-tomchev");
+  const team = teamMembers();
   const projects = await listPublishedProjects();
   const [firstProject, ...restProjects] = projects;
 
@@ -166,7 +166,7 @@ export default async function HomePage({ params }: Params) {
           align="split"
         />
         <div className="mt-12">
-          <FoundersPair people={founders} locale={locale} variant="card" />
+          <FoundersPair people={team} locale={locale} variant="card" />
         </div>
         <div className="mt-10">
           <ArrowLink href={href(locale, "people")}>{m.toPeople}</ArrowLink>

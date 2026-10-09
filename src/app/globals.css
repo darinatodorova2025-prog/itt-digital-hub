@@ -327,6 +327,67 @@
   .person-tile:focus-within .person-portrait-plate {
     background: var(--color-marine);
   }
+
+  /* Team roster — one column until three cards can keep a readable measure. */
+  .team-roster-wrap {
+    container-type: inline-size;
+    container-name: team;
+  }
+  .team-roster {
+    display: grid;
+    align-items: stretch;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .team-card.surface-card {
+    padding: 1.5rem;
+  }
+  .team-portrait {
+    width: min(100%, 12.75rem);
+    margin-top: 1.15rem;
+  }
+  .team-name {
+    margin-top: 1.15rem;
+    hyphens: none;
+    text-wrap: balance;
+  }
+  .team-role {
+    margin-top: 0.3rem;
+    min-height: 3.1em;
+  }
+  .team-bio {
+    margin-top: 0.85rem;
+  }
+  @container team (min-width: 56rem) {
+    .team-roster {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.15rem;
+    }
+    .team-card.surface-card {
+      padding: 1.3rem 1.2rem 1.45rem;
+    }
+    .team-portrait {
+      width: min(100%, 10.75rem);
+      margin-top: 0.95rem;
+    }
+    .team-name {
+      margin-top: 0.95rem;
+    }
+    .team-bio {
+      margin-top: 0.7rem;
+    }
+  }
+  @container team (min-width: 70rem) {
+    .team-roster {
+      gap: 1.35rem;
+    }
+    .team-card.surface-card {
+      padding: 1.45rem 1.35rem 1.6rem;
+    }
+    .team-portrait {
+      width: min(100%, 12rem);
+    }
+  }
   .img-mono {
     filter: grayscale(1) contrast(1.12) brightness(1.05);
   }

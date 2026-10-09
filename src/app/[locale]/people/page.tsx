@@ -3,7 +3,7 @@ import { isLocale, type Locale } from "@/lib/i18n";
 import { pageMetadata } from "@/lib/metadata";
 import { primaryNav } from "@/content/site";
 import { peoplePage as c } from "@/content/pages";
-import { people } from "@/content/people";
+import { teamMembers } from "@/content/people";
 import { PageHeader } from "@/components/editorial/PageHeader";
 import { Section } from "@/components/layout/Section";
 import { SectionHeading } from "@/components/editorial/SectionHeading";
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function PeoplePage({ params }: Params) {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : "bg";
-  const founders = people.filter((person) => person.slug === "ivan-todorov" || person.slug === "ivan-tomchev");
+  const team = teamMembers();
 
   return (
     <>
@@ -32,7 +32,7 @@ export default async function PeoplePage({ params }: Params) {
       <Section id="team" labelledBy="team-heading" size="sm">
         <SectionHeading label={c.team.label[locale]} heading={c.structure.heading[locale]} id="team-heading" lead={c.structureNote[locale]} align="split" />
         <div className="mt-12">
-          <FoundersPair people={founders} locale={locale} variant="profile" />
+          <FoundersPair people={team} locale={locale} variant="profile" />
         </div>
       </Section>
     </>

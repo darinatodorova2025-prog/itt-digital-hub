@@ -269,13 +269,13 @@ export const peoplePage = {
   structure: {
     label: { bg: "Екип", en: "Team" },
     heading: {
-      bg: "Две допълващи се роли.\nЕдин процес.",
-      en: "Two complementary roles.\nOne process.",
+      bg: "Допълващи се роли.\nЕдин процес.",
+      en: "Complementary roles.\nOne process.",
     },
   },
   structureNote: {
-    bg: "Единият фокус е върху бизнеса, процесите и това какво си струва да бъде променено. Другият е върху архитектурата, инженерното изпълнение и надеждната работа на системата. Работим заедно през целия проект, а не като отделни звена.",
-    en: "One focus is the business, the processes and what is worth changing. The other is the architecture, the engineering and making the system work reliably. We work together throughout a project, not as separate handoffs.",
+    bg: "Бизнесът и процесите, архитектурата на решението и разработката на работещ продукт стоят заедно. Работим през целия проект, а не като отделни звена.",
+    en: "Business and processes, the architecture of the solution and development of a working product sit together. We work together throughout a project, not as separate handoffs.",
   },
   disciplines: { label: { bg: "Експертиза", en: "Expertise" }, heading: { bg: "Къде се допълваме", en: "Where we complement each other" } },
   team: { label: { bg: "Екип", en: "Team" }, heading: { bg: "Профили", en: "Profiles" } },

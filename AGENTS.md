@@ -18,7 +18,7 @@ Never invent names, clients, metrics, permissions, logos, emails, or results. Us
 
 ## Information architecture
 Nav: Work · What we solve · Approach · Tools · About · Contact · BG/EN.
-Homepage: Hero → Experience across → Selected work → Problems → AI isn’t always the answer → How we work → Two specialists → Contact.
+Homepage: Hero → Experience across → Selected work → Problems → AI isn’t always the answer → How we work → Team → Contact.
 
 ## Product surfaces
 This repository is one website and one Vercel project. AI Act Assistant, Settlement Analyzer, and later tools are surfaces of the same site — not separate apps, remotes, or deployments.
