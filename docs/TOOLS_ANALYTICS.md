@@ -183,6 +183,7 @@ A talk and a printed QR code should use different `utm_medium` values, for examp
 No events in the dashboard:
 
 - Confirm `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is set on the Vercel environment that is serving the site, then redeploy. Next.js inlines it only when client code reads `process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` directly. `NEXT_PUBLIC_VERCEL_ENV` is set from `VERCEL_ENV` in `next.config.ts` so preview visits are not labeled production.
+- Browser events must keep the PostHog `token` property. `scrubBrowserProperties` leaves a `phc_` project key in place and still removes passwords, authorization headers and other secrets.
 - The dashboard hides `development` and `preview`. Check activity without that filter: https://eu.posthog.com/project/301034/activity
 - Local `next dev` sends nothing unless `NEXT_PUBLIC_POSTHOG_CAPTURE_DEV=1`.
 

@@ -5,7 +5,7 @@ import { appEnvironment, captureEnabled, clientConfirmsOperation, toolIdFromPath
 import { cleanAnalyticsId, readAnalyticsContext, readQuestionContext } from "../src/lib/analytics/identity";
 import { classifyComparison, operationSuccessful, sourceCoverage } from "../src/lib/analytics/operation";
 import { changedLayers, deltaTBucket, flowBucket, insulationBucket } from "../src/lib/analytics/pipe";
-import { sanitizeProperties } from "../src/lib/analytics/privacy";
+import { sanitizeProperties, scrubBrowserProperties } from "../src/lib/analytics/privacy";
 import { classifyTopic, topicForQuestion } from "../src/lib/analytics/topics";
 import { estimateCostUsd } from "../src/lib/analytics/usage";
 import { toolIdForAgent } from "../platform/agent-hub/src/product-analytics";
@@ -53,6 +53,17 @@ describe("tools analytics", () => {
       status: "completed",
     });
     expect(JSON.stringify(safe)).not.toContain("person@example.com");
+    const browser = {
+      token: "phc_public",
+      $current_url: "https://ittdigitalhub.org/bg/tools",
+      password: "hidden",
+      authorization: "Bearer secret",
+    };
+    scrubBrowserProperties(browser);
+    expect(browser.token).toBe("phc_public");
+    expect(browser.$current_url).toContain("/bg/tools");
+    expect(browser).not.toHaveProperty("password");
+    expect(browser).not.toHaveProperty("authorization");
   });
 
   it("reads only safe correlation headers", () => {

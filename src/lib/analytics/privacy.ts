@@ -125,11 +125,14 @@ function cleanValue(value: unknown): AnalyticsValue | undefined {
 export function scrubBrowserProperties(properties: Record<string, unknown> | undefined): void {
   if (!properties) return;
   for (const key of Object.keys(properties)) {
+    const value = properties[key];
+    // PostHog stores the publishable project key on every event as `token`.
+    // Removing it makes ingestion drop the event.
+    if (key === "token" && typeof value === "string" && value.startsWith("phc_") && value.length < 80) continue;
     if (!key.startsWith("$") && !METRIC_KEYS.has(key) && DENIED_KEY.test(key)) {
       delete properties[key];
       continue;
     }
-    const value = properties[key];
     if (typeof value === "string") properties[key] = clip(value, 180);
   }
 }
