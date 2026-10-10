@@ -129,6 +129,7 @@ export function scrubBrowserProperties(properties: Record<string, unknown> | und
     // PostHog stores the publishable project key on every event as `token`.
     // Removing it makes ingestion drop the event.
     if (key === "token" && typeof value === "string" && value.startsWith("phc_") && value.length < 80) continue;
+    if (key === "distinct_id" && typeof value === "string" && value.length > 1 && value.length < 200 && !value.includes("@")) continue;
     if (!key.startsWith("$") && !METRIC_KEYS.has(key) && DENIED_KEY.test(key)) {
       delete properties[key];
       continue;

@@ -55,15 +55,21 @@ describe("tools analytics", () => {
     expect(JSON.stringify(safe)).not.toContain("person@example.com");
     const browser = {
       token: "phc_public",
+      distinct_id: "anon-visitor-1",
       $current_url: "https://ittdigitalhub.org/bg/tools",
       password: "hidden",
       authorization: "Bearer secret",
     };
     scrubBrowserProperties(browser);
     expect(browser.token).toBe("phc_public");
+    expect(browser.distinct_id).toBe("anon-visitor-1");
     expect(browser.$current_url).toContain("/bg/tools");
     expect(browser).not.toHaveProperty("password");
     expect(browser).not.toHaveProperty("authorization");
+    const blocked = { distinct_id: "person@example.com", token: "secret-token" };
+    scrubBrowserProperties(blocked);
+    expect(blocked).not.toHaveProperty("distinct_id");
+    expect(blocked).not.toHaveProperty("token");
   });
 
   it("reads only safe correlation headers", () => {
