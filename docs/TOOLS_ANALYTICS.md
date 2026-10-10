@@ -190,6 +190,7 @@ No events in the dashboard:
 Replay is empty:
 
 - Open a tool page and stay longer than 2 seconds. The homepage alone is not recorded.
+- Project URL triggers must use `regex`, not `icontains`. The current recorder only activates regex rules, so `icontains` leaves replay buffering and nothing is uploaded. Blocked paths use the same regex form.
 - Recordings can take a few minutes to appear.
 
 Server and browser events do not share a person:
