@@ -26,4 +26,9 @@ export function trackAiActEvent(event: AiActEvent, payload?: AiActEventPayload):
       track(event, payload);
     })
     .catch(() => undefined);
+  void import("@/lib/analytics/client")
+    .then(({ capture }) => {
+      capture(event, { tool_id: "ai-act-agent", ...payload });
+    })
+    .catch(() => undefined);
 }

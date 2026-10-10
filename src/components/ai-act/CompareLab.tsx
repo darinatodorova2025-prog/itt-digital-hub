@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { track } from "@vercel/analytics";
+import { beginTrackedOperation, capture, captureFeature } from "@/lib/analytics/client";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 import { aiAct as copy, comparisonExamples, type ExampleId } from "@/content/ai-act";
@@ -51,10 +52,11 @@ export function CompareLab({ locale }: { locale: Locale }) {
     setResult(null);
     const selected = exampleId && comparisonExamples.some((item) => item.id === exampleId && item.prompt[locale] === prompt) ? exampleId : null;
     track(selected ? "ai_act_example_prompt" : "ai_act_custom_prompt", selected ? { example: selected } : {});
+    const tracked = beginTrackedOperation("ai-act-assistant", prompt, { locale, mode: "comparison", example_id: selected ?? "custom" });
     try {
       const response = await fetch("/api/ai-act/compare", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...tracked.headers },
         body: JSON.stringify({ prompt, locale, exampleId: selected }),
       });
       const body = (await response.json()) as Payload;
@@ -66,6 +68,17 @@ export function CompareLab({ locale }: { locale: Locale }) {
       setResult(body);
     } catch {
       setFormError("upstream");
+      capture("tool_operation_result", {
+        tool_id: "ai-act-assistant",
+        locale,
+        status: "failed",
+        confirmation: "client",
+        successful: false,
+        fully_completed: false,
+        error_code: "network",
+        operation_id: tracked.operationId,
+        mode: "comparison",
+      });
     } finally {
       setPending(false);
     }
@@ -88,7 +101,7 @@ export function CompareLab({ locale }: { locale: Locale }) {
             setExampleId(null);
           }}
           placeholder={text.promptPlaceholder[locale]}
-          className="mt-2 w-full resize-none overflow-hidden rounded-2xl border border-line bg-paper px-4 py-2.5 text-body text-ink outline-none focus-visible:border-signal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+          className="ph-mask mt-2 w-full resize-none overflow-hidden rounded-2xl border border-line bg-paper px-4 py-2.5 text-body text-ink outline-none focus-visible:border-signal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
         />
         <div className="mt-3">
           <p id="ai-act-examples" className="text-meta text-ink-3">
@@ -105,6 +118,7 @@ export function CompareLab({ locale }: { locale: Locale }) {
                   onClick={() => {
                     setExampleId(example.id);
                     setPrompt(example.prompt[locale]);
+                    captureFeature("ai-act-assistant", "example_selected", { locale, example_id: example.id });
                   }}
                   className={cn(
                     "relative min-h-11 rounded-xl border px-3 py-2 text-left text-small text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal",
@@ -239,7 +253,13 @@ function SourceBlock({ locale, sources }: { locale: Locale; sources: PublicSourc
             <p className="break-words text-ink">
               <span className="text-ink-3">[{index + 1}] </span>
               {source.url ? (
-                <a href={source.url} target="_blank" rel="noopener noreferrer" className="underline decoration-line-strong underline-offset-2">
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-line-strong underline-offset-2"
+                  onClick={() => captureFeature("ai-act-assistant", "source_opened", { source_index: index + 1, source_title: source.title })}
+                >
                   {source.title}
                 </a>
               ) : (

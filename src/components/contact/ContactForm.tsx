@@ -82,7 +82,7 @@ export function ContactForm({ locale }: { locale: Locale }) {
           : null;
 
   return (
-    <form action={action} className="relative mt-12">
+    <form action={action} className="ph-mask relative mt-12">
       <input type="hidden" name="locale" value={locale} />
       <div className="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
         <label>

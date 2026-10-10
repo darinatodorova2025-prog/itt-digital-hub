@@ -1,6 +1,10 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ToolItem } from "@/content/tools";
+import { capture, captureOnce } from "@/lib/analytics/client";
 import { ArrowRight } from "@/components/ui/Icons";
 import { BetaBadge } from "@/components/ui/BetaBadge";
 import { cn } from "@/lib/cn";
@@ -19,7 +23,20 @@ function Cover({ src, alt }: { src: string; alt: string }) {
 }
 
 export function ToolCard({ tool, openLabel, tone = "paper" }: { tool: ToolItem; openLabel: string; tone?: "paper" | "dark" }) {
+  const frameRef = useRef<HTMLElement>(null);
   const live = Boolean(tool.href);
+
+  useEffect(() => {
+    const node = frameRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      captureOnce(`card:${tool.id}`, "tool_card_seen", { tool_id: tool.id });
+      observer.disconnect();
+    }, { threshold: 0.45 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [tool.id]);
   const dark = tone === "dark";
   const body = (
     <>
@@ -53,12 +70,13 @@ export function ToolCard({ tool, openLabel, tone = "paper" }: { tool: ToolItem; 
 
   if (tool.href) {
     return (
-      <article className="h-full">
+      <article ref={frameRef} className="h-full">
         <Link
           href={tool.href}
           target={tool.external ? "_blank" : undefined}
           rel={tool.external ? "noreferrer" : undefined}
           className={cn("tool-card group no-underline outline-offset-4", dark ? "text-on-dark" : "text-ink", frame)}
+          onClick={() => capture("tool_card_clicked", { tool_id: tool.id })}
         >
           {body}
         </Link>
@@ -66,5 +84,5 @@ export function ToolCard({ tool, openLabel, tone = "paper" }: { tool: ToolItem; 
     );
   }
 
-  return <article className={cn(frame, "cursor-default")}>{body}</article>;
+  return <article ref={frameRef} className={cn(frame, "cursor-default")}>{body}</article>;
 }

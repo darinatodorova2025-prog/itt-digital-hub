@@ -4,6 +4,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import { aiActAgent as copy } from "@/content/ai-act-agent";
 import { trackAiActEvent } from "@/lib/ai-act/analytics";
+import { capture, noteQuestion } from "@/lib/analytics/client";
+import { topicForQuestion } from "@/lib/analytics/topics";
 import { mapPlatformError, postAgent, type AiActPlatformState } from "@/lib/agent-platform/client";
 import {
   AI_ACT_MESSAGE_MAX_LENGTH,
@@ -33,6 +35,14 @@ function AnswerBody({ text }: { text: string }) {
       )}
     </div>
   );
+}
+
+function markTime(): number {
+  return Date.now();
+}
+
+function elapsedSince(startedAt: number): number {
+  return Date.now() - startedAt;
 }
 
 function errorCopy(locale: Locale, code?: AiActErrorCode): string {
@@ -115,7 +125,20 @@ export function HostedAssistant({ locale }: { locale: Locale }) {
       };
     });
     setDraft("");
+    const noted = noteQuestion("ai-act-agent", content);
+    const startedAt = markTime();
     trackAiActEvent("ai_act_question_started", { locale, retry: Boolean(options?.retryOf) });
+    capture("tool_operation_started", {
+      tool_id: "ai-act-agent",
+      locale,
+      mode: "hosted",
+      question_index: noted.questionIndex,
+      follow_up: noted.followUp,
+      is_repeat: noted.isRepeat,
+      retry: Boolean(options?.retryOf),
+      topic_category: topicForQuestion("ai-act-agent", content),
+      prompt_length: content.length,
+    });
 
     const live = ensure();
     const completeTurns = session.messages.filter((turn) => turn.status === "complete");
@@ -136,11 +159,42 @@ export function HostedAssistant({ locale }: { locale: Locale }) {
         ...(live.gateToken ? { clientState: { gate: live.gateToken } } : {}),
       });
       const data = (await response.json()) as {
+        requestId?: string;
         answer?: string;
         state?: AiActPlatformState;
         error?: { code?: string };
       };
       const errorCode = response.ok ? undefined : mapPlatformError(data.error?.code);
+      const status = !response.ok
+        ? errorCode === "rate_limited"
+          ? "rate_limited"
+          : errorCode === "lead_required"
+            ? "gated"
+            : errorCode === "invalid"
+              ? "invalid"
+              : "failed"
+        : data.answer
+          ? "completed"
+          : "failed";
+      capture("tool_operation_result", {
+        tool_id: "ai-act-agent",
+        locale,
+        status,
+        confirmation: "client",
+        successful: status === "completed",
+        fully_completed: status === "completed",
+        error_code: errorCode ?? (status === "completed" ? null : "empty"),
+        request_id: data.requestId,
+        mode: "hosted",
+        question_index: noted.questionIndex,
+        follow_up: noted.followUp,
+        is_repeat: noted.isRepeat,
+        retry: Boolean(options?.retryOf),
+        topic_category: topicForQuestion("ai-act-agent", content),
+        prompt_length: content.length,
+        latency_ms: elapsedSince(startedAt),
+        duration_ms: elapsedSince(startedAt),
+      });
       if (errorCode === "lead_required") {
         setDraft(content);
         update((current) => ({
@@ -166,6 +220,21 @@ export function HostedAssistant({ locale }: { locale: Locale }) {
       }));
       if (!response.ok || !data.answer) setDraft(content);
     } catch {
+      capture("tool_operation_result", {
+        tool_id: "ai-act-agent",
+        locale,
+        status: "failed",
+        confirmation: "client",
+        successful: false,
+        fully_completed: false,
+        error_code: "network",
+        mode: "hosted",
+        question_index: noted.questionIndex,
+        follow_up: noted.followUp,
+        is_repeat: noted.isRepeat,
+        latency_ms: elapsedSince(startedAt),
+        duration_ms: elapsedSince(startedAt),
+      });
       setDraft(content);
       update((current) => ({
         ...current,
@@ -293,7 +362,7 @@ export function HostedAssistant({ locale }: { locale: Locale }) {
                   disabled={pending}
                   enterKeyHint="send"
                   placeholder={copy.chat.placeholder[locale]}
-                  className="w-full resize-none rounded-[1.25rem] bg-white px-4 py-3 font-sans text-base leading-normal text-ink outline-none placeholder:text-ink-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber md:text-small"
+                  className="ph-mask w-full resize-none rounded-[1.25rem] bg-white px-4 py-3 font-sans text-base leading-normal text-ink outline-none placeholder:text-ink-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber md:text-small"
                 />
               </div>
               <Button type="submit" disabled={pending || draft.trim().length === 0} className="w-full min-h-11 shrink-0 sm:w-auto">

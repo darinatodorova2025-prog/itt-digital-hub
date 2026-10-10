@@ -154,7 +154,7 @@ export function LeadCapture({
       onInput={() => {
         if (status === "invalid" || status === "error") setStatus("idle");
       }}
-      className={cn("relative", boxed ? "rounded-[1.25rem] bg-white p-6 md:p-8" : "surface-card")}
+      className={cn("ph-mask relative", boxed ? "rounded-[1.25rem] bg-white p-6 md:p-8" : "surface-card")}
       noValidate
     >
       {boxed ? null : (

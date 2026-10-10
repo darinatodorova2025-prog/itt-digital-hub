@@ -1,3 +1,4 @@
+import type { ModelUsage } from "@/lib/analytics/usage";
 import type { PublicSource, ToolKind } from "./presentation";
 
 export type SideSuccess = {
@@ -10,6 +11,7 @@ export type SideSuccess = {
   toolNames: string[];
   sources: PublicSource[];
   toolKinds: ToolKind[];
+  usage?: ModelUsage | null;
 };
 
 export type SideFailure = {
@@ -17,6 +19,7 @@ export type SideFailure = {
   error: "timeout" | "upstream" | "configuration" | "model_mismatch" | "empty" | "rate_limited";
   latencyMs: number;
   resolvedModel: string | null;
+  usage?: ModelUsage | null;
 };
 
 export type ComparisonSummary = {

@@ -1,3 +1,4 @@
+import { readResponseUsage } from "@/lib/analytics/usage";
 import { COMPARISON_TIMEOUT_MS } from "./config";
 import type { ComparisonSummary, SideFailure, SideSuccess } from "./observe";
 import { collectExecution } from "./presentation";
@@ -57,13 +58,14 @@ async function runSide(
     if (!response.ok) return { ok: false, error: "upstream", latencyMs, resolvedModel: null };
     const payload = (await response.json()) as unknown;
     const resolvedModel = readModel(payload);
+    const usage = readResponseUsage(payload);
     if (resolvedModel && !modelMatches(resolvedModel, requestedModel)) {
-      return { ok: false, error: "model_mismatch", latencyMs, resolvedModel };
+      return { ok: false, error: "model_mismatch", latencyMs, resolvedModel, usage };
     }
     const text = readText(payload).trim();
-    if (!text) return { ok: false, error: "empty", latencyMs, resolvedModel };
+    if (!text) return { ok: false, error: "empty", latencyMs, resolvedModel, usage };
     const tools = readTools(payload);
-    return { ok: true, text, resolvedModel, latencyMs, ...tools };
+    return { ok: true, text, resolvedModel, latencyMs, usage, ...tools };
   } catch (error) {
     const aborted = error instanceof Error && error.name === "AbortError";
     return { ok: false, error: aborted ? "timeout" : "upstream", latencyMs: Date.now() - started, resolvedModel: null };

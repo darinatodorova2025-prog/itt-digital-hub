@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
+import { capture, captureOnce } from "@/lib/analytics/client";
+import { deltaTBucket, flowBucket, insulationBucket } from "@/lib/analytics/pipe";
 import { pipeThermalAnalysis as copy } from "@/content/pipe-thermal-analysis";
 import {
   DEFAULT_INPUT,
@@ -59,7 +61,16 @@ function draftFromDefault(): Draft {
 export function PipeThermalWorkspace({ locale }: { locale: Locale }) {
   const [draft, setDraft] = useState<Draft>(draftFromDefault);
   const [overlayMm, setOverlayMm] = useState<number[]>([]);
+  const dirty = useRef(false);
+  const sequence = useRef(0);
+  const lastSignature = useRef("");
+  const advancedOpen = useRef(false);
   const units = copy.units;
+
+  function edit(patch: Partial<Draft>) {
+    dirty.current = true;
+    setDraft((prev) => ({ ...prev, ...patch }));
+  }
 
   const parsed = useMemo(
     () =>
@@ -98,8 +109,92 @@ export function PipeThermalWorkspace({ locale }: { locale: Locale }) {
 
   function toggleOverlay(tInsMm: number) {
     if (parsed.ok && parsed.input.tInsMm === tInsMm) return;
-    setOverlayMm((prev) => (prev.includes(tInsMm) ? prev.filter((mm) => mm !== tInsMm) : [...prev, tInsMm]));
+    setOverlayMm((prev) => {
+      const enabled = !prev.includes(tInsMm);
+      capture("tool_feature_used", {
+        tool_id: "pipe-thermal-analysis",
+        locale,
+        feature: "insulation_overlay",
+        insulation_mm: tInsMm,
+        enabled,
+      });
+      return enabled ? [...prev, tInsMm] : prev.filter((mm) => mm !== tInsMm);
+    });
   }
+
+  useEffect(() => {
+    if (!dirty.current) return;
+    const fields = parsed.ok ? "" : parsed.errors.map((error) => error.field).join(",");
+    const signature = [
+      parsed.ok ? "ok" : "bad",
+      draft.flowM3h,
+      draft.tInsMm,
+      draft.t0C,
+      draft.toutC,
+      draft.hOutMode,
+      draft.wind,
+      fields,
+    ].join("|");
+    if (signature === lastSignature.current) return;
+    const timer = window.setTimeout(() => {
+      lastSignature.current = signature;
+      sequence.current += 1;
+      const advanced = advancedOpen.current || advancedChanged(draft);
+      if (parsed.ok && result) {
+        const initial = Number(draft.t0C);
+        const ambient = Number(draft.toutC);
+        capture("tool_operation_result", {
+          tool_id: "pipe-thermal-analysis",
+          locale,
+          status: "completed",
+          confirmation: "client",
+          successful: true,
+          fully_completed: true,
+          sequence: sequence.current,
+          first: sequence.current === 1,
+          h_out_mode: draft.hOutMode,
+          wind: draft.hOutMode === "wind" ? draft.wind : null,
+          flow_bucket: flowBucket(parsed.input.flowM3h),
+          insulation_bucket: insulationBucket(parsed.input.tInsMm),
+          delta_t_bucket: deltaTBucket(Number.isFinite(initial) ? initial : parsed.input.t0C, Number.isFinite(ambient) ? ambient : parsed.input.toutC),
+          overlay_count: overlayMm.length,
+          advanced,
+        });
+        return;
+      }
+      capture("tool_operation_result", {
+        tool_id: "pipe-thermal-analysis",
+        locale,
+        status: "invalid",
+        confirmation: "client",
+        successful: false,
+        fully_completed: false,
+        sequence: sequence.current,
+        first: sequence.current === 1,
+        validation_fields: parsed.ok ? [] : parsed.errors.map((error) => error.field),
+        advanced,
+      });
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [draft, locale, overlayMm.length, parsed, result]);
+
+  useEffect(() => {
+    const onLeave = () => {
+      if (!dirty.current || sequence.current > 0) return;
+      capture("tool_operation_result", {
+        tool_id: "pipe-thermal-analysis",
+        locale,
+        status: "abandoned",
+        confirmation: "client",
+        successful: false,
+        fully_completed: false,
+        error_code: "abandoned",
+        first: true,
+      });
+    };
+    window.addEventListener("pagehide", onLeave);
+    return () => window.removeEventListener("pagehide", onLeave);
+  }, [locale]);
 
   function num(field: PipeThermalField, unit: string, hint?: string) {
     const err = errorForField(errors, field);
@@ -111,7 +206,7 @@ export function PipeThermalWorkspace({ locale }: { locale: Locale }) {
         unit={unit}
         hint={hint}
         error={err ? fieldErrorMessage(err, locale) : undefined}
-        onChange={(value) => setDraft((prev) => ({ ...prev, [field]: value }))}
+        onChange={(value) => edit({ [field]: value })}
       />
     );
   }
@@ -135,7 +230,7 @@ export function PipeThermalWorkspace({ locale }: { locale: Locale }) {
               type="checkbox"
               className="mt-0.5 size-4 accent-signal"
               checked={draft.includePeCapacity}
-              onChange={(event) => setDraft((prev) => ({ ...prev, includePeCapacity: event.target.checked }))}
+              onChange={(event) => edit({ includePeCapacity: event.target.checked })}
             />
             <span>{copy.fields.includePeCapacity[locale]}</span>
           </label>
@@ -158,7 +253,7 @@ export function PipeThermalWorkspace({ locale }: { locale: Locale }) {
             label={copy.fields.hOutMode[locale]}
             value={draft.hOutMode}
             hint={copy.hints.hOutMode[locale]}
-            onChange={(value) => setDraft((prev) => ({ ...prev, hOutMode: value as HOutMode }))}
+            onChange={(value) => edit({ hOutMode: value as HOutMode })}
           >
             <option value="wind">{copy.modes.wind[locale]}</option>
             <option value="physics">{copy.modes.physics[locale]}</option>
@@ -169,7 +264,7 @@ export function PipeThermalWorkspace({ locale }: { locale: Locale }) {
               id="pta-wind"
               label={copy.fields.wind[locale]}
               value={draft.wind}
-              onChange={(value) => setDraft((prev) => ({ ...prev, wind: value as WindClass }))}
+              onChange={(value) => edit({ wind: value as WindClass })}
             >
               <option value="calm">{copy.wind.calm[locale]}</option>
               <option value="breeze">{copy.wind.breeze[locale]}</option>
@@ -180,7 +275,13 @@ export function PipeThermalWorkspace({ locale }: { locale: Locale }) {
           {draft.hOutMode === "manual" ? num("hManual", units.wm2k) : null}
         </FieldGroup>
 
-        <details className="pta-advanced border-t border-line pt-4">
+        <details
+          className="pta-advanced border-t border-line pt-4"
+          onToggle={(event) => {
+            advancedOpen.current = event.currentTarget.open;
+            if (event.currentTarget.open) captureOnce("pipe-advanced", "tool_feature_used", { tool_id: "pipe-thermal-analysis", locale, feature: "advanced_opened" });
+          }}
+        >
           <summary className="cursor-pointer text-small font-medium text-ink">{copy.groups.advanced[locale]}</summary>
           <div className="mt-4 grid gap-2.5">
             {num("kWater", units.mK)}
@@ -336,6 +437,11 @@ export function PipeThermalWorkspace({ locale }: { locale: Locale }) {
       </div>
     </div>
   );
+}
+
+function advancedChanged(draft: Draft): boolean {
+  const defaults = draftFromDefault();
+  return (["kWater", "muWater", "prWater", "kAir", "rhoWater", "cpWater", "rhoPe", "cpPe"] as const).some((field) => draft[field] !== defaults[field]);
 }
 
 function Kpi({

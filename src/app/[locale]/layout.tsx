@@ -11,6 +11,7 @@ import { SiteChrome } from "@/components/layout/SiteChrome";
 import { OrganizationJsonLd } from "@/components/layout/OrganizationJsonLd";
 import { allowPublicIndexing, robotsDirective } from "@/lib/indexing";
 import { Analytics } from "@vercel/analytics/next";
+import { AnalyticsRoute } from "@/components/analytics/AnalyticsRoute";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -49,6 +50,7 @@ export default async function LocaleLayout({
           {children}
         </SiteChrome>
         <OrganizationJsonLd locale={locale} />
+        <AnalyticsRoute locale={locale} />
         <Analytics />
       </body>
     </html>

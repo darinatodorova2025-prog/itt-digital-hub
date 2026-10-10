@@ -19,6 +19,8 @@ import { analysisToCsv, analysisToGeoJson, downloadText, safeFilename } from './
 import { dataRadiusForBoundary } from './lib/geometry'
 import { bbox } from '@turf/turf'
 import { analysisRadiusForSettlement, analyzeSettlement } from './services/analysis'
+import { capture, captureFeature, captureSearch } from '@/lib/analytics/client'
+import { changedLayers } from '@/lib/analytics/pipe'
 import { trackEvent } from './conference/tracking'
 import { NetworkInterestModal } from './water/NetworkInterestModal'
 import { samplesInsideBoundary, summarizeTerrain, type ElevationSample, type TerrainSummary } from './water/metrics'
@@ -105,6 +107,8 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   const polygonRequest = useRef<{ key: string; promise: Promise<GeoJSON.Geometry | undefined> } | null>(null)
   const infoButtonRef = useRef<HTMLButtonElement | null>(null)
   const infoCloseRef = useRef<HTMLButtonElement | null>(null)
+  const sessionRuns = useRef(0)
+  const seenSettlements = useRef(new Set<string>())
 
   const requestOpenPolygon = (settlement: SettlementResult) => {
     const key = settlement.ekatte ?? `${settlement.osmType}:${settlement.osmId}`
@@ -204,7 +208,9 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       setSearchLoading(true)
       setSearchError(null)
       try {
-        setSearchResults(await searchSettlements(query, controller.signal, locale))
+        const results = await searchSettlements(query, controller.signal, locale)
+        setSearchResults(results)
+        captureSearch(results.length, query.trim().length, locale)
       } catch (error) {
         if (controller.signal.aborted) return
         if (error instanceof SettlementSearchError) {
@@ -234,6 +240,15 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   }
 
   const handleSelect = (settlement: SettlementResult) => {
+    capture('sa_settlement_selected', {
+      tool_id: 'settlement-analyzer',
+      locale,
+      ...(settlement.ekatte ? { ekatte: settlement.ekatte } : {}),
+      settlement_name: settlement.name,
+      municipality: settlement.municipality,
+      region: settlement.region,
+      data_source: catalogHas(packCatalog, settlement.ekatte) ? 'pack' : 'overpass',
+    })
     setSelected(settlement)
     setQuery(settlement.name)
     setSearchResults([])
@@ -245,6 +260,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   }
 
   const handleSelectPack = (item: PackCatalogItem) => {
+    capture('sa_pack_selected', { tool_id: 'settlement-analyzer', locale, ekatte: item.ekatte, data_source: 'pack' })
     const settlement = settlementByEkatte(item.ekatte)
     if (settlement) handleSelect(settlement)
   }
@@ -333,6 +349,15 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       }
     }
     onAnalysisStarted?.(analysisCount >= 1)
+    const startedAt = Date.now()
+    const dataSource = catalogHas(packCatalog, selected.ekatte) ? 'pack' : 'overpass'
+    capture('tool_operation_started', {
+      tool_id: 'settlement-analyzer',
+      locale,
+      data_source: dataSource,
+      mode,
+      ...(selected.ekatte ? { ekatte: selected.ekatte } : {}),
+    })
     if (activeRunId.current) settleActive('cancelled', 'replaced', 'cancelled')
     abortReason.current = null
     analysisAbort.current?.abort()
@@ -391,6 +416,29 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       setStage('metrics')
       setResult(analysis)
       onAnalysisCompleted?.(analysis)
+      const settlementKey = selected.ekatte || `${selected.osmType}:${selected.osmId}`
+      const repeat = seenSettlements.current.has(settlementKey)
+      seenSettlements.current.add(settlementKey)
+      sessionRuns.current += 1
+      capture('tool_operation_result', {
+        tool_id: 'settlement-analyzer',
+        locale,
+        status: 'completed',
+        confirmation: 'client',
+        successful: true,
+        fully_completed: true,
+        duration_ms: Date.now() - startedAt,
+        latency_ms: Date.now() - startedAt,
+        data_source: analysis.dataSource,
+        mode,
+        sequence: sessionRuns.current,
+        first: sessionRuns.current === 1,
+        is_repeat: repeat,
+        ...(selected.ekatte ? { ekatte: selected.ekatte } : {}),
+        settlement_name: selected.name,
+        municipality: selected.municipality,
+        region: selected.region,
+      })
       if (selected.ekatte) {
         void fetchUrbanizedParcels(selected.ekatte, controller.signal).then((parcels) => {
           if (analysisAbort.current !== controller) return
@@ -441,7 +489,22 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
         setStage('idle')
         setLastFailure('analysis')
       }
-      settleActive('failure', tooLarge ? 'too_large' : timedOut ? 'timeout' : aborted ? 'aborted' : 'unexpected', tooLarge ? 'rejected' : timedOut ? 'timeout' : 'upstream')
+      const errorCode = tooLarge ? 'too_large' : timedOut ? 'timeout' : aborted ? 'aborted' : 'unexpected'
+      capture('tool_operation_result', {
+        tool_id: 'settlement-analyzer',
+        locale,
+        status: 'failed',
+        confirmation: 'client',
+        successful: false,
+        fully_completed: false,
+        error_code: errorCode,
+        duration_ms: Date.now() - startedAt,
+        latency_ms: Date.now() - startedAt,
+        data_source: dataSource,
+        mode,
+        ...(selected.ekatte ? { ekatte: selected.ekatte } : {}),
+      })
+      settleActive('failure', errorCode, tooLarge ? 'rejected' : timedOut ? 'timeout' : 'upstream')
     } finally {
       window.clearTimeout(timeout)
     }
@@ -503,6 +566,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       setResult(analyzeSettlement(selected, currentRaw, boundary))
       setEditedBoundary(null)
       setStage('complete')
+      captureFeature('settlement-analyzer', 'boundary_recalculated', { locale })
     } catch {
       setEditing(true)
       setStage('complete')
@@ -513,12 +577,14 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
   const exportCsv = () => {
     if (!result) return
     onFeatureUsed?.('export_csv')
+    captureFeature('settlement-analyzer', 'export_csv', { locale })
     const suffix = locale === 'en' ? 'analysis' : 'анализ'
     downloadText(analysisToCsv(result, locale), `${safeFilename(result.settlement.name)}-${suffix}.csv`, 'text/csv;charset=utf-8')
   }
   const exportGeoJson = () => {
     if (!result) return
     onFeatureUsed?.('export_geojson')
+    captureFeature('settlement-analyzer', 'export_geojson', { locale })
     const suffix = locale === 'en' ? 'analysis' : 'анализ'
     downloadText(JSON.stringify(analysisToGeoJson(result, locale), null, 2), `${safeFilename(result.settlement.name)}-${suffix}.geojson`, 'application/geo+json;charset=utf-8')
   }
@@ -608,7 +674,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
         ) : null}
         <div className="mode-bar" role="tablist" aria-label={waterText(locale).modesLabel}>
           {WATER_CONTEXTS.map((item) => (
-            <button key={item} type="button" role="tab" aria-selected={mode === item} className={mode === item ? 'mode-bar__item mode-bar__item--active' : 'mode-bar__item'} onClick={() => { setMode(item); setVisible(layersForMode(item)) }}>
+            <button key={item} type="button" role="tab" aria-selected={mode === item} className={mode === item ? 'mode-bar__item mode-bar__item--active' : 'mode-bar__item'} onClick={() => { if (item !== mode) capture('sa_mode_changed', { tool_id: 'settlement-analyzer', locale, mode: item }); setMode(item); setVisible(layersForMode(item)) }}>
               {waterText(locale).modes[item]}
             </button>
           ))}
@@ -618,7 +684,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
       <main className={`workspace ${result ? 'workspace--with-results' : ''}`}>
         <section className="map-region" aria-label={copy.mapRegion}>
           <ClientMap locale={locale} selected={selected} result={result} visible={visible} editing={editing} cadastre={cadastreParcels} terrain={terrain} terrainStyleMode={terrainStyle(mode)} onBoundaryEdited={handleBoundaryEdited} />
-          <LayerPanel locale={locale} terrainLabel={waterText(locale).terrainLayer} visible={visible} onChange={setVisible} collapsed={layersCollapsed} onToggleCollapsed={() => setLayersCollapsed((value) => !value)} />
+          <LayerPanel locale={locale} terrainLabel={waterText(locale).terrainLayer} visible={visible} onChange={(next) => { for (const change of changedLayers(visible, next)) capture('sa_layer_changed', { tool_id: 'settlement-analyzer', locale, layer: change.layer, enabled: change.enabled }); setVisible(next) }} collapsed={layersCollapsed} onToggleCollapsed={() => setLayersCollapsed((value) => !value)} />
           {analyzing && <div className="analysis-overlay" role="status" aria-live="polite"><span className="analysis-loader" /><strong>{copy.stages[stage] ?? ''}</strong></div>}
           {downloading && downloadProgress ? (
             <div className="analysis-overlay" role="status" aria-live="polite">
@@ -642,7 +708,7 @@ function App({ locale, ownerMode = false, analysisCount = 0, onAnalysisStarted, 
             terrainState={terrainState}
             editing={editing}
             cadastreLoaded={Boolean(cadastreParcels && cadastreParcels.features.length > 0)}
-            onOpenNetwork={() => { setNetworkOpen(true); void trackEvent('network_upload_modal_open') }}
+            onOpenNetwork={() => { setNetworkOpen(true); void trackEvent('network_upload_modal_open'); captureFeature('settlement-analyzer', 'network_interest', { locale }) }}
             onStartEditing={startEditing}
             onCancelEditing={cancelEditing}
             onRecalculate={recalculate}

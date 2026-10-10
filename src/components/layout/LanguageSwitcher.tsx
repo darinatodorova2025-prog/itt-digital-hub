@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { locales, type Locale, localeLabels } from "@/lib/i18n";
 import { switchLocalePath } from "@/lib/paths";
 import { cn } from "@/lib/cn";
+import { capture } from "@/lib/analytics/client";
 import { clearLocationHash, scrollToDocumentTop, setManualScrollRestoration } from "@/lib/scroll-to-top";
 
 /**
@@ -87,7 +88,10 @@ export function LanguageSwitcher({
                 hrefLang={localeLabels[loc].htmlLang}
                 lang={localeLabels[loc].htmlLang}
                 scroll
-                onClick={prepareLocaleSwitchTop}
+                onClick={() => {
+                  prepareLocaleSwitchTop();
+                  capture("locale_switched", { from_locale: current, to_locale: loc });
+                }}
                 className={cn(
                   "transition-colors duration-150",
                   dark ? "text-on-dark-muted hover:text-on-dark" : "text-ink-3 hover:text-ink",

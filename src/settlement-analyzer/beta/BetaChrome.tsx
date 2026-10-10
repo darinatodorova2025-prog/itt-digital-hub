@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import Link from "next/link"
 import type { Locale } from "@/lib/i18n"
 import { href } from "@/lib/paths"
+import { capture, captureFeature } from "@/lib/analytics/client"
 import { SURVEY_DRAFT_STORAGE_KEY, VISITOR_STORAGE_KEY } from "./config"
 import { betaCopy } from "./copy"
 import { emptySurveyAnswers, positiveBusinessInterest } from "./decisions"
@@ -75,10 +76,17 @@ export function useBetaChrome(locale: Locale, privilegedHint: boolean, enabled =
       window.sessionStorage.setItem("sa_beta_feedback_seen", "1")
       setLocalSeen(true)
       void post({ action: "survey", surveyAction: "impression" })
+      capture("sa_feedback_prompt", { tool_id: "settlement-analyzer", locale, step: "shown" })
     }
-    if (dialog === "limit") void post({ action: "event", eventName: "trial_limit_modal_shown" })
-    if (dialog === "survey") void post({ action: "survey", surveyAction: "start" })
-  }, [dialog, post])
+    if (dialog === "limit") {
+      void post({ action: "event", eventName: "trial_limit_modal_shown" })
+      capture("sa_trial_limit", { tool_id: "settlement-analyzer", locale, step: "shown" })
+    }
+    if (dialog === "survey") {
+      void post({ action: "survey", surveyAction: "start" })
+      capture("sa_survey", { tool_id: "settlement-analyzer", locale, step: "started" })
+    }
+  }, [dialog, locale, post])
 
   const remember = (next: SurveyAnswers) => {
     setAnswers(next)
@@ -159,8 +167,8 @@ export function useBetaChrome(locale: Locale, privilegedHint: boolean, enabled =
       {dialog === "invite" ? (
         <Notice title={copy.inviteTitle} paragraphs={copy.inviteBody} disclosure={copy.disclosure}>
           <button type="button" className="button button--primary" onClick={openSurvey}>{copy.giveFeedback}</button>
-          <button type="button" className="button" onClick={() => { void post({ action: "survey", surveyAction: "dismiss" }); setDialog(null) }}>{copy.continueTrial}</button>
-          <button type="button" className="sa-beta-text-button" onClick={() => { void post({ action: "survey", surveyAction: "claim" }); setDialog(null) }}>{copy.alreadyCompleted}</button>
+          <button type="button" className="button" onClick={() => { void post({ action: "survey", surveyAction: "dismiss" }); capture("sa_survey", { tool_id: "settlement-analyzer", locale, step: "dismissed" }); setDialog(null) }}>{copy.continueTrial}</button>
+          <button type="button" className="sa-beta-text-button" onClick={() => { void post({ action: "survey", surveyAction: "claim" }); capture("sa_survey", { tool_id: "settlement-analyzer", locale, step: "claimed" }); setDialog(null) }}>{copy.alreadyCompleted}</button>
         </Notice>
       ) : null}
       {dialog === "complete" ? (
@@ -172,7 +180,7 @@ export function useBetaChrome(locale: Locale, privilegedHint: boolean, enabled =
       {dialog === "limit" ? (
         <Notice title={copy.limitTitle} paragraphs={copy.limitBody}>
           {!verified ? <button type="button" className="button button--primary" onClick={openSurvey}>{copy.giveFeedback}</button> : null}
-          {verified && positiveBusinessInterest(interest) ? <Link className="button" href={href(locale, "work-with-us")}>{copy.contactCta}</Link> : null}
+          {verified && positiveBusinessInterest(interest) ? <Link className="button" href={href(locale, "work-with-us")} onClick={() => captureFeature("settlement-analyzer", "contact", { locale, surface: "trial_limit" })}>{copy.contactCta}</Link> : null}
           <button type="button" className="button" onClick={() => setDialog(null)}>{copy.close}</button>
         </Notice>
       ) : null}
@@ -192,6 +200,7 @@ export function useBetaChrome(locale: Locale, privilegedHint: boolean, enabled =
           onClose={(step) => {
             setSurveyStep(Math.max(0, step - 1))
             void post({ action: "survey", surveyAction: "abandon", step })
+            capture("sa_survey", { tool_id: "settlement-analyzer", locale, step: "abandoned" })
             setDialog(null)
           }}
           onComplete={async () => {
@@ -203,6 +212,7 @@ export function useBetaChrome(locale: Locale, privilegedHint: boolean, enabled =
               setSurveyError(copy.sendFailed)
               return false
             }
+            capture("sa_survey", { tool_id: "settlement-analyzer", locale, step: "completed" })
             window.sessionStorage.removeItem(SURVEY_DRAFT_STORAGE_KEY)
             return true
           }}

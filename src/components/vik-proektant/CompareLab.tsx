@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { track } from "@vercel/analytics";
+import { beginTrackedOperation, capture, captureFeature } from "@/lib/analytics/client";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 import { comparisonExamples, customScenarioGuide, scenarioGuides, vikProektant as copy, type ExampleId } from "@/content/vik-proektant";
@@ -79,10 +80,11 @@ export function CompareLab({ locale, modelLabel }: { locale: Locale; modelLabel:
     const selected = exampleId && comparisonExamples.some((item) => item.id === exampleId && item.prompt[locale] === prompt) ? exampleId : null;
     track(selected ? "selected_example_prompt" : "custom_prompt_used", selected ? { example: selected } : {});
     track("comparison_started", { example: selected ?? "custom" });
+    const tracked = beginTrackedOperation("vik-proektant", prompt, { locale, mode: "comparison", example_id: selected ?? "custom" });
     try {
       const response = await fetch("/api/vik-proektant/compare", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...tracked.headers },
         body: JSON.stringify({ prompt, locale, exampleId: selected }),
       });
       const body = (await response.json()) as Payload;
@@ -106,6 +108,17 @@ export function CompareLab({ locale, modelLabel }: { locale: Locale; modelLabel:
     } catch {
       setFormError("upstream");
       track("comparison_completed", { status: "failed" });
+      capture("tool_operation_result", {
+        tool_id: "vik-proektant",
+        locale,
+        status: "failed",
+        confirmation: "client",
+        successful: false,
+        fully_completed: false,
+        error_code: "network",
+        operation_id: tracked.operationId,
+        mode: "comparison",
+      });
     } finally {
       if (evaluationGeneration.current === generation) setPending(false);
     }
@@ -124,12 +137,15 @@ export function CompareLab({ locale, modelLabel }: { locale: Locale; modelLabel:
       const body = (await response.json()) as unknown;
       if (!response.ok || !isAnswerComparison(body)) {
         setEvaluation({ status: "unavailable" });
+        captureFeature("vik-proektant", "comparison_scored", { locale, status: "failed" });
         return;
       }
       setEvaluation({ status: "ready", comparison: body });
+      captureFeature("vik-proektant", "comparison_scored", { locale, status: "completed" });
     } catch {
       if (evaluationGeneration.current !== generation) return;
       setEvaluation({ status: "unavailable" });
+      captureFeature("vik-proektant", "comparison_scored", { locale, status: "failed" });
     }
   }
 
@@ -152,7 +168,7 @@ export function CompareLab({ locale, modelLabel }: { locale: Locale; modelLabel:
             setExampleId(null);
           }}
           placeholder={text.promptPlaceholder[locale]}
-          className="mt-2 w-full resize-none overflow-hidden rounded-2xl border border-line bg-paper px-4 py-2.5 text-body text-ink outline-none focus-visible:border-signal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+          className="ph-mask mt-2 w-full resize-none overflow-hidden rounded-2xl border border-line bg-paper px-4 py-2.5 text-body text-ink outline-none focus-visible:border-signal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
         />
         <div className="mt-3">
           <p className="text-meta text-ink-3">{text.examples[locale]}</p>
@@ -169,6 +185,7 @@ export function CompareLab({ locale, modelLabel }: { locale: Locale; modelLabel:
                     if (example.id !== exampleId || nextPrompt !== prompt) dropComparison();
                     setExampleId(example.id);
                     setPrompt(nextPrompt);
+                    captureFeature("vik-proektant", "example_selected", { locale, example_id: example.id });
                   }}
                   className={cn(
                     "relative min-h-11 rounded-xl border px-3 py-2 text-left text-small text-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal",
@@ -415,7 +432,13 @@ function SourceList({ sources }: { sources: PublicSource[] }) {
           <p className="text-ink">
             <span className="text-ink-3">[{index + 1}] </span>
             {source.url ? (
-              <a href={source.url} target="_blank" rel="noopener noreferrer" className="underline decoration-line-strong underline-offset-2">
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-line-strong underline-offset-2"
+                onClick={() => captureFeature("vik-proektant", "source_opened", { source_index: index + 1, source_title: sourceLabel(source) })}
+              >
                 {sourceLabel(source)}
               </a>
             ) : (

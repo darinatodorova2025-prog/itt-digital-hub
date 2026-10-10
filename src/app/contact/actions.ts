@@ -2,6 +2,7 @@
 
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { captureServerEvent } from "@/lib/analytics/server";
 import { formatContactMessage, parseContactForm } from "@/lib/contact";
 
 export type ContactActionState = {
@@ -91,5 +92,14 @@ export async function submitContact(_prev: ContactActionState, formData: FormDat
   }
 
   const sent = await deliver(text, parsed.data.name);
+  if (sent) {
+    const headerList = await headers();
+    await captureServerEvent(headerList, "contact_submitted", {
+      locale: parsed.data.locale,
+      status: "ok",
+      confirmation: "server",
+      surface: "work-with-us",
+    });
+  }
   return { status: sent ? "ok" : "error" };
 }

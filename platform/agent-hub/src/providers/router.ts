@@ -4,6 +4,7 @@ import { ProviderCallError, type ProviderCallCode } from "./errors";
 import { createGeminiProvider, type GeminiProviderOptions } from "./gemini";
 import { createMockProvider } from "./mock";
 import { createOpenRouterProvider, type OpenRouterProviderOptions } from "./openrouter";
+import { captureHubModelOutcome } from "../product-analytics";
 import type { ModelProvider, ModelProviderId, ModelRequest, ModelResponse, ModelRouter } from "./types";
 
 const FALLBACK_CODES = new Set<ProviderCallCode>(["rate_limited", "timeout", "network", "provider_error"]);
@@ -25,12 +26,25 @@ export function createModelRouter(
 ): ModelRouter {
   return {
     async complete(request) {
+      const started = performance.now();
       try {
-        return await runProvider(providers, options.log, request, request.provider, request.model, false);
+        const response = await runProvider(providers, options.log, request, request.provider, request.model, false);
+        emitHubOutcome(request, response, "completed");
+        return response;
       } catch (error) {
         const fallback = request.fallback;
-        if (!fallback || !isFallbackEligible(error)) throw error;
-        return runProvider(providers, options.log, request, fallback.provider, fallback.model, true);
+        if (!fallback || !isFallbackEligible(error)) {
+          emitHubOutcome(request, null, statusFor(error), elapsed(started), outcomeFor(error), false);
+          throw error;
+        }
+        try {
+          const response = await runProvider(providers, options.log, request, fallback.provider, fallback.model, true);
+          emitHubOutcome(request, response, "completed");
+          return response;
+        } catch (fallbackError) {
+          emitHubOutcome(request, null, statusFor(fallbackError), elapsed(started), outcomeFor(fallbackError), true);
+          throw fallbackError;
+        }
       }
     },
   };
@@ -108,6 +122,34 @@ function logCall(log: Logger | undefined, request: ModelRequest, response: Model
     ...(response.upstreamProvider ? { upstreamProvider: response.upstreamProvider } : {}),
     ...(outcome !== "ok" ? { errorCode: outcome } : {}),
   });
+}
+
+function emitHubOutcome(
+  request: ModelRequest,
+  response: ModelResponse | null,
+  status: "completed" | "failed" | "rate_limited",
+  durationMs?: number,
+  errorCode?: string,
+  fallback?: boolean,
+): void {
+  const cost = response?.usage?.cost;
+  captureHubModelOutcome({
+    agentId: request.call?.agentId,
+    requestId: request.call?.requestId,
+    status,
+    provider: response?.provider ?? request.provider,
+    model: response?.model ?? request.model,
+    fallback: fallback ?? response?.fallbackUsed === true,
+    durationMs: response?.durationMs ?? durationMs,
+    errorCode,
+    inputTokens: response?.usage?.inputTokens,
+    outputTokens: response?.usage?.outputTokens,
+    ...(typeof cost === "number" && Number.isFinite(cost) && cost >= 0 ? { estimatedCostUsd: cost } : {}),
+  });
+}
+
+function statusFor(error: unknown): "failed" | "rate_limited" {
+  return outcomeFor(error) === "rate_limited" ? "rate_limited" : "failed";
 }
 
 function outcomeFor(error: unknown): string {
