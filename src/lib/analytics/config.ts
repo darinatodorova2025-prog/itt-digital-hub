@@ -18,30 +18,50 @@ export type ToolId = (typeof TOOL_IDS)[number];
 
 export type AppEnvironment = "production" | "preview" | "development" | "test";
 
-export function appEnvironment(env: Record<string, string | undefined> = process.env): AppEnvironment {
-  if (env.NODE_ENV === "test" || env.VITEST) return "test";
-  const raw = env.NEXT_PUBLIC_APP_ENV || env.VERCEL_ENV || env.NODE_ENV;
+/**
+ * Next.js inlines only direct `process.env.NEXT_PUBLIC_*` reads into the browser bundle.
+ * A dynamic lookup on the `process.env` object is empty in client code, so production
+ * capture must use these explicit reads. Tests pass their own env object.
+ */
+function deploymentEnv(env?: Record<string, string | undefined>): Record<string, string | undefined> {
+  if (env) return env;
+  return {
+    NODE_ENV: process.env.NODE_ENV,
+    VITEST: process.env.VITEST,
+    VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV,
+    NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
+    NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN,
+    NEXT_PUBLIC_POSTHOG_CAPTURE_DEV: process.env.NEXT_PUBLIC_POSTHOG_CAPTURE_DEV,
+    POSTHOG_CAPTURE_DEV: process.env.POSTHOG_CAPTURE_DEV,
+  };
+}
+
+export function appEnvironment(env?: Record<string, string | undefined>): AppEnvironment {
+  const source = deploymentEnv(env);
+  if (source.NODE_ENV === "test" || source.VITEST) return "test";
+  const raw = source.NEXT_PUBLIC_APP_ENV || source.VERCEL_ENV || source.NODE_ENV;
   if (raw === "production" || raw === "preview" || raw === "development") return raw;
   return "development";
 }
 
-export function posthogProjectToken(env: Record<string, string | undefined> = process.env): string | null {
-  const token = env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
+export function posthogProjectToken(env?: Record<string, string | undefined>): string | null {
+  const token = deploymentEnv(env).NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
   if (!token || !token.startsWith("phc_")) return null;
   return token;
 }
 
 /** Client events go through the same-origin proxy. Server events use the EU ingest host directly. */
-export function analyticsConfigured(env: Record<string, string | undefined> = process.env): boolean {
+export function analyticsConfigured(env?: Record<string, string | undefined>): boolean {
   return posthogProjectToken(env) !== null;
 }
 
-export function captureEnabled(env: Record<string, string | undefined> = process.env): boolean {
-  if (!analyticsConfigured(env)) return false;
+export function captureEnabled(env?: Record<string, string | undefined>): boolean {
+  const source = deploymentEnv(env);
+  if (!posthogProjectToken(env)) return false;
   const environment = appEnvironment(env);
   if (environment === "test") return false;
   if (environment === "development") {
-    return env.NEXT_PUBLIC_POSTHOG_CAPTURE_DEV === "1" || env.POSTHOG_CAPTURE_DEV === "1";
+    return source.NEXT_PUBLIC_POSTHOG_CAPTURE_DEV === "1" || source.POSTHOG_CAPTURE_DEV === "1";
   }
   return true;
 }

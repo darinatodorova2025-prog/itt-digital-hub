@@ -9,6 +9,10 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  env: {
+    // VERCEL_ENV exists at build time but is not exposed to the browser by default.
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV || "",
+  },
   reactStrictMode: true,
   poweredByHeader: false,
   outputFileTracingIncludes: {

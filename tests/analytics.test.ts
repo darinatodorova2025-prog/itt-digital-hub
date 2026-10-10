@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { campaignCookieValue, readCampaign } from "../src/lib/analytics/campaign";
 import { appEnvironment, captureEnabled, clientConfirmsOperation, toolIdFromPath } from "../src/lib/analytics/config";
@@ -16,6 +17,10 @@ describe("tools analytics", () => {
     expect(captureEnabled({ NODE_ENV: "production", VERCEL_ENV: "production" })).toBe(false);
     expect(captureEnabled({ NODE_ENV: "production", VERCEL_ENV: "production", NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_live" })).toBe(true);
     expect(captureEnabled({ NODE_ENV: "development", NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_live" })).toBe(false);
+    expect(captureEnabled({ NODE_ENV: "development", NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: "phc_live", NEXT_PUBLIC_POSTHOG_CAPTURE_DEV: "1" })).toBe(true);
+    const source = readFileSync(new URL("../src/lib/analytics/config.ts", import.meta.url), "utf8");
+    expect(source).toContain("process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN");
+    expect(source).toContain("process.env.NEXT_PUBLIC_VERCEL_ENV");
   });
 
   it("maps tool routes and confirms browser-finished tools on the client", () => {
