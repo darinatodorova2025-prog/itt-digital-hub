@@ -1383,12 +1383,26 @@
   line-height: 1.4;
 }
 
+.md-scene-collect .md-live-metrics {
+  width: fit-content;
+  margin-top: clamp(1.2rem, 2.6vh, 2rem);
+  padding: 0.45rem 1.25rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(48, 54, 66, 0.72);
+  gap: clamp(1.5rem, 2.8vw, 2.6rem);
+}
+
 .md-scene-collect .md-live-metrics strong {
   font-size: clamp(4.4rem, 7vw, 6.8rem);
 }
 
 .md-scene-collect .md-live-metrics span {
-  font-size: clamp(1.2rem, 1.55vw, 1.55rem);
+  display: block;
+  margin-top: 0.35rem;
+  color: #f4f6fb;
+  font-size: clamp(1.65rem, 2.15vw, 2.2rem);
+  font-weight: 650;
+  line-height: 1.15;
 }
 
 .md-scene-night {
