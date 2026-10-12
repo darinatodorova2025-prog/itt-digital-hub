@@ -19,14 +19,15 @@ export async function getAdminData(input: { period: AdminPeriod; campaign: strin
     throw new StoreUnavailableError("Административният преглед изисква допълнителна сървърна конфигурация.");
   }
   const supabase = createSupabaseServiceClient();
-  const [visitors, sessions, runs, leads, surveys] = await Promise.all([
+  const [visitors, sessions, runs, leads, surveys, events] = await Promise.all([
     supabase.from("sa_beta_visitors").select("id, first_seen_at, last_seen_at, utm_source, utm_campaign, utm_content, survey_status, survey_started_at, survey_completed_at, survey_version").order("last_seen_at", { ascending: false }).limit(ROW_LIMIT),
     supabase.from("sa_beta_sessions").select("visitor_id, started_at").order("started_at", { ascending: false }).limit(ROW_LIMIT),
     supabase.from("sa_beta_analysis_runs").select("visitor_id, status, settlement_name, started_at, completed_at, counts_toward_trial, layers, error_category").order("created_at", { ascending: false }).limit(ROW_LIMIT),
     supabase.from("sa_beta_leads").select("id, visitor_id, business_interest, name, organisation, email, phone, role, organisation_work_frequency, intended_use_cases, requested_capabilities, what_they_want_to_discuss, acquisition_source, utm_campaign, created_at").order("created_at", { ascending: false }).limit(ROW_LIMIT),
     supabase.from("sa_beta_survey_responses").select("visitor_id, status, started_at, completed_at, survey_version, answers").order("completed_at", { ascending: false }).limit(ROW_LIMIT),
+    supabase.from("sa_beta_events").select("visitor_id, event_name, created_at, metadata").in("event_name", ["beta_feedback_started", "survey_completed"]).order("created_at", { ascending: false }).limit(ROW_LIMIT),
   ]);
-  const failed = [visitors.error, sessions.error, runs.error, leads.error, surveys.error].find(Boolean);
+  const failed = [visitors.error, sessions.error, runs.error, leads.error, surveys.error, events.error].find(Boolean);
   if (failed) throw new StoreUnavailableError("Административният преглед изисква допълнителна сървърна конфигурация.");
   const now = new Date();
   return buildAdminSnapshot({
@@ -62,11 +63,17 @@ export async function getAdminData(input: { period: AdminPeriod; campaign: strin
       surveyVersion: row.survey_version,
       answers: row.answers,
     })),
+    events: ((events.data ?? []) as EventDb[]).map((row) => ({
+      visitorId: row.visitor_id,
+      eventName: row.event_name,
+      createdAt: row.created_at,
+      businessInterest: interestFromMetadata(row.metadata),
+    })),
     period: input.period,
     campaign: input.campaign,
     now,
     generatedAt: now.toISOString(),
-    truncated: [visitors.data, sessions.data, runs.data, leads.data, surveys.data].some((rows) => (rows?.length ?? 0) >= ROW_LIMIT),
+    truncated: [visitors.data, sessions.data, runs.data, leads.data, surveys.data, events.data].some((rows) => (rows?.length ?? 0) >= ROW_LIMIT),
     locale: input.locale,
   });
 }
@@ -113,6 +120,19 @@ type LeadDb = {
   acquisition_source: string | null
   utm_campaign: string | null
   created_at: string
+}
+
+type EventDb = {
+  visitor_id: string
+  event_name: string
+  created_at: string
+  metadata: unknown
+}
+
+function interestFromMetadata(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object") return null;
+  const value = (metadata as { businessInterest?: unknown }).businessInterest;
+  return value === "discuss" || value === "info" || value === "not_now" ? value : null;
 }
 
 type SurveyDb = {

@@ -100,6 +100,14 @@ export type SurveyRecord = {
 
 export type RankedLabel = { label: string; count: number }
 
+export type SeriesGrain = "day" | "week"
+
+export type ActivityPoint = {
+  key: string
+  sessions: number
+  analyses: number
+}
+
 export type AdminSnapshot = {
   generatedAt: string
   latestEventAt: string | null
@@ -128,6 +136,7 @@ export type AdminSnapshot = {
     topUseCase: RankedLabel | null
     topPain: RankedLabel | null
     topCapability: RankedLabel | null
+    notNowWithoutAnswers: number
     single: {
       usefulness: number | null
       useCase: string | null
@@ -144,6 +153,10 @@ export type AdminSnapshot = {
     informationRequests: number
     statuses: { high: number; medium: number; cold: number }
   }
+  series: {
+    grain: SeriesGrain
+    points: ActivityPoint[]
+  }
   survey: SurveySummary
   surveyRecords: SurveyRecord[]
   leads: AdminLead[]
@@ -154,6 +167,7 @@ export type AdminSnapshot = {
     analysesPerUser: number | null
     surveyStarted: number
     surveyCompleted: number
+    internalSuccesses: number
     settlements: RankedLabel[]
     layers: RankedLabel[]
     failedAttempts: number
@@ -218,6 +232,13 @@ type SurveyRow = {
   answers: unknown
 }
 
+type EventRow = {
+  visitorId: string
+  eventName: string
+  createdAt: string
+  businessInterest: "discuss" | "info" | "not_now" | null
+}
+
 type Bounds = { start: number | null; end: number; endInclusive: boolean }
 
 const STARTED_STATUSES = new Set(["started", "completed_verified", "already_completed_claimed"]);
@@ -238,6 +259,7 @@ export function buildAdminSnapshot(input: {
   runs: RunRow[]
   leads: LeadRow[]
   surveys: SurveyRow[]
+  events: EventRow[]
   period: AdminPeriod
   campaign: string
   now: Date
@@ -299,7 +321,7 @@ export function buildAdminSnapshot(input: {
         step("meetings", current.meetings, ratio(current.meetings, current.contacts)),
       ],
     },
-    feedback: feedbackOf(current.completed, completedAnswers, input.locale),
+    feedback: feedbackOf(current.completed, completedAnswers, current.notNowWithoutAnswers, input.locale),
     business: {
       contacts: current.contacts,
       identifiable: current.identifiable,
@@ -308,6 +330,7 @@ export function buildAdminSnapshot(input: {
       informationRequests: current.informationRequests,
       statuses: statusCounts(leads),
     },
+    series: buildSeries(input.period, input.now, bounds, current.sessionTimes, current.successTimes),
     survey,
     surveyRecords: completedAnswers.map((row) => toRecord(row, input.locale)),
     leads,
@@ -318,6 +341,7 @@ export function buildAdminSnapshot(input: {
       analysesPerUser: current.analyzedUsers > 0 ? Math.round((current.analyses / current.analyzedUsers) * 10) / 10 : null,
       surveyStarted: current.surveyStarted,
       surveyCompleted: current.surveyCompleted,
+      internalSuccesses: current.internalSuccesses,
       settlements: topLabels(current.settlements, 8),
       layers: topLabels(current.layers, 8),
       failedAttempts: current.failedAttempts,
@@ -328,7 +352,7 @@ export function buildAdminSnapshot(input: {
 }
 
 function measure(
-  input: { visitors: VisitorRow[]; sessions: SessionRow[]; runs: RunRow[]; leads: LeadRow[]; surveys: SurveyRow[]; campaign: string },
+  input: { visitors: VisitorRow[]; sessions: SessionRow[]; runs: RunRow[]; leads: LeadRow[]; surveys: SurveyRow[]; events: EventRow[]; campaign: string },
   visitors: Map<string, VisitorRow>,
   bounds: Bounds,
 ) {
@@ -353,6 +377,22 @@ function measure(
     }
   }
 
+  const completedVisitors = new Set(completed.map((row) => row.visitorId));
+  let notNowWithoutAnswers = 0;
+  for (const event of input.events) {
+    if (!allow(event.visitorId) || !inRange(event.createdAt, bounds)) continue;
+    if (event.eventName === "beta_feedback_started" || event.eventName === "survey_completed") started.add(event.visitorId);
+    if (event.eventName !== "survey_completed" || completedVisitors.has(event.visitorId)) continue;
+    completedVisitors.add(event.visitorId);
+    completed.push({
+      visitorId: event.visitorId,
+      completedAt: event.createdAt,
+      surveyVersion: null,
+      answers: null,
+    });
+    if (event.businessInterest === "not_now") notNowWithoutAnswers += 1;
+  }
+
   const sessionsByVisitor = countBy(sessions.map((session) => session.visitorId));
   const runsByVisitor = new Map<string, { count: number; settlements: string[] }>();
   const settlements = new Map<string, number>();
@@ -367,6 +407,7 @@ function measure(
     runsByVisitor.set(run.visitorId, current);
   }
 
+  const internalSuccesses = input.runs.filter((run) => allow(run.visitorId) && run.status === "success" && run.countsTowardTrial === false && inRange(runTime(run), bounds)).length;
   const active = new Set<string>(sessionsByVisitor.keys());
   for (const visitorId of runsByVisitor.keys()) active.add(visitorId);
   for (const run of publicRuns) active.add(run.visitorId);
@@ -394,6 +435,10 @@ function measure(
     sessionVisitors,
     surveyStarted: started.size,
     surveyCompleted: completed.length,
+    notNowWithoutAnswers,
+    internalSuccesses,
+    sessionTimes: sessions.map((session) => session.startedAt),
+    successTimes: successes.map((run) => runTime(run)),
     contacts: leads.length,
     meetings,
     informationRequests,
@@ -411,7 +456,7 @@ function measure(
   };
 }
 
-function feedbackOf(completed: CompletedSurvey[], withAnswers: CompletedSurvey[], locale: Locale): AdminSnapshot["feedback"] {
+function feedbackOf(completed: CompletedSurvey[], withAnswers: CompletedSurvey[], notNowWithoutAnswers: number, locale: Locale): AdminSnapshot["feedback"] {
   const scores = withAnswers.flatMap((row) => {
     const score = row.answers?.usefulness_score;
     return typeof score === "number" && score >= 1 && score <= 5 ? [score] : [];
@@ -428,6 +473,7 @@ function feedbackOf(completed: CompletedSurvey[], withAnswers: CompletedSurvey[]
     topUseCase,
     topPain,
     topCapability,
+    notNowWithoutAnswers,
     single: singleSource?.answers ? {
       usefulness: scoreOf(singleSource.answers),
       useCase: joinStored(singleSource.answers.intended_use_cases, locale, INTENDED_USE_CASES),
@@ -673,18 +719,19 @@ function isSuccessRun(run: RunRow) {
   return run.status === "success" && run.countsTowardTrial !== false;
 }
 
-function earliestTimestamp(input: { visitors: VisitorRow[]; sessions: SessionRow[]; runs: RunRow[]; leads: LeadRow[]; surveys: SurveyRow[] }) {
+function earliestTimestamp(input: { visitors: VisitorRow[]; sessions: SessionRow[]; runs: RunRow[]; leads: LeadRow[]; surveys: SurveyRow[]; events: EventRow[] }) {
   const values = timestamps(input);
   return values.length ? Math.min(...values) : null;
 }
 
-function timestamps(input: { visitors: VisitorRow[]; sessions: SessionRow[]; runs: RunRow[]; leads: LeadRow[]; surveys: SurveyRow[] }) {
+function timestamps(input: { visitors: VisitorRow[]; sessions: SessionRow[]; runs: RunRow[]; leads: LeadRow[]; surveys: SurveyRow[]; events: EventRow[] }) {
   const raw = [
     ...input.visitors.flatMap((visitor) => [visitor.firstSeenAt, visitor.lastSeenAt, visitor.surveyStartedAt, visitor.surveyCompletedAt]),
     ...input.sessions.map((session) => session.startedAt),
     ...input.runs.map((run) => runTime(run)),
     ...input.leads.map((lead) => lead.created_at),
     ...input.surveys.flatMap((row) => [row.startedAt, row.completedAt]),
+    ...input.events.map((event) => event.createdAt),
   ];
   return raw.flatMap((value) => {
     const time = value ? Date.parse(value) : Number.NaN;
@@ -849,6 +896,92 @@ function surveyTitles(locale: Locale) {
     frequency: "Колко често организацията ви работи по подобни задачи?",
     stages: "В кои етапи от работата бихте използвали подобен инструмент?",
   };
+}
+
+const DAILY_SERIES_LIMIT = 62;
+
+function buildSeries(period: AdminPeriod, now: Date, bounds: Bounds, sessionTimes: Array<string | null>, successTimes: Array<string | null>) {
+  const sessions = countDayKeys(sessionTimes);
+  const analyses = countDayKeys(successTimes);
+  const observed = [...sessions.keys(), ...analyses.keys()];
+  let keys: string[];
+  if (bounds.start != null) keys = enumerateDays(bounds.start, bounds.end);
+  else if (observed.length === 0) return { grain: "day" as const, points: [] };
+  else {
+    const endKey = dayKeyFromParts(sofiaDateParts(now));
+    const startKey = observed.reduce((min, key) => key < min ? key : min, observed[0] ?? endKey);
+    keys = enumerateDayKeys(startKey, endKey);
+  }
+  if (period === "all" && keys.length > DAILY_SERIES_LIMIT) {
+    return { grain: "week" as const, points: weekPoints(keys, sessions, analyses) };
+  }
+  return {
+    grain: "day" as const,
+    points: keys.map((key) => ({ key, sessions: sessions.get(key) ?? 0, analyses: analyses.get(key) ?? 0 })),
+  };
+}
+
+function countDayKeys(values: Array<string | null | undefined>) {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    const key = sofiaKeyFromIso(value);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function enumerateDays(startMs: number, endMs: number) {
+  return enumerateDayKeys(dayKeyFromParts(sofiaDateParts(new Date(startMs))), dayKeyFromParts(sofiaDateParts(new Date(endMs))));
+}
+
+function enumerateDayKeys(startKey: string, endKey: string) {
+  const keys: string[] = [];
+  let cursor = parseDayKey(startKey);
+  for (let guard = 0; guard < 800; guard += 1) {
+    const key = dayKeyFromParts(cursor);
+    keys.push(key);
+    if (key >= endKey) break;
+    cursor = addUtcDays(cursor.year, cursor.month, cursor.day, 1);
+  }
+  return keys;
+}
+
+function weekPoints(keys: string[], sessions: Map<string, number>, analyses: Map<string, number>) {
+  const order: string[] = [];
+  const buckets = new Map<string, { sessions: number; analyses: number }>();
+  for (const key of keys) {
+    const week = mondayKey(key);
+    const bucket = buckets.get(week) ?? { sessions: 0, analyses: 0 };
+    if (!buckets.has(week)) order.push(week);
+    bucket.sessions += sessions.get(key) ?? 0;
+    bucket.analyses += analyses.get(key) ?? 0;
+    buckets.set(week, bucket);
+  }
+  return order.map((key) => ({ key, sessions: buckets.get(key)?.sessions ?? 0, analyses: buckets.get(key)?.analyses ?? 0 }));
+}
+
+function mondayKey(key: string) {
+  const cursor = parseDayKey(key);
+  const weekday = new Date(Date.UTC(cursor.year, cursor.month - 1, cursor.day)).getUTCDay();
+  const delta = weekday === 0 ? -6 : 1 - weekday;
+  return dayKeyFromParts(addUtcDays(cursor.year, cursor.month, cursor.day, delta));
+}
+
+function sofiaKeyFromIso(value: string | null | undefined) {
+  if (!value) return null;
+  const time = Date.parse(value);
+  if (Number.isNaN(time)) return null;
+  return dayKeyFromParts(sofiaDateParts(new Date(time)));
+}
+
+function dayKeyFromParts(parts: { year: number; month: number; day: number }) {
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
+function parseDayKey(key: string) {
+  const [year = 0, month = 0, day = 0] = key.split("-").map(Number);
+  return { year, month, day };
 }
 
 function sofiaDateParts(now: Date) {

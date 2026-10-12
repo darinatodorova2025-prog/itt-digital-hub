@@ -26,6 +26,7 @@ function snapshot(overrides: Partial<Parameters<typeof buildAdminSnapshot>[0]> =
     runs: [],
     leads: [],
     surveys: [],
+    events: [],
     period: "all",
     campaign: "",
     now,
@@ -296,5 +297,35 @@ describe("buildAdminSnapshot", () => {
     expect(result.business.anonymousInterest).toBe(1);
     expect(result.business.contacts).toBe(0);
     expect(JSON.stringify(result.surveyRecords)).not.toContain("email");
+  });
+
+  it("keeps staff successes out of the public series and counts a completion that has no stored answers", () => {
+    const result = snapshot({
+      period: "7d",
+      visitors: [visitor("public"), visitor("staff")],
+      sessions: [
+        { visitorId: "public", startedAt: "2026-10-10T08:00:00.000Z" },
+        { visitorId: "staff", startedAt: "2026-10-09T08:00:00.000Z" },
+      ],
+      runs: [
+        { visitorId: "public", status: "success", settlementName: "Стара Загора", startedAt: "2026-10-10T08:00:00.000Z", completedAt: "2026-10-10T08:05:00.000Z", countsTowardTrial: true, layers: ["roads"], errorCategory: null },
+        { visitorId: "staff", status: "success", settlementName: "Пловдив", startedAt: "2026-10-09T08:00:00.000Z", completedAt: "2026-10-09T08:05:00.000Z", countsTowardTrial: false, layers: ["roads"], errorCategory: null },
+      ],
+      events: [
+        { visitorId: "public", eventName: "beta_feedback_started", createdAt: "2026-10-10T08:10:00.000Z", businessInterest: null },
+        { visitorId: "public", eventName: "survey_completed", createdAt: "2026-10-10T08:12:00.000Z", businessInterest: "not_now" },
+      ],
+    });
+    expect(result.kpis.analyses.value).toBe(1);
+    expect(result.kpis.analyzedUsers.value).toBe(1);
+    expect(result.activity.internalSuccesses).toBe(1);
+    expect(result.funnels.survey.map((step) => step.count)).toEqual([1, 1]);
+    expect(result.feedback.withAnswers).toBe(0);
+    expect(result.feedback.notNowWithoutAnswers).toBe(1);
+    expect(result.series.grain).toBe("day");
+    expect(result.series.points).toHaveLength(7);
+    expect(result.series.points.find((point) => point.key === "2026-10-10")).toMatchObject({ sessions: 1, analyses: 1 });
+    expect(result.series.points.find((point) => point.key === "2026-10-09")).toMatchObject({ sessions: 1, analyses: 0 });
+    expect(result.series.points.every((point) => point.analyses === 0 || point.key === "2026-10-10")).toBe(true);
   });
 });

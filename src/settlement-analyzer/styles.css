@@ -372,15 +372,43 @@ td:first-child { min-width: 125px; }
 .admin-kpi strong { font-size: 28px; line-height: 1; letter-spacing: -.03em; }
 .admin-kpi em, .admin-previous { color: var(--sa-ink-3); font-size: 12px; font-style: normal; line-height: 1.35; }
 .admin-card { margin-bottom: 0; padding: 12px 14px; background: #fff; border: 1px solid var(--sa-line); border-radius: 8px; }
+.usage-chart { margin: 0 0 10px; padding: 12px 14px 10px; background: #fff; border: 1px solid var(--sa-line); border-radius: 8px; }
+.usage-chart h2, .mini-funnel h2, .admin-summary h2, .activity-tab h3, .survey-records h3 { margin: 0 0 8px; font-size: 14px; }
+.usage-chart h2, .mini-funnel h2 { margin-bottom: 0; }
+.usage-chart-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-bottom: 8px; }
+.usage-chart-head p { margin: 0; color: var(--sa-ink-3); font-size: 12px; }
+.usage-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 0; padding: 0; list-style: none; color: var(--sa-ink-2); font-size: 12px; font-weight: 600; }
+@media (min-width: 800px) {
+  .usage-legend { margin-left: auto; }
+}
+.usage-legend li { display: flex; align-items: center; gap: 6px; }
+.usage-legend i { width: 12px; height: 8px; border-radius: 99px; }
+.legend-sessions { background: color-mix(in srgb, var(--sa-marine) 28%, white); }
+.legend-analyses { height: 3px; background: var(--sa-signal); }
+.usage-plot { position: relative; height: 188px; }
+.usage-axis { position: absolute; inset: 0 0 0 0; display: flex; justify-content: space-between; color: var(--sa-ink-3); font-size: 11px; pointer-events: none; }
+.usage-plot svg { position: absolute; inset: 0 0 0 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.usage-plot polyline { fill: none; stroke: var(--sa-signal); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.usage-cols { position: absolute; inset: 0; display: flex; align-items: stretch; gap: 3px; }
+.usage-cols button { position: relative; flex: 1; min-width: 0; border: 0; background: transparent; padding: 0; cursor: pointer; }
+.usage-cols button.is-active, .usage-cols button:focus-visible { background: color-mix(in srgb, var(--sa-signal) 8%, transparent); outline: none; }
+.usage-bar { position: absolute; left: 18%; right: 18%; bottom: 0; border-radius: 3px 3px 0 0; background: color-mix(in srgb, var(--sa-marine) 28%, white); }
+.usage-dot { position: absolute; left: 50%; width: 7px; height: 7px; margin-left: -3.5px; border: 2px solid #fff; border-radius: 50%; background: var(--sa-signal); transform: translateY(50%); }
+.usage-tooltip { position: absolute; z-index: 2; top: 8px; transform: translateX(-50%); display: grid; gap: 2px; min-width: 140px; margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--sa-marine); color: #fff; font-size: 12px; line-height: 1.35; pointer-events: none; }
+.usage-tooltip strong { font-size: 12px; }
+.usage-labels { display: flex; gap: 3px; margin-top: 4px; color: var(--sa-ink-3); font-size: 10px; }
+.usage-labels span { flex: 1; min-width: 0; text-align: center; white-space: nowrap; }
 .admin-funnels { display: grid; grid-template-columns: 1.35fr .85fr .8fr; gap: 10px; }
-.mini-funnel h2, .admin-summary h2, .activity-tab h3, .survey-records h3 { margin: 0 0 8px; font-size: 14px; }
-.mini-steps { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.mini-steps li { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mini-funnel { padding: 12px 14px; background: #fff; border: 1px solid var(--sa-line); border-radius: 8px; }
+.mini-funnel h2 { margin-bottom: 10px; }
+.mini-steps { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mini-steps li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: baseline; }
 .mini-steps span, .mini-label { color: var(--sa-ink-3); font-size: 12px; font-weight: 600; }
-.mini-label { display: flex; align-items: center; gap: 4px; }
-.mini-steps strong { display: flex; align-items: baseline; gap: 6px; font-size: 20px; line-height: 1.1; }
+.mini-label { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.mini-steps strong { display: flex; align-items: baseline; justify-content: flex-end; gap: 6px; font-size: 16px; line-height: 1.1; }
 .mini-steps strong em { color: var(--sa-ink-3); font-size: 12px; font-style: normal; font-weight: 600; }
-.mini-steps i { display: block; height: 4px; margin: 4px 0; border-radius: 99px; background: var(--sa-signal); }
+.mini-track { grid-column: 1 / -1; height: 8px; overflow: hidden; border-radius: 99px; background: var(--sa-tint); }
+.mini-track i { display: block; height: 100%; border-radius: inherit; background: var(--sa-signal); }
 .admin-hint { position: relative; border: 0; background: transparent; color: var(--sa-signal); font-size: 12px; font-weight: 700; cursor: help; padding: 0; text-align: left; }
 .admin-hint--mark { width: 16px; height: 16px; border-radius: 50%; background: var(--sa-tint); color: var(--sa-ink-2); font-size: 11px; font-weight: 700; }
 .admin-hint span[role="tooltip"] { display: none; position: absolute; z-index: 8; left: 0; bottom: calc(100% + 6px); width: min(260px, 70vw); padding: 8px 10px; border-radius: 8px; background: var(--sa-marine); color: #fff; font-size: 12px; font-weight: 500; line-height: 1.4; text-align: left; }
@@ -458,7 +486,8 @@ td:first-child { min-width: 125px; }
 .lead-status--high { background: #e8edff; color: #040e31; }
 .lead-status--medium { background: #fff4dc; color: #8a5b05; }
 .lead-status--cold { background: var(--sa-paper); color: var(--sa-ink-3); }
-.admin-empty { padding: 32px; text-align: center; color: var(--sa-ink-3); font-size: 13px; }
+.admin-empty { margin: 0; padding: 8px 0; text-align: left; color: var(--sa-ink-3); font-size: 13px; }
+.admin-empty--compact { padding: 0; }
 .admin-login { min-height: calc(100svh - 5.5rem - 62px); display: grid; place-items: center; padding: 32px 16px; }
 .admin-error { max-width: 600px; margin: 100px auto; padding: 30px; text-align: center; }
 .admin-error h1 { font-size: 25px; }

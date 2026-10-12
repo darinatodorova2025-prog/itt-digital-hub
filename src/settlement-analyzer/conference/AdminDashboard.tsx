@@ -6,7 +6,7 @@ import { ChevronRight, Search, X } from 'lucide-react'
 import type { Locale } from '@/lib/i18n'
 import { SOFIA_TIME_ZONE } from '../beta/config'
 import { adminCopy, type AdminCopy } from './admin-copy'
-import type { AdminLead, AdminPeriod, AdminSnapshot, FunnelStep, SurveySummary } from '../server/admin-metrics'
+import type { AdminLead, AdminPeriod, AdminSnapshot, FunnelStep, SeriesGrain, SurveySummary } from '../server/admin-metrics'
 
 const UNATTRIBUTED_CAMPAIGN = '__unattributed__'
 
@@ -92,6 +92,8 @@ export function AdminDashboard({ locale, analyzerHref, adminName, privacyReady, 
           <Kpi label={copy.kpis.contacts.title} value={data.kpis.contacts.value} detail={copy.kpis.contacts.detail} hint={copy.kpis.contacts.hint} previous={data.kpis.contacts.previous} copy={copy} locale={locale} />
         </section>
 
+        <UsageChart data={data} copy={copy} locale={locale} />
+
         <section className="admin-funnels" aria-label={copy.funnels.engagement}>
           <MiniFunnel title={copy.funnels.engagement} steps={data.funnels.engagement} copy={copy} locale={locale} />
           <MiniFunnel title={copy.funnels.survey} steps={data.funnels.survey} copy={copy} locale={locale} />
@@ -131,7 +133,7 @@ export function AdminDashboard({ locale, analyzerHref, adminName, privacyReady, 
             ))}
           </div>
           <div className="admin-tabpanel" role="tabpanel" id={`admin-panel-${tab}`} aria-labelledby={`admin-tab-${tab}`}>
-            {tab === 'feedback' && <FeedbackTab survey={data.survey} records={data.surveyRecords} copy={copy} locale={locale} />}
+            {tab === 'feedback' && <FeedbackTab survey={data.survey} records={data.surveyRecords} feedback={data.feedback} copy={copy} locale={locale} />}
             {tab === 'contacts' && <ContactsTab leads={data.leads} copy={copy} locale={locale} />}
             {tab === 'activity' && <ActivityTab data={data} copy={copy} locale={locale} />}
           </div>
@@ -156,7 +158,7 @@ function Kpi({ label, value, detail, hint, previous, copy, locale }: { label: st
 }
 
 function MiniFunnel({ title, steps, copy, locale }: { title: string; steps: FunnelStep[]; copy: AdminCopy; locale: Locale }) {
-  const base = Math.max(steps[0]?.count ?? 0, 1)
+  const base = steps[0]?.count ?? 0
   return (
     <section className="mini-funnel">
       <h2>{title}</h2>
@@ -168,6 +170,7 @@ function MiniFunnel({ title, steps, copy, locale }: { title: string; steps: Funn
               ? `${hint} ${copy.noRateDetail}`
               : `${hint} ${formatNumber(step.ratio.numerator, locale)} / ${formatNumber(step.ratio.denominator, locale)}.`
             : hint
+          const width = base > 0 ? Math.min(100, (step.count / base) * 100) : 0
           return (
             <li key={step.id}>
               <span className="mini-label">
@@ -178,13 +181,94 @@ function MiniFunnel({ title, steps, copy, locale }: { title: string; steps: Funn
                 {formatNumber(step.count, locale)}
                 {step.ratio ? <em>{step.ratio.percent == null ? copy.noRate : formatPercent(step.ratio.percent, locale)}</em> : null}
               </strong>
-              <i style={{ width: `${Math.min(100, (step.count / base) * 100)}%` }} />
+              <span className="mini-track" aria-hidden="true"><i style={{ width: `${step.count > 0 ? Math.max(width, 4) : 0}%` }} /></span>
             </li>
           )
         })}
       </ol>
     </section>
   )
+}
+
+function UsageChart({ data, copy, locale }: { data: AdminSnapshot; copy: AdminCopy; locale: Locale }) {
+  const points = data.series.points
+  const [active, setActive] = useState<number | null>(null)
+  const maxSessions = Math.max(1, ...points.map((point) => point.sessions))
+  const maxAnalyses = Math.max(1, ...points.map((point) => point.analyses))
+  const sessionPeak = Math.max(0, ...points.map((point) => point.sessions))
+  const analysisPeak = Math.max(0, ...points.map((point) => point.analyses))
+  if (points.length === 0) {
+    return (
+      <section className="usage-chart" aria-label={copy.chartTitle}>
+        <h2>{copy.chartTitle}</h2>
+        <p className="admin-empty admin-empty--compact">{copy.chartEmpty}</p>
+      </section>
+    )
+  }
+  const line = points.map((point, index) => {
+    const x = ((index + 0.5) / points.length) * 100
+    const y = 100 - (point.analyses / maxAnalyses) * 92
+    return `${x},${y}`
+  }).join(' ')
+  const labelEvery = points.length <= 10 ? 1 : Math.ceil(points.length / 6)
+  const selected = active == null ? null : points[active]
+  return (
+    <section className="usage-chart" aria-label={copy.chartTitle}>
+      <div className="usage-chart-head">
+        <h2>{copy.chartTitle}</h2>
+        <p>{copy.chartGrain[data.series.grain]}</p>
+        <ul className="usage-legend">
+          <li><i className="legend-sessions" />{copy.chartSessions}</li>
+          <li><i className="legend-analyses" />{copy.chartAnalyses}</li>
+        </ul>
+      </div>
+      <div className="usage-plot">
+        <div className="usage-axis" aria-hidden="true">
+          <span>{formatNumber(sessionPeak, locale)}</span>
+          <span>{formatNumber(analysisPeak, locale)}</span>
+        </div>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points={line} />
+        </svg>
+        <div className="usage-cols">
+          {points.map((point, index) => (
+            <button
+              key={point.key}
+              type="button"
+              className={active === index ? 'is-active' : undefined}
+              aria-label={`${formatPoint(point.key, data.series.grain, locale)}: ${formatNumber(point.sessions, locale)} ${copy.chartSessions}, ${formatNumber(point.analyses, locale)} ${copy.chartAnalyses}`}
+              onMouseEnter={() => setActive(index)}
+              onMouseLeave={() => setActive((current) => current === index ? null : current)}
+              onFocus={() => setActive(index)}
+              onBlur={() => setActive((current) => current === index ? null : current)}
+            >
+              <span className="usage-bar" style={{ height: `${(point.sessions / maxSessions) * 100}%` }} />
+              {point.analyses > 0 && <span className="usage-dot" style={{ bottom: `${(point.analyses / maxAnalyses) * 92}%` }} />}
+            </button>
+          ))}
+        </div>
+        {selected && active != null && (
+          <p className="usage-tooltip" style={{ left: `${((active + 0.5) / points.length) * 100}%`, transform: active > points.length * 0.72 ? 'translateX(-85%)' : active < points.length * 0.12 ? 'translateX(-10%)' : 'translateX(-50%)' }}>
+            <strong>{formatPoint(selected.key, data.series.grain, locale)}</strong>
+            <span>{copy.chartSessions}: {formatNumber(selected.sessions, locale)}</span>
+            <span>{copy.chartAnalyses}: {formatNumber(selected.analyses, locale)}</span>
+          </p>
+        )}
+      </div>
+      <div className="usage-labels" aria-hidden="true">
+        {points.map((point, index) => (
+          <span key={point.key}>{index % labelEvery === 0 || index === points.length - 1 ? formatPoint(point.key, data.series.grain, locale) : ''}</span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function formatPoint(key: string, grain: SeriesGrain, locale: Locale) {
+  const [year, month, day] = key.split('-').map(Number)
+  if (!year || !month || !day) return key
+  if (locale === 'bg') return grain === 'week' ? `${day}.${String(month).padStart(2, '0')}` : `${day}.${String(month).padStart(2, '0')}`
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month - 1, day)))
 }
 
 function Hint({ text }: { text: string }) {
@@ -201,7 +285,9 @@ function FeedbackSummary({ data, copy, locale }: { data: AdminSnapshot; copy: Ad
   return (
     <section className="admin-card admin-summary">
       <h2>{copy.feedbackTitle}</h2>
-      {feedback.completed === 0 ? <p className="admin-empty">{copy.feedbackEmpty}</p> : feedback.single ? (
+      {feedback.completed === 0 ? <p className="admin-empty admin-empty--compact">{copy.feedbackEmpty}</p> : feedback.withAnswers === 0 ? (
+        <p className="summary-prose">{copy.answersUnavailable(feedback.completed, feedback.notNowWithoutAnswers)}</p>
+      ) : feedback.single ? (
         <div className="summary-prose">
           <p><strong>n = {formatNumber(feedback.completed, locale)}.</strong> {copy.usefulness}: {feedback.single.usefulness ?? copy.noScore}{feedback.single.usefulness != null ? '/5' : ''}.</p>
           <p>{copy.topUse}: {feedback.single.useCase ?? copy.noneYet}.</p>
@@ -229,7 +315,7 @@ function BusinessSummary({ data, copy }: { data: AdminSnapshot; copy: AdminCopy 
   return (
     <section className="admin-card admin-summary">
       <h2>{copy.businessTitle}</h2>
-      {empty ? <p className="admin-empty">{copy.businessEmpty}</p> : (
+      {empty ? <p className="admin-empty admin-empty--compact">{copy.businessEmpty}</p> : (
         <>
           <dl className="summary-list">
             <div><dt>{copy.kpis.contacts.title}</dt><dd>{business.contacts}</dd></div>
@@ -246,9 +332,12 @@ function BusinessSummary({ data, copy }: { data: AdminSnapshot; copy: AdminCopy 
   )
 }
 
-function FeedbackTab({ survey, records, copy, locale }: { survey: SurveySummary; records: AdminSnapshot['surveyRecords']; copy: AdminCopy; locale: Locale }) {
+function FeedbackTab({ survey, records, feedback, copy, locale }: { survey: SurveySummary; records: AdminSnapshot['surveyRecords']; feedback: AdminSnapshot['feedback']; copy: AdminCopy; locale: Locale }) {
   const [openId, setOpenId] = useState<string | null>(null)
-  if (survey.completed === 0) return <p className="admin-empty">{copy.noSurveys}</p>
+  if (survey.completed === 0) {
+    if (feedback.completed > 0 && feedback.withAnswers === 0) return <p className="admin-empty admin-empty--compact">{copy.answersUnavailable(feedback.completed, feedback.notNowWithoutAnswers)}</p>
+    return <p className="admin-empty admin-empty--compact">{copy.noSurveys}</p>
+  }
   return (
     <div className="feedback-tab">
       <p className="admin-method">
@@ -449,6 +538,7 @@ function ActivityTab({ data, copy, locale }: { data: AdminSnapshot; copy: AdminC
         <div><dt>{copy.activityItems.registrations}</dt><dd>{copy.registrationsUnavailable}</dd></div>
         <div><dt>{copy.activityItems.failures} <Hint text={copy.failureHint} /></dt><dd>{formatNumber(activity.failedAttempts, locale)}{activity.failureShare.percent == null ? '' : ` · ${formatPercent(activity.failureShare.percent, locale)} ${copy.ofFinished}`}</dd></div>
         <div><dt>{copy.activityItems.unfinished}</dt><dd>{formatNumber(activity.unfinishedAttempts, locale)}</dd></div>
+        <div><dt>{copy.activityItems.internal} <Hint text={copy.internalHint} /></dt><dd>{formatNumber(activity.internalSuccesses, locale)}</dd></div>
       </dl>
       <div className="activity-columns">
         <section>
