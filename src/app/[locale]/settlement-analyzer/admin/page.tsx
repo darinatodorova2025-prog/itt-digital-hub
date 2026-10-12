@@ -3,13 +3,15 @@ import { href } from "@/lib/paths";
 import { loginAction } from "@/app/admin/actions";
 import { isAdminSession } from "@/settlement-analyzer/server/admin-auth";
 import { getAdminData } from "@/settlement-analyzer/server/admin-data";
+import type { AdminPeriod } from "@/settlement-analyzer/server/admin-metrics";
 import { privacyConfig } from "@/settlement-analyzer/server/config";
 import { AdminDashboard } from "@/settlement-analyzer/conference/AdminDashboard";
+import { adminCopy } from "@/settlement-analyzer/conference/admin-copy";
 import { sa } from "@/settlement-analyzer/copy";
 
 type Params = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ error?: string | string[] }>;
+  searchParams: Promise<{ error?: string | string[]; range?: string | string[]; campaign?: string | string[] }>;
 };
 
 function readableError(value: string | string[] | undefined) {
@@ -30,7 +32,13 @@ export default async function SettlementAnalyzerAdminPage({ params, searchParams
     return <SettlementAdminLogin locale={locale} error={readableError(query.error)} />;
   }
   const copy = sa(locale);
-  const data = await getAdminData().catch(() => null);
+  const text = adminCopy(locale);
+  const query = await searchParams;
+  const data = await getAdminData({
+    period: parsePeriod(one(query.range)),
+    campaign: cleanCampaign(one(query.campaign)),
+    locale,
+  }).catch(() => null);
   if (!data) {
     return (
       <main className="admin-page">
@@ -39,8 +47,8 @@ export default async function SettlementAnalyzerAdminPage({ params, searchParams
           <strong>{copy.admin}</strong>
         </div>
         <section className="admin-error">
-          <h1>Данните временно не могат да бъдат заредени</h1>
-          <p>Административният преглед на регистрациите е наличен след допълнителна сървърна конфигурация. Самият анализатор работи независимо от този екран.</p>
+          <h1>{text.loadErrorTitle}</h1>
+          <p>{text.loadErrorBody}</p>
           <a className="button button--primary" href={href(locale, "settlement-analyzer")}>{copy.name}</a>
         </section>
       </main>
@@ -48,11 +56,25 @@ export default async function SettlementAnalyzerAdminPage({ params, searchParams
   }
   return (
     <AdminDashboard
-      {...data}
+      locale={locale}
+      analyzerHref={href(locale, "settlement-analyzer")}
+      data={data}
       adminName="ITT"
       privacyReady={Boolean(privacyConfig().dataControllerName && privacyConfig().privacyContactEmail)}
     />
   );
+}
+
+function one(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parsePeriod(value: string | undefined): AdminPeriod {
+  return value === "7d" || value === "all" ? value : "30d";
+}
+
+function cleanCampaign(value: string | undefined) {
+  return (value ?? "").trim().slice(0, 120);
 }
 
 function SettlementAdminLogin({ locale, error }: { locale: Locale; error?: string }) {
