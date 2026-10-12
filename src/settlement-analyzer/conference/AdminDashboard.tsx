@@ -316,10 +316,11 @@ function Hint({ text, align = 'start' }: { text: string; align?: 'start' | 'end'
 
 function FeedbackSummary({ data, copy, locale, onOpen }: { data: AdminSnapshot; copy: AdminCopy; locale: Locale; onOpen: () => void }) {
   const feedback = data.feedback
+  const quiet = feedback.completed === 0 && data.funnels.survey.every((step) => step.count === 0)
   return (
     <section className="admin-card admin-summary">
       <h2><MessageSquare aria-hidden="true" />{copy.feedbackTitle}</h2>
-      <FunnelRows steps={data.funnels.survey} copy={copy} locale={locale} />
+      {quiet ? null : <FunnelRows steps={data.funnels.survey} copy={copy} locale={locale} />}
       {feedback.completed === 0 ? (
         <div className="empty-state">
           <p>{copy.feedbackEmpty}</p>
@@ -351,11 +352,11 @@ function FeedbackSummary({ data, copy, locale, onOpen }: { data: AdminSnapshot; 
 
 function BusinessSummary({ data, copy, locale, onOpen }: { data: AdminSnapshot; copy: AdminCopy; locale: Locale; onOpen: () => void }) {
   const business = data.business
-  const empty = business.contacts === 0 && business.anonymousInterest === 0
+  const empty = business.contacts === 0 && business.anonymousInterest === 0 && data.funnels.commercial.every((step) => step.count === 0)
   return (
     <section className="admin-card admin-summary">
       <h2><Mail aria-hidden="true" />{copy.businessTitle}</h2>
-      <FunnelRows steps={data.funnels.commercial} copy={copy} locale={locale} />
+      {empty ? null : <FunnelRows steps={data.funnels.commercial} copy={copy} locale={locale} />}
       {empty ? (
         <div className="empty-state">
           <p>{copy.businessEmpty}</p>
