@@ -31,29 +31,48 @@ async function requireStaff() {
   return session;
 }
 
+const SETTLEMENT_ADMIN = /^\/(bg|en)\/settlement-analyzer\/admin$/;
+
+function safeNext(value: FormDataEntryValue | null): string {
+  const next = String(value ?? "");
+  return SETTLEMENT_ADMIN.test(next) ? next : "/admin";
+}
+
+function signInError(message: string | undefined): string {
+  if (!message || /invalid login credentials/i.test(message)) return "Невалиден имейл или парола.";
+  return message;
+}
+
+function loginError(message: string, next: string): never {
+  const error = encodeURIComponent(message);
+  if (next === "/admin") redirect(`/admin/login?error=${error}`);
+  redirect(`${next}?error=${error}`);
+}
+
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const next = safeNext(formData.get("next"));
   const mode = cmsMode();
   if (mode === "local") {
     const staff = await localLogin(email, password);
-    if (!staff) redirect("/admin/login?error=" + encodeURIComponent("Невалиден имейл или парола."));
+    if (!staff) loginError("Невалиден имейл или парола.", next);
     try {
       await setAdminSessionCookie({ userId: staff.userId, email: staff.email, role: staff.role, exp: Date.now() + 1000 * 60 * 60 * 12 });
     } catch (error) {
-      redirect("/admin/login?error=" + encodeURIComponent(error instanceof Error ? error.message : "Подписването на сесията не е настроено."));
+      loginError(error instanceof Error ? error.message : "Подписването на сесията не е настроено.", next);
     }
-    redirect("/admin");
+    redirect(next);
   }
   if (mode === "supabase") {
     const { createSupabaseServerClient } = await import("@/lib/cms/supabase-server");
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) redirect("/admin/login?error=" + encodeURIComponent(error?.message ?? "Входът не успя."));
+    if (error || !data.user) loginError(signInError(error?.message), next);
     const { data: staff } = await supabase.from("staff").select("user_id, email, role").eq("user_id", data.user.id).maybeSingle();
     if (!staff) {
       await supabase.auth.signOut();
-      redirect("/admin/login?error=" + encodeURIComponent("Този акаунт не е в списъка на екипа."));
+      loginError("Този акаунт не е в списъка на екипа.", next);
     }
     try {
       await setAdminSessionCookie({
@@ -64,11 +83,11 @@ export async function loginAction(formData: FormData) {
       });
     } catch (error) {
       await supabase.auth.signOut();
-      redirect("/admin/login?error=" + encodeURIComponent(error instanceof Error ? error.message : "Подписването на сесията не е настроено."));
+      loginError(error instanceof Error ? error.message : "Подписването на сесията не е настроено.", next);
     }
-    redirect("/admin");
+    redirect(next);
   }
-  redirect("/admin/login?error=" + encodeURIComponent("CMS не е конфигуриран."));
+  loginError("CMS не е конфигуриран.", next);
 }
 
 export async function logoutAction() {

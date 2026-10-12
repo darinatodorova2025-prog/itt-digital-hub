@@ -1,9 +1,13 @@
 import { cookies } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
+import { getAdminSession, requireRole } from "@/lib/auth/session";
 import { ADMIN_COOKIE, cookieOptions } from "./session";
 import { isAdminRequest } from "./config";
 
+/** Staff signed in with email and password, or a request that still carries the older owner cookie. */
 export async function isAdminSession() {
+  const session = await getAdminSession();
+  if (requireRole(session)) return true;
   const cookieStore = await cookies();
   return isAdminRequest(cookieStore.get(ADMIN_COOKIE)?.value);
 }

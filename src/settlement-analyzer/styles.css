@@ -344,7 +344,7 @@ td:first-child { min-width: 125px; }
 .owner-diagnostics { position: fixed; z-index: 3600; top: 74px; left: 50%; transform: translateX(-50%); width: min(620px, calc(100vw - 28px)); min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 15px; border-radius: var(--sa-radius); box-shadow: var(--shadow); font-size: 14px; background: #fff8eb; border: 1px solid #ead3a4; color: #76561c; }
 .owner-diagnostics button { margin-left: auto; border: 0; background: transparent; display: grid; place-items: center; cursor: pointer; min-width: 32px; min-height: 32px; }
 
-.privacy-page, .admin-page { position: fixed; inset: 0; z-index: 4500; overflow-y: auto; background: var(--sa-paper); }
+.privacy-page, .admin-page { position: fixed; top: 5.5rem; right: 0; bottom: 0; left: 0; z-index: 4500; overflow-y: auto; background: var(--sa-paper); }
 .page-topbar { min-height: 62px; display: flex; align-items: center; gap: 12px; padding: 0 max(20px, calc((100vw - 1180px) / 2)); background: #fff; border-bottom: 1px solid var(--sa-line); }
 .page-topbar a { color: var(--sa-signal); text-decoration: none; font-weight: 600; }
 .page-topbar strong { margin-left: auto; }
@@ -394,6 +394,7 @@ td:first-child { min-width: 125px; }
 .lead-status--medium { background: #fff4dc; color: #8a5b05; }
 .lead-status--cold { background: var(--sa-paper); color: var(--sa-ink-3); }
 .admin-empty { padding: 32px; text-align: center; color: var(--sa-ink-3); font-size: 13px; }
+.admin-login { min-height: calc(100svh - 5.5rem - 62px); display: grid; place-items: center; padding: 32px 16px; }
 .admin-error { max-width: 600px; margin: 100px auto; padding: 30px; text-align: center; }
 .admin-error h1 { font-size: 25px; }
 .admin-error p { color: var(--sa-ink-3); }
