@@ -31,6 +31,7 @@ export function adminCopy(locale: Locale) {
     method: bg
       ? "Периодът следва датата на събитието. Кампанията е първото записано UTM на посетителя. Записи без кампания са „Без кампания“."
       : "The period follows the event date. Campaign is the visitor’s first recorded UTM. Records without one stay Unattributed.",
+    methodLabel: bg ? "Как се брои" : "How this is counted",
     kpis: {
       sessions: {
         title: bg ? "Сесии" : "Sessions",

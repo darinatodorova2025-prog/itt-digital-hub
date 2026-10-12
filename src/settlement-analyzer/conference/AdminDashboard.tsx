@@ -27,6 +27,8 @@ export function AdminDashboard({ locale, analyzerHref, adminName, privacyReady, 
   const router = useRouter()
   const pathname = usePathname()
   const [tab, setTab] = useState<TabId>('feedback')
+  const feedbackQuiet = data.feedback.completed === 0
+  const businessQuiet = data.business.contacts === 0 && data.business.anonymousInterest === 0
 
   const navigate = (next: { period?: AdminPeriod; campaign?: string }) => {
     const params = new URLSearchParams()
@@ -46,29 +48,31 @@ export function AdminDashboard({ locale, analyzerHref, adminName, privacyReady, 
       </div>
       <div className="admin-content">
         <header className="admin-heading">
-          <div>
+          <div className="admin-heading-copy">
             <h1>{copy.title}</h1>
             <p>{copy.subtitle}</p>
           </div>
           <div className="admin-controls">
-            <div className="admin-segment" role="group" aria-label={copy.periodLabel}>
-              {PERIODS.map((period) => (
-                <button key={period} type="button" aria-pressed={data.period === period} onClick={() => navigate({ period })}>
-                  {copy.periods[period]}
-                </button>
-              ))}
+            <div className="admin-control-row">
+              <div className="admin-segment" role="group" aria-label={copy.periodLabel}>
+                {PERIODS.map((period) => (
+                  <button key={period} type="button" aria-pressed={data.period === period} onClick={() => navigate({ period })}>
+                    {copy.periods[period]}
+                  </button>
+                ))}
+              </div>
+              {data.campaigns.length > 0 && (
+                <label className="admin-select">
+                  <span>{copy.campaignLabel}</span>
+                  <select value={data.campaign} onChange={(event) => navigate({ campaign: event.target.value })}>
+                    <option value="">{copy.allCampaigns}</option>
+                    {data.campaigns.map((campaign) => <option key={campaign} value={campaign}>{campaign}</option>)}
+                    {data.hasUnattributed && <option value={UNATTRIBUTED_CAMPAIGN}>{copy.unattributed}</option>}
+                  </select>
+                </label>
+              )}
+              <button className="admin-refresh" type="button" onClick={() => router.refresh()}>{copy.refresh}</button>
             </div>
-            {data.campaigns.length > 0 && (
-              <label className="admin-select">
-                <span>{copy.campaignLabel}</span>
-                <select value={data.campaign} onChange={(event) => navigate({ campaign: event.target.value })}>
-                  <option value="">{copy.allCampaigns}</option>
-                  {data.campaigns.map((campaign) => <option key={campaign} value={campaign}>{campaign}</option>)}
-                  {data.hasUnattributed && <option value={UNATTRIBUTED_CAMPAIGN}>{copy.unattributed}</option>}
-                </select>
-              </label>
-            )}
-            <button className="admin-refresh" type="button" onClick={() => router.refresh()}>{copy.refresh}</button>
             <p className="admin-freshness">
               {data.latestEventAt ? `${copy.freshness} ${formatDate(data.latestEventAt, locale)}` : copy.noEvents}
               {' · '}
@@ -99,12 +103,22 @@ export function AdminDashboard({ locale, analyzerHref, adminName, privacyReady, 
           <MiniFunnel title={copy.funnels.survey} steps={data.funnels.survey} copy={copy} locale={locale} />
           <MiniFunnel title={copy.funnels.commercial} steps={data.funnels.commercial} copy={copy} locale={locale} />
         </section>
-        <p className="admin-method">{copy.method}</p>
+        <details className="admin-method">
+          <summary>{copy.methodLabel}</summary>
+          <p>{copy.method}</p>
+        </details>
 
-        <div className="admin-summaries">
-          <FeedbackSummary data={data} copy={copy} locale={locale} />
-          <BusinessSummary data={data} copy={copy} />
-        </div>
+        {feedbackQuiet && businessQuiet ? (
+          <section className="admin-empty-pair">
+            <p><strong>{copy.feedbackTitle}</strong><span>{copy.feedbackEmpty}</span></p>
+            <p><strong>{copy.businessTitle}</strong><span>{copy.businessEmpty}</span></p>
+          </section>
+        ) : (
+          <div className="admin-summaries">
+            <FeedbackSummary data={data} copy={copy} locale={locale} />
+            <BusinessSummary data={data} copy={copy} />
+          </div>
+        )}
 
         <div className="admin-tabs-wrap">
           <div className="admin-tabs" role="tablist" aria-label={copy.tabsLabel}>
@@ -148,7 +162,7 @@ function Kpi({ label, value, detail, hint, previous, copy, locale }: { label: st
     <article className="admin-kpi">
       <div className="admin-kpi-label">
         <small>{label}</small>
-        <Hint text={hint} />
+        <Hint text={hint} align="end" />
       </div>
       <strong>{formatNumber(value, locale)}</strong>
       <em>{detail}</em>
@@ -172,7 +186,7 @@ function MiniFunnel({ title, steps, copy, locale }: { title: string; steps: Funn
             : hint
           const width = base > 0 ? Math.min(100, (step.count / base) * 100) : 0
           return (
-            <li key={step.id}>
+            <li key={step.id} className={step.count === 0 ? 'is-quiet' : undefined}>
               <span className="mini-label">
                 {copy.steps[step.id as keyof AdminCopy['steps']]}
                 <Hint text={ratioText} />
@@ -193,10 +207,10 @@ function MiniFunnel({ title, steps, copy, locale }: { title: string; steps: Funn
 function UsageChart({ data, copy, locale }: { data: AdminSnapshot; copy: AdminCopy; locale: Locale }) {
   const points = data.series.points
   const [active, setActive] = useState<number | null>(null)
-  const maxSessions = Math.max(1, ...points.map((point) => point.sessions))
-  const maxAnalyses = Math.max(1, ...points.map((point) => point.analyses))
   const sessionPeak = Math.max(0, ...points.map((point) => point.sessions))
   const analysisPeak = Math.max(0, ...points.map((point) => point.analyses))
+  const sessionScale = Math.max(1, sessionPeak)
+  const analysisScale = Math.max(1, analysisPeak)
   if (points.length === 0) {
     return (
       <section className="usage-chart" aria-label={copy.chartTitle}>
@@ -205,13 +219,7 @@ function UsageChart({ data, copy, locale }: { data: AdminSnapshot; copy: AdminCo
       </section>
     )
   }
-  const line = points.map((point, index) => {
-    const x = ((index + 0.5) / points.length) * 100
-    const y = 100 - (point.analyses / maxAnalyses) * 92
-    return `${x},${y}`
-  }).join(' ')
-  const labelEvery = points.length <= 10 ? 1 : Math.ceil(points.length / 6)
-  const selected = active == null ? null : points[active]
+  const labelEvery = points.length <= 8 ? 1 : Math.ceil(points.length / 6)
   return (
     <section className="usage-chart" aria-label={copy.chartTitle}>
       <div className="usage-chart-head">
@@ -222,43 +230,51 @@ function UsageChart({ data, copy, locale }: { data: AdminSnapshot; copy: AdminCo
           <li><i className="legend-analyses" />{copy.chartAnalyses}</li>
         </ul>
       </div>
-      <div className="usage-plot">
-        <div className="usage-axis" aria-hidden="true">
+      <div className="usage-frame">
+        <div className="usage-scale" aria-hidden="true">
           <span>{formatNumber(sessionPeak, locale)}</span>
           <span>{formatNumber(analysisPeak, locale)}</span>
         </div>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <polyline points={line} />
-        </svg>
-        <div className="usage-cols">
-          {points.map((point, index) => (
-            <button
-              key={point.key}
-              type="button"
-              className={active === index ? 'is-active' : undefined}
-              aria-label={`${formatPoint(point.key, data.series.grain, locale)}: ${formatNumber(point.sessions, locale)} ${copy.chartSessions}, ${formatNumber(point.analyses, locale)} ${copy.chartAnalyses}`}
-              onMouseEnter={() => setActive(index)}
-              onMouseLeave={() => setActive((current) => current === index ? null : current)}
-              onFocus={() => setActive(index)}
-              onBlur={() => setActive((current) => current === index ? null : current)}
-            >
-              <span className="usage-bar" style={{ height: `${(point.sessions / maxSessions) * 100}%` }} />
-              {point.analyses > 0 && <span className="usage-dot" style={{ bottom: `${(point.analyses / maxAnalyses) * 92}%` }} />}
-            </button>
-          ))}
+        <div className="usage-days">
+          {points.map((point, index) => {
+            const center = (index + 0.5) / points.length
+            const place = center < 0.14 ? 'is-start' : center > 0.86 ? 'is-end' : ''
+            const showLabel = index % labelEvery === 0 || index === points.length - 1
+            const sessionHeight = point.sessions > 0 ? `max(3px, ${(point.sessions / sessionScale) * 100}%)` : '0%'
+            const analysisHeight = point.analyses > 0 ? `max(8px, ${(point.analyses / analysisScale) * 100}%)` : '0%'
+            return (
+              <button
+                key={point.key}
+                type="button"
+                className={`usage-day${active === index ? ' is-active' : ''}`}
+                aria-label={`${formatPoint(point.key, data.series.grain, locale)}: ${formatNumber(point.sessions, locale)} ${copy.chartSessions}, ${formatNumber(point.analyses, locale)} ${copy.chartAnalyses}`}
+                onMouseEnter={() => setActive(index)}
+                onMouseLeave={() => setActive((current) => current === index ? null : current)}
+                onFocus={() => setActive(index)}
+                onBlur={() => setActive((current) => current === index ? null : current)}
+              >
+                <span className="usage-session-slot">
+                  <span className="usage-bar" style={{ height: sessionHeight }} />
+                </span>
+                <span className="usage-analysis-slot">
+                  {point.analyses > 0 && (
+                    <span className="usage-mark" style={{ height: analysisHeight }}>
+                      <i />
+                    </span>
+                  )}
+                </span>
+                <span className="usage-date" aria-hidden="true">{showLabel ? formatPoint(point.key, data.series.grain, locale) : ''}</span>
+                {active === index && (
+                  <span className={`usage-tooltip ${place}`} role="tooltip">
+                    <strong>{formatPoint(point.key, data.series.grain, locale)}</strong>
+                    <span>{copy.chartSessions}: {formatNumber(point.sessions, locale)}</span>
+                    <span>{copy.chartAnalyses}: {formatNumber(point.analyses, locale)}</span>
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
-        {selected && active != null && (
-          <p className="usage-tooltip" style={{ left: `${((active + 0.5) / points.length) * 100}%`, transform: active > points.length * 0.72 ? 'translateX(-85%)' : active < points.length * 0.12 ? 'translateX(-10%)' : 'translateX(-50%)' }}>
-            <strong>{formatPoint(selected.key, data.series.grain, locale)}</strong>
-            <span>{copy.chartSessions}: {formatNumber(selected.sessions, locale)}</span>
-            <span>{copy.chartAnalyses}: {formatNumber(selected.analyses, locale)}</span>
-          </p>
-        )}
-      </div>
-      <div className="usage-labels" aria-hidden="true">
-        {points.map((point, index) => (
-          <span key={point.key}>{index % labelEvery === 0 || index === points.length - 1 ? formatPoint(point.key, data.series.grain, locale) : ''}</span>
-        ))}
       </div>
     </section>
   )
@@ -271,9 +287,9 @@ function formatPoint(key: string, grain: SeriesGrain, locale: Locale) {
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month - 1, day)))
 }
 
-function Hint({ text }: { text: string }) {
+function Hint({ text, align = 'start' }: { text: string; align?: 'start' | 'end' }) {
   return (
-    <button type="button" className="admin-hint admin-hint--mark" aria-label={text}>
+    <button type="button" className={`admin-hint admin-hint--mark${align === 'end' ? ' admin-hint--end' : ''}`} aria-label={text}>
       i
       <span role="tooltip">{text}</span>
     </button>
@@ -456,7 +472,7 @@ function ContactsTab({ leads, copy, locale }: { leads: AdminLead[]; copy: AdminC
     })
   }, [campaign, company, contactRequested, leads, locale, query, role, sort, status, topic])
 
-  if (leads.length === 0) return <p className="admin-empty">{copy.noContacts}</p>
+  if (leads.length === 0) return <p className="admin-empty admin-empty--compact">{copy.noContacts}</p>
 
   return (
     <div className="contacts-tab">
