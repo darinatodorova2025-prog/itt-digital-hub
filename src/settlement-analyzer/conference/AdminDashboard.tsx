@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { ChevronRight, Search, X } from 'lucide-react'
+import { BarChart3, ChevronRight, ClipboardCheck, Contact, Mail, MessageSquare, Search, Users, X } from 'lucide-react'
 import type { Locale } from '@/lib/i18n'
 import { SOFIA_TIME_ZONE } from '../beta/config'
 import { adminCopy, type AdminCopy } from './admin-copy'
@@ -27,8 +27,10 @@ export function AdminDashboard({ locale, analyzerHref, adminName, privacyReady, 
   const router = useRouter()
   const pathname = usePathname()
   const [tab, setTab] = useState<TabId>('feedback')
-  const feedbackQuiet = data.feedback.completed === 0
-  const businessQuiet = data.business.contacts === 0 && data.business.anonymousInterest === 0
+  const openTab = (id: TabId) => {
+    setTab(id)
+    requestAnimationFrame(() => document.getElementById('admin-details')?.scrollIntoView({ block: 'nearest' }))
+  }
 
   const navigate = (next: { period?: AdminPeriod; campaign?: string }) => {
     const params = new URLSearchParams()
@@ -90,37 +92,23 @@ export function AdminDashboard({ locale, analyzerHref, adminName, privacyReady, 
         {data.truncated && <p className="admin-note">{copy.truncated}</p>}
 
         <section className="admin-kpis" aria-label={copy.periodLabel}>
-          <Kpi label={copy.kpis.sessions.title} value={data.kpis.sessions.value} detail={copy.kpis.sessions.detail} hint={copy.kpis.sessions.hint} previous={data.kpis.sessions.previous} copy={copy} locale={locale} />
-          <Kpi label={copy.kpis.analyzedUsers.title} value={data.kpis.analyzedUsers.value} detail={copy.kpis.analyzedUsers.detail} hint={copy.kpis.analyzedUsers.hint} previous={data.kpis.analyzedUsers.previous} copy={copy} locale={locale} />
-          <Kpi label={copy.kpis.analyses.title} value={data.kpis.analyses.value} detail={copy.kpis.analyses.detail} hint={copy.kpis.analyses.hint} previous={data.kpis.analyses.previous} copy={copy} locale={locale} />
-          <Kpi label={copy.kpis.contacts.title} value={data.kpis.contacts.value} detail={copy.kpis.contacts.detail} hint={copy.kpis.contacts.hint} previous={data.kpis.contacts.previous} copy={copy} locale={locale} />
+          <Kpi icon={<BarChart3 aria-hidden="true" />} label={copy.kpis.sessions.title} value={data.kpis.sessions.value} detail={copy.kpis.sessions.detail} hint={copy.kpis.sessions.hint} previous={data.kpis.sessions.previous} copy={copy} locale={locale} />
+          <Kpi icon={<Users aria-hidden="true" />} label={copy.kpis.analyzedUsers.title} value={data.kpis.analyzedUsers.value} detail={copy.kpis.analyzedUsers.detail} hint={copy.kpis.analyzedUsers.hint} previous={data.kpis.analyzedUsers.previous} copy={copy} locale={locale} />
+          <Kpi icon={<ClipboardCheck aria-hidden="true" />} label={copy.kpis.analyses.title} value={data.kpis.analyses.value} detail={copy.kpis.analyses.detail} hint={copy.kpis.analyses.hint} previous={data.kpis.analyses.previous} copy={copy} locale={locale} />
+          <Kpi icon={<Contact aria-hidden="true" />} label={copy.kpis.contacts.title} value={data.kpis.contacts.value} detail={copy.kpis.contacts.detail} hint={copy.kpis.contacts.hint} previous={data.kpis.contacts.previous} copy={copy} locale={locale} />
         </section>
 
-        <UsageChart data={data} copy={copy} locale={locale} />
+        <div className="admin-stage">
+          <UsageChart data={data} copy={copy} locale={locale} />
+          <UsagePanel steps={data.funnels.engagement} copy={copy} locale={locale} />
+        </div>
 
-        <section className="admin-funnels" aria-label={copy.funnels.engagement}>
-          <MiniFunnel title={copy.funnels.engagement} steps={data.funnels.engagement} copy={copy} locale={locale} />
-          <MiniFunnel title={copy.funnels.survey} steps={data.funnels.survey} copy={copy} locale={locale} />
-          <MiniFunnel title={copy.funnels.commercial} steps={data.funnels.commercial} copy={copy} locale={locale} />
-        </section>
-        <details className="admin-method">
-          <summary>{copy.methodLabel}</summary>
-          <p>{copy.method}</p>
-        </details>
+        <div className="admin-summaries">
+          <FeedbackSummary data={data} copy={copy} locale={locale} onOpen={() => openTab('feedback')} />
+          <BusinessSummary data={data} copy={copy} locale={locale} onOpen={() => openTab('contacts')} />
+        </div>
 
-        {feedbackQuiet && businessQuiet ? (
-          <section className="admin-empty-pair">
-            <p><strong>{copy.feedbackTitle}</strong><span>{copy.feedbackEmpty}</span></p>
-            <p><strong>{copy.businessTitle}</strong><span>{copy.businessEmpty}</span></p>
-          </section>
-        ) : (
-          <div className="admin-summaries">
-            <FeedbackSummary data={data} copy={copy} locale={locale} />
-            <BusinessSummary data={data} copy={copy} />
-          </div>
-        )}
-
-        <div className="admin-tabs-wrap">
+        <div className="admin-tabs-wrap" id="admin-details">
           <div className="admin-tabs" role="tablist" aria-label={copy.tabsLabel}>
             {TABS.map((id) => (
               <button
@@ -157,9 +145,10 @@ export function AdminDashboard({ locale, analyzerHref, adminName, privacyReady, 
   )
 }
 
-function Kpi({ label, value, detail, hint, previous, copy, locale }: { label: string; value: number; detail: string; hint: string; previous: number | null; copy: AdminCopy; locale: Locale }) {
+function Kpi({ icon, label, value, detail, hint, previous, copy, locale }: { icon: ReactNode; label: string; value: number; detail: string; hint: string; previous: number | null; copy: AdminCopy; locale: Locale }) {
   return (
     <article className="admin-kpi">
+      <span className="admin-kpi-icon">{icon}</span>
       <div className="admin-kpi-label">
         <small>{label}</small>
         <Hint text={hint} align="end" />
@@ -171,35 +160,49 @@ function Kpi({ label, value, detail, hint, previous, copy, locale }: { label: st
   )
 }
 
-function MiniFunnel({ title, steps, copy, locale }: { title: string; steps: FunnelStep[]; copy: AdminCopy; locale: Locale }) {
+function FunnelRows({ steps, copy, locale }: { steps: FunnelStep[]; copy: AdminCopy; locale: Locale }) {
   const base = steps[0]?.count ?? 0
   return (
-    <section className="mini-funnel">
-      <h2>{title}</h2>
-      <ol className="mini-steps">
-        {steps.map((step) => {
-          const hint = copy.hints[step.id as keyof AdminCopy['hints']]
-          const ratioText = step.ratio
-            ? step.ratio.percent == null
-              ? `${hint} ${copy.noRateDetail}`
-              : `${hint} ${formatNumber(step.ratio.numerator, locale)} / ${formatNumber(step.ratio.denominator, locale)}.`
-            : hint
-          const width = base > 0 ? Math.min(100, (step.count / base) * 100) : 0
-          return (
-            <li key={step.id} className={step.count === 0 ? 'is-quiet' : undefined}>
-              <span className="mini-label">
-                {copy.steps[step.id as keyof AdminCopy['steps']]}
-                <Hint text={ratioText} />
-              </span>
-              <strong>
-                {formatNumber(step.count, locale)}
-                {step.ratio ? <em>{step.ratio.percent == null ? copy.noRate : formatPercent(step.ratio.percent, locale)}</em> : null}
-              </strong>
-              <span className="mini-track" aria-hidden="true"><i style={{ width: `${step.count > 0 ? Math.max(width, 4) : 0}%` }} /></span>
-            </li>
-          )
-        })}
-      </ol>
+    <ol className="f-steps">
+      {steps.map((step, index) => {
+        const hint = copy.hints[step.id as keyof AdminCopy['hints']]
+        const ratioText = step.ratio
+          ? step.ratio.percent == null
+            ? `${hint} ${copy.noRateDetail}`
+            : `${hint} ${formatNumber(step.ratio.numerator, locale)} / ${formatNumber(step.ratio.denominator, locale)}.`
+          : hint
+        const width = base > 0 ? Math.min(100, (step.count / base) * 100) : 0
+        const share = index === 0 ? (base > 0 ? 100 : null) : step.ratio?.percent ?? null
+        return (
+          <li key={step.id} className={step.count === 0 ? 'is-quiet' : undefined}>
+            <span className="f-name">
+              {copy.steps[step.id as keyof AdminCopy['steps']]}
+              <Hint text={ratioText} />
+            </span>
+            <span className="f-track" aria-hidden="true"><i style={{ width: `${step.count > 0 ? Math.max(width, 6) : 0}%` }} /></span>
+            <strong>{formatNumber(step.count, locale)}</strong>
+            <em>{share == null ? copy.noRate : formatPercent(share, locale)}</em>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+function UsagePanel({ steps, copy, locale }: { steps: FunnelStep[]; copy: AdminCopy; locale: Locale }) {
+  const analyzed = steps.find((step) => step.id === 'analyzed')
+  const ratio = analyzed?.ratio
+  const insight = ratio && ratio.denominator > 0 && ratio.percent != null
+    ? copy.analyzedInsight(formatNumber(ratio.numerator, locale), formatNumber(ratio.denominator, locale), ratio.denominator, ratio.numerator)
+    : null
+  return (
+    <section className="usage-panel" aria-label={copy.funnels.engagement}>
+      <h2>{copy.funnels.engagement}</h2>
+      <FunnelRows steps={steps} copy={copy} locale={locale} />
+      <div className="f-insight">
+        {insight && <strong>{insight}</strong>}
+        <p>{copy.method}</p>
+      </div>
     </section>
   )
 }
@@ -207,19 +210,19 @@ function MiniFunnel({ title, steps, copy, locale }: { title: string; steps: Funn
 function UsageChart({ data, copy, locale }: { data: AdminSnapshot; copy: AdminCopy; locale: Locale }) {
   const points = data.series.points
   const [active, setActive] = useState<number | null>(null)
-  const sessionPeak = Math.max(0, ...points.map((point) => point.sessions))
-  const analysisPeak = Math.max(0, ...points.map((point) => point.analyses))
-  const sessionScale = Math.max(1, sessionPeak)
-  const analysisScale = Math.max(1, analysisPeak)
+  const peak = Math.max(0, ...points.map((point) => Math.max(point.sessions, point.analyses)))
+  const scale = niceScale(peak)
+  const ticks = axisTicks(scale)
   if (points.length === 0) {
     return (
       <section className="usage-chart" aria-label={copy.chartTitle}>
         <h2>{copy.chartTitle}</h2>
-        <p className="admin-empty admin-empty--compact">{copy.chartEmpty}</p>
+        <p className="chart-empty">{copy.chartEmpty}</p>
       </section>
     )
   }
   const labelEvery = points.length <= 8 ? 1 : Math.ceil(points.length / 6)
+  const bar = (value: number) => value > 0 ? `max(4px, ${(value / scale) * 100}%)` : '0%'
   return (
     <section className="usage-chart" aria-label={copy.chartTitle}>
       <div className="usage-chart-head">
@@ -230,54 +233,69 @@ function UsageChart({ data, copy, locale }: { data: AdminSnapshot; copy: AdminCo
           <li><i className="legend-analyses" />{copy.chartAnalyses}</li>
         </ul>
       </div>
-      <div className="usage-frame">
-        <div className="usage-scale" aria-hidden="true">
-          <span>{formatNumber(sessionPeak, locale)}</span>
-          <span>{formatNumber(analysisPeak, locale)}</span>
+      <div className="chart-plot">
+        <div className="chart-axis" aria-hidden="true">
+          {ticks.map((tick) => <span key={tick}>{formatNumber(tick, locale)}</span>)}
         </div>
-        <div className="usage-days">
-          {points.map((point, index) => {
-            const center = (index + 0.5) / points.length
-            const place = center < 0.14 ? 'is-start' : center > 0.86 ? 'is-end' : ''
-            const showLabel = index % labelEvery === 0 || index === points.length - 1
-            const sessionHeight = point.sessions > 0 ? `max(3px, ${(point.sessions / sessionScale) * 100}%)` : '0%'
-            const analysisHeight = point.analyses > 0 ? `max(8px, ${(point.analyses / analysisScale) * 100}%)` : '0%'
-            return (
-              <button
-                key={point.key}
-                type="button"
-                className={`usage-day${active === index ? ' is-active' : ''}`}
-                aria-label={`${formatPoint(point.key, data.series.grain, locale)}: ${formatNumber(point.sessions, locale)} ${copy.chartSessions}, ${formatNumber(point.analyses, locale)} ${copy.chartAnalyses}`}
-                onMouseEnter={() => setActive(index)}
-                onMouseLeave={() => setActive((current) => current === index ? null : current)}
-                onFocus={() => setActive(index)}
-                onBlur={() => setActive((current) => current === index ? null : current)}
-              >
-                <span className="usage-session-slot">
-                  <span className="usage-bar" style={{ height: sessionHeight }} />
-                </span>
-                <span className="usage-analysis-slot">
-                  {point.analyses > 0 && (
-                    <span className="usage-mark" style={{ height: analysisHeight }}>
-                      <i />
+        <div className="chart-canvas">
+          <div className="chart-lines" aria-hidden="true">
+            {ticks.map((tick) => <i key={tick} />)}
+          </div>
+          <div className="chart-cols">
+            {points.map((point, index) => {
+              const center = (index + 0.5) / points.length
+              const place = center < 0.14 ? 'is-start' : center > 0.86 ? 'is-end' : ''
+              return (
+                <button
+                  key={point.key}
+                  type="button"
+                  className={active === index ? 'is-active' : undefined}
+                  aria-label={`${formatPoint(point.key, data.series.grain, locale)}: ${formatNumber(point.sessions, locale)} ${copy.chartSessions}, ${formatNumber(point.analyses, locale)} ${copy.chartAnalyses}`}
+                  onMouseEnter={() => setActive(index)}
+                  onMouseLeave={() => setActive((current) => current === index ? null : current)}
+                  onFocus={() => setActive(index)}
+                  onBlur={() => setActive((current) => current === index ? null : current)}
+                >
+                  {point.sessions > 0 && <i className="bar bar-sessions" style={{ height: bar(point.sessions) }} />}
+                  {point.analyses > 0 && <i className="bar bar-analyses" style={{ height: bar(point.analyses) }} />}
+                  {active === index && (
+                    <span className={`usage-tooltip ${place}`} role="tooltip">
+                      <strong>{formatPoint(point.key, data.series.grain, locale)}</strong>
+                      <span>{copy.chartSessions}: {formatNumber(point.sessions, locale)}</span>
+                      <span>{copy.chartAnalyses}: {formatNumber(point.analyses, locale)}</span>
                     </span>
                   )}
-                </span>
-                <span className="usage-date" aria-hidden="true">{showLabel ? formatPoint(point.key, data.series.grain, locale) : ''}</span>
-                {active === index && (
-                  <span className={`usage-tooltip ${place}`} role="tooltip">
-                    <strong>{formatPoint(point.key, data.series.grain, locale)}</strong>
-                    <span>{copy.chartSessions}: {formatNumber(point.sessions, locale)}</span>
-                    <span>{copy.chartAnalyses}: {formatNumber(point.analyses, locale)}</span>
-                  </span>
-                )}
-              </button>
-            )
-          })}
+                </button>
+              )
+            })}
+          </div>
+          <div className="chart-dates" aria-hidden="true">
+            {points.map((point, index) => (
+              <span key={point.key}>{index % labelEvery === 0 || index === points.length - 1 ? formatPoint(point.key, data.series.grain, locale) : ''}</span>
+            ))}
+          </div>
         </div>
       </div>
     </section>
   )
+}
+
+function niceScale(peak: number) {
+  if (peak <= 1) return 1
+  if (peak <= 2) return 2
+  if (peak <= 4) return 4
+  if (peak <= 6) return 6
+  if (peak <= 8) return 8
+  if (peak <= 10) return 10
+  const power = 10 ** Math.floor(Math.log10(peak))
+  const normalized = peak / power
+  const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 4 ? 4 : normalized <= 6 ? 6 : normalized <= 8 ? 8 : 10
+  return nice * power
+}
+
+function axisTicks(scale: number) {
+  if (scale <= 1) return [1, 0]
+  return scale % 2 === 0 ? [scale, scale / 2, 0] : [scale, 0]
 }
 
 function formatPoint(key: string, grain: SeriesGrain, locale: Locale) {
@@ -296,12 +314,18 @@ function Hint({ text, align = 'start' }: { text: string; align?: 'start' | 'end'
   )
 }
 
-function FeedbackSummary({ data, copy, locale }: { data: AdminSnapshot; copy: AdminCopy; locale: Locale }) {
+function FeedbackSummary({ data, copy, locale, onOpen }: { data: AdminSnapshot; copy: AdminCopy; locale: Locale; onOpen: () => void }) {
   const feedback = data.feedback
   return (
     <section className="admin-card admin-summary">
-      <h2>{copy.feedbackTitle}</h2>
-      {feedback.completed === 0 ? <p className="admin-empty admin-empty--compact">{copy.feedbackEmpty}</p> : feedback.withAnswers === 0 ? (
+      <h2><MessageSquare aria-hidden="true" />{copy.feedbackTitle}</h2>
+      <FunnelRows steps={data.funnels.survey} copy={copy} locale={locale} />
+      {feedback.completed === 0 ? (
+        <div className="empty-state">
+          <p>{copy.feedbackEmpty}</p>
+          <button type="button" onClick={onOpen}>{copy.viewSurveys}</button>
+        </div>
+      ) : feedback.withAnswers === 0 ? (
         <p className="summary-prose">{copy.answersUnavailable(feedback.completed, feedback.notNowWithoutAnswers)}</p>
       ) : feedback.single ? (
         <div className="summary-prose">
@@ -325,13 +349,19 @@ function FeedbackSummary({ data, copy, locale }: { data: AdminSnapshot; copy: Ad
   )
 }
 
-function BusinessSummary({ data, copy }: { data: AdminSnapshot; copy: AdminCopy }) {
+function BusinessSummary({ data, copy, locale, onOpen }: { data: AdminSnapshot; copy: AdminCopy; locale: Locale; onOpen: () => void }) {
   const business = data.business
   const empty = business.contacts === 0 && business.anonymousInterest === 0
   return (
     <section className="admin-card admin-summary">
-      <h2>{copy.businessTitle}</h2>
-      {empty ? <p className="admin-empty admin-empty--compact">{copy.businessEmpty}</p> : (
+      <h2><Mail aria-hidden="true" />{copy.businessTitle}</h2>
+      <FunnelRows steps={data.funnels.commercial} copy={copy} locale={locale} />
+      {empty ? (
+        <div className="empty-state">
+          <p>{copy.businessEmpty}</p>
+          <button type="button" onClick={onOpen}>{copy.viewContacts}</button>
+        </div>
+      ) : (
         <>
           <dl className="summary-list">
             <div><dt>{copy.kpis.contacts.title}</dt><dd>{business.contacts}</dd></div>

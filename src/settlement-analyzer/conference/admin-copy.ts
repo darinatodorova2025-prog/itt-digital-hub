@@ -32,6 +32,17 @@ export function adminCopy(locale: Locale) {
       ? "Периодът следва датата на събитието. Кампанията е първото записано UTM на посетителя. Записи без кампания са „Без кампания“."
       : "The period follows the event date. Campaign is the visitor’s first recorded UTM. Records without one stay Unattributed.",
     methodLabel: bg ? "Как се брои" : "How this is counted",
+    analyzedInsight: (shown: string, total: string, people: number, analyzed: number) => {
+      if (bg) {
+        const noun = people === 1 ? "посетител" : "посетители";
+        const verb = analyzed === 1 ? "е извършил" : "са извършили";
+        return `${shown} от ${total} ${noun} ${verb} анализ.`;
+      }
+      const noun = people === 1 ? "visitor" : "visitors";
+      return `${shown} of ${total} ${noun} completed an analysis.`;
+    },
+    viewSurveys: bg ? "Към анкетите" : "View surveys",
+    viewContacts: bg ? "Към контактите" : "View contacts",
     kpis: {
       sessions: {
         title: bg ? "Сесии" : "Sessions",
