@@ -375,15 +375,20 @@ td:first-child { min-width: 125px; }
 .funnel-bar i { display: block; height: 100%; border-radius: inherit; background: var(--sa-signal); }
 .funnel-row strong, .funnel-row em { text-align: right; }
 .funnel-row em { color: var(--sa-ink-3); font-style: normal; }
-.survey-groups { display: grid; gap: 22px; }
-.survey-group h3, .survey-notes h3 { margin: 0 0 10px; font-size: 14px; }
-.survey-choices { display: grid; gap: 8px; }
-.survey-choice { display: grid; grid-template-columns: minmax(180px, 340px) minmax(80px, 1fr) 36px 52px; gap: 10px; align-items: center; font-size: 13px; }
+.admin-reading { display: grid; grid-template-columns: minmax(320px, 0.9fr) minmax(340px, 1.1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
+.admin-reading.is-stacked { grid-template-columns: 1fr; }
+.admin-reading > .admin-card { margin-bottom: 0; }
+.survey-groups { display: grid; gap: 18px; }
+.admin-reading.is-stacked .survey-groups { grid-template-columns: 1fr 1fr; gap: 22px 28px; align-items: start; }
+.survey-group h3 { margin: 0 0 8px; font-size: 14px; }
+.survey-hint { margin: -2px 0 8px; color: var(--sa-ink-3); font-size: 12px; }
+.survey-choices { display: grid; gap: 7px; }
+.survey-choice { display: grid; grid-template-columns: minmax(0, 1fr) 72px auto; gap: 8px; align-items: center; font-size: 13px; }
 .survey-choice > span { line-height: 1.35; }
-.survey-choice strong, .survey-choice em { text-align: right; }
-.survey-choice em { color: var(--sa-ink-3); font-style: normal; }
-.survey-notes { display: grid; gap: 8px; margin-top: 22px; }
-.survey-note { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--sa-line); border-radius: 8px; background: var(--sa-paper); }
+.survey-choice .funnel-bar { width: 72px; }
+.survey-choice strong { color: var(--sa-ink-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.survey-notes { display: grid; gap: 8px; margin-top: 8px; }
+.survey-note { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--sa-line); border-radius: 8px; background: var(--sa-paper); }
 .survey-note small { color: var(--sa-ink-3); font-size: 12px; }
 .survey-note p { margin: 0; font-size: 14px; }
 .lead-toolbar { display: grid; grid-template-columns: minmax(260px, 1.6fr) repeat(3, minmax(140px, .8fr)); gap: 8px; margin-bottom: 14px; }
@@ -476,7 +481,7 @@ td:first-child { min-width: 125px; }
   .admin-heading h1 { font-size: 25px; }
   .admin-config-warning { align-items: flex-start; flex-direction: column; }
   .funnel-row { grid-template-columns: 140px minmax(100px, 1fr) 45px 45px; gap: 8px; }
-  .survey-choice { grid-template-columns: minmax(140px, 220px) minmax(72px, 1fr) 32px 48px; gap: 8px; }
+  .admin-reading, .admin-reading.is-stacked .survey-groups { grid-template-columns: 1fr; }
   .lead-toolbar { grid-template-columns: 1fr 1fr; }
   .admin-search { grid-column: 1 / -1; }
 }
@@ -508,8 +513,8 @@ td:first-child { min-width: 125px; }
   .admin-kpi > span { width: 34px; height: 34px; }
   .admin-kpi strong { font-size: 21px; }
   .admin-card { padding: 15px; }
-  .funnel-row, .survey-choice { grid-template-columns: 1fr 42px 44px; }
-  .survey-choice > span { grid-column: 1 / -1; }
+  .funnel-row { grid-template-columns: 1fr 42px 44px; }
+  .survey-choice { grid-template-columns: minmax(0, 1fr) 56px auto; }
   .funnel-row > span { grid-column: 1 / -1; }
   .lead-toolbar { grid-template-columns: 1fr; }
   .admin-search { grid-column: auto; }

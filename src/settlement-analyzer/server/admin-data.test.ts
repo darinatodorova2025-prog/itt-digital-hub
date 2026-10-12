@@ -115,13 +115,30 @@ describe("buildAdminSnapshot", () => {
       },
     ]);
 
+    const usefulness = summary.groups[0];
+    const interest = summary.groups[1];
+    const uses = summary.groups.find((group) => group.title.startsWith("За какво"));
+    const capabilities = summary.groups.find((group) => group.title.startsWith("Какво трябва"));
+    const automation = summary.groups.find((group) => group.title.startsWith("Ако можехте"));
+    const roles = summary.groups.find((group) => group.title === "Вашата роля");
+
     expect(summary.completed).toBe(2);
-    expect(summary.groups[0].choices.find((choice) => choice.label === "4")?.count).toBe(2);
-    expect(summary.groups[1].choices.find((choice) => choice.label === "Не засега")?.count).toBe(1);
-    expect(summary.groups[1].choices.find((choice) => choice.label === "Да, бих искал да обсъдим")?.count).toBe(1);
-    expect(summary.groups[3].choices.find((choice) => choice.label === "Кадастър и имоти")?.count).toBe(2);
-    expect(summary.notes.map((note) => note.text)).toEqual(["По-ясна граница", "Събирането на кадастър"]);
-    expect(JSON.stringify(summary.notes)).not.toContain("hidden@example.com");
-    expect(JSON.stringify(summary.notes)).not.toContain("Скрито име");
+    expect(usefulness.scale).toBe(true);
+    expect(usefulness.choices).toHaveLength(5);
+    expect(usefulness.choices.find((choice) => choice.label === "4")?.count).toBe(2);
+    expect(usefulness.choices.find((choice) => choice.label === "1")?.count).toBe(0);
+    expect(interest.choices.map((choice) => choice.count)).toEqual([1, 0, 1]);
+    expect(interest.hint).toContain("таблицата");
+    expect(uses?.choices.map((choice) => [choice.label, choice.count])).toEqual([
+      ["Подготовка преди ВиК проект", 2],
+      ["Подготовка на оферта", 1],
+    ]);
+    expect(capabilities?.choices[0]).toMatchObject({ label: "Кадастър и имоти", count: 2 });
+    expect(capabilities?.notes.map((note) => note.text)).toEqual(["По-ясна граница"]);
+    expect(automation?.choices).toEqual([]);
+    expect(automation?.notes.map((note) => note.text)).toEqual(["Събирането на кадастър"]);
+    expect(roles?.choices.map((choice) => choice.label)).toEqual(["ВиК проектант", "Консултант"]);
+    expect(JSON.stringify(summary.groups)).not.toContain("hidden@example.com");
+    expect(JSON.stringify(summary.groups)).not.toContain("Скрито име");
   });
 });

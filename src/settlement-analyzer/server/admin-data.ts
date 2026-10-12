@@ -63,14 +63,19 @@ export type AdminSnapshot = {
 
 export type SurveyChoice = { label: string; count: number }
 
-export type SurveyGroup = { title: string; choices: SurveyChoice[] }
+export type SurveyNote = { text: string; at: string }
 
-export type SurveyNote = { question: string; text: string; at: string }
+export type SurveyGroup = {
+  title: string
+  scale: boolean
+  hint?: string
+  choices: SurveyChoice[]
+  notes: SurveyNote[]
+}
 
 export type SurveySummary = {
   completed: number
   groups: SurveyGroup[]
-  notes: SurveyNote[]
 }
 
 type VisitorRow = {
@@ -167,16 +172,16 @@ export function buildSurveySummary(rows: SurveyRow[]): SurveySummary {
   return {
     completed: count,
     groups: [
-      group("Колко полезен ви се струва този анализ за реалната ви работа?", USEFULNESS, completed, (answers) => scoreLabel(answers.usefulness_score)),
-      group("Имате ли интерес към подобно решение за вашата организация?", BUSINESS_INTERESTS.map((item) => item.bg), completed, (answers) => interestLabel(answers)),
-      group("За какво бихте използвали подобен инструмент?", INTENDED_USE_CASES.map((item) => item.bg), completed, (answers) => answers.intended_use_cases),
-      group("Какво трябва да има, за да го използвате в реален проект?", REQUESTED_CAPABILITIES.map((item) => item.bg), completed, (answers) => answers.requested_capabilities),
-      group("Коя част от предпроектната работа ви отнема най-много време?", TIME_SINKS.map((item) => item.bg), completed, (answers) => answers.time_sink),
-      group("Вашата роля", ROLES.map((item) => item.bg), completed, (answers) => answers.role),
-      group("Колко често организацията ви работи по подобни задачи?", WORK_FREQUENCIES.map((item) => item.bg), completed, (answers) => answers.organisation_work_frequency),
-      group("В кои етапи от работата бихте използвали подобен инструмент?", WORKFLOW_STAGES.map((item) => item.bg), completed, (answers) => answers.workflow_stages),
-    ],
-    notes: surveyNotes(completed).sort((a, b) => b.at.localeCompare(a.at)),
+      group("Колко полезен ви се струва този анализ за реалната ви работа?", USEFULNESS, completed, (answers) => scoreLabel(answers.usefulness_score), true),
+      group("Имате ли интерес към подобно решение за вашата организация?", BUSINESS_INTERESTS.map((item) => item.bg), completed, (answers) => interestLabel(answers), true, undefined, "Първите два отговора се появяват в таблицата отдолу. „Не засега“ остава само тук."),
+      group("За какво бихте използвали подобен инструмент?", INTENDED_USE_CASES.map((item) => item.bg), completed, (answers) => answers.intended_use_cases, false, (answers) => answers.intended_use_other),
+      group("Какво трябва да има, за да го използвате в реален проект?", REQUESTED_CAPABILITIES.map((item) => item.bg), completed, (answers) => answers.requested_capabilities, false, (answers) => answers.requested_capabilities_other),
+      group("Коя част от предпроектната работа ви отнема най-много време?", TIME_SINKS.map((item) => item.bg), completed, (answers) => answers.time_sink, false, (answers) => answers.time_sink_other),
+      group("Ако можехте да автоматизирате или улесните още една дейност във вашата работа, коя би била тя?", [], completed, () => null, false, (answers) => answers.automation_need),
+      group("Вашата роля", ROLES.map((item) => item.bg), completed, (answers) => answers.role, false, (answers) => answers.role_other),
+      group("Колко често организацията ви работи по подобни задачи?", WORK_FREQUENCIES.map((item) => item.bg), completed, (answers) => answers.organisation_work_frequency, false),
+      group("В кои етапи от работата бихте използвали подобен инструмент?", WORKFLOW_STAGES.map((item) => item.bg), completed, (answers) => answers.workflow_stages, false, (answers) => answers.workflow_stages_other),
+    ].filter((item): item is SurveyGroup => Boolean(item)),
   }
 }
 
@@ -281,19 +286,26 @@ function storedAnswers(value: unknown): StoredSurveyAnswers | null {
 function group(
   title: string,
   options: string[],
-  completed: Array<{ answers: StoredSurveyAnswers }>,
+  completed: Array<{ answers: StoredSurveyAnswers; at: string }>,
   pick: (answers: StoredSurveyAnswers) => string | string[] | null,
-): SurveyGroup {
+  scale: boolean,
+  readNote?: (answers: StoredSurveyAnswers) => string | null,
+  hint?: string,
+): SurveyGroup | null {
   const counts = new Map(options.map((label) => [label, 0]))
   for (const row of completed) {
-    const labels = new Set(list(pick(row.answers)))
-    for (const label of labels) counts.set(label, (counts.get(label) ?? 0) + 1)
+    for (const label of new Set(list(pick(row.answers)))) counts.set(label, (counts.get(label) ?? 0) + 1)
   }
-  const extras = [...counts.keys()].filter((label) => !options.includes(label))
-  return {
-    title,
-    choices: [...options, ...extras].map((label) => ({ label, count: counts.get(label) ?? 0 })),
-  }
+  const extras = [...counts.keys()].filter((label) => !options.includes(label) && (counts.get(label) ?? 0) > 0)
+  const choices = (scale ? [...options, ...extras] : [...options, ...extras].filter((label) => (counts.get(label) ?? 0) > 0))
+    .map((label) => ({ label, count: counts.get(label) ?? 0 }))
+  if (!scale) choices.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "bg"))
+  const notes = completed.flatMap((row) => {
+    const text = readNote?.(row.answers)?.trim()
+    return text ? [{ text, at: row.at }] : []
+  }).sort((a, b) => b.at.localeCompare(a.at))
+  if (!scale && choices.length === 0 && notes.length === 0) return null
+  return { title, scale, hint, choices, notes }
 }
 
 function list(value: string | string[] | null) {
@@ -308,21 +320,6 @@ function scoreLabel(score: number | null) {
 function interestLabel(answers: StoredSurveyAnswers) {
   if (answers.business_interest_label?.trim()) return answers.business_interest_label.trim()
   return BUSINESS_INTERESTS.find((item) => item.value === answers.business_interest)?.bg ?? null
-}
-
-function surveyNotes(completed: Array<{ answers: StoredSurveyAnswers; at: string }>): SurveyNote[] {
-  const fields: Array<[string, (answers: StoredSurveyAnswers) => string | null]> = [
-    ["За какво бихте използвали подобен инструмент?", (answers) => answers.intended_use_other],
-    ["Какво трябва да има, за да го използвате в реален проект?", (answers) => answers.requested_capabilities_other],
-    ["Коя част от предпроектната работа ви отнема най-много време?", (answers) => answers.time_sink_other],
-    ["Ако можехте да автоматизирате или улесните още една дейност във вашата работа, коя би била тя?", (answers) => answers.automation_need],
-    ["Вашата роля", (answers) => answers.role_other],
-    ["В кои етапи от работата бихте използвали подобен инструмент?", (answers) => answers.workflow_stages_other],
-  ]
-  return completed.flatMap((row) => fields.flatMap(([question, read]) => {
-    const text = read(row.answers)?.trim()
-    return text ? [{ question, text, at: row.at }] : []
-  }))
 }
 
 function countBy(values: string[]) {
