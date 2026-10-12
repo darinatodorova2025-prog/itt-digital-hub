@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAdminSnapshot } from "./admin-data";
+import { buildAdminSnapshot, buildSurveySummary } from "./admin-data";
 
 describe("buildAdminSnapshot", () => {
   it("counts visitors, successful analyses, and contact requests", () => {
@@ -31,6 +31,7 @@ describe("buildAdminSnapshot", () => {
         utm_campaign: "summit",
         created_at: "2026-10-10T08:30:00.000Z",
       }],
+      surveys: [],
     });
 
     expect(snapshot.kpis.visits).toBe(2);
@@ -58,5 +59,69 @@ describe("buildAdminSnapshot", () => {
       "Оставен контакт",
       "Заявка за разговор",
     ]);
+    expect(snapshot.survey.completed).toBe(0);
+  });
+
+  it("counts completed survey answers and keeps free text without contact details", () => {
+    const summary = buildSurveySummary([
+      {
+        visitorId: "v1",
+        completedAt: "2026-10-11T10:00:00.000Z",
+        answers: {
+          usefulness_score: 4,
+          intended_use_cases: ["Подготовка преди ВиК проект"],
+          intended_use_other: null,
+          requested_capabilities: ["Кадастър и имоти", "Автоматичен доклад / PDF"],
+          requested_capabilities_other: null,
+          time_sink: "Събиране на изходни данни",
+          time_sink_other: null,
+          automation_need: "Събирането на кадастър",
+          role: "ВиК проектант",
+          role_other: null,
+          organisation_work_frequency: "Всеки месец",
+          workflow_stages: ["Предпроектен анализ"],
+          workflow_stages_other: null,
+          business_interest: "not_now",
+          business_interest_label: "Не засега",
+          contact: { name: "Скрито име", organisation: null, email: "hidden@example.com", phone: "0888000000", topic: null },
+        },
+      },
+      {
+        visitorId: "v1",
+        completedAt: "2026-10-10T10:00:00.000Z",
+        answers: { usefulness_score: 1, business_interest: "discuss", intended_use_cases: [], requested_capabilities: [], workflow_stages: [] },
+      },
+      {
+        visitorId: "v2",
+        completedAt: "2026-10-12T10:00:00.000Z",
+        answers: {
+          usefulness_score: 4,
+          intended_use_cases: ["Подготовка преди ВиК проект", "Подготовка на оферта"],
+          intended_use_other: null,
+          requested_capabilities: ["Кадастър и имоти"],
+          requested_capabilities_other: "По-ясна граница",
+          time_sink: "Подготовка на оферта",
+          time_sink_other: null,
+          automation_need: null,
+          role: "Консултант",
+          role_other: null,
+          organisation_work_frequency: "Почти постоянно",
+          workflow_stages: ["Предпроектен анализ", "Документация"],
+          workflow_stages_other: null,
+          business_interest: "discuss",
+          business_interest_label: "Да, бих искал да обсъдим",
+          contact: null,
+        },
+      },
+    ]);
+
+    expect(summary.completed).toBe(2);
+    expect(summary.groups[0].choices.find((choice) => choice.label === "4")?.count).toBe(2);
+    expect(summary.groups[1].choices.find((choice) => choice.label === "Не засега")?.count).toBe(1);
+    expect(summary.groups[1].choices.find((choice) => choice.label === "Да, бих искал да обсъдим")?.count).toBe(1);
+    expect(summary.groups[3].choices.find((choice) => choice.label === "Кадастър и имоти")?.count).toBe(2);
+    expect(summary.notes.map((note) => note.text)).toEqual(["По-ясна граница", "Събирането на кадастър"]);
+    expect(JSON.stringify(summary.notes)).not.toContain("hidden@example.com");
+    expect(JSON.stringify(summary.notes)).not.toContain("Скрито име");
   });
 });

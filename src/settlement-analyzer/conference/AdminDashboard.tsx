@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { BarChart3, Building2, CalendarClock, CheckCircle2, ChevronRight, Filter, MapPinned, Repeat2, Search, UserCheck, UsersRound, X } from 'lucide-react'
-import type { AdminLead } from '../server/admin-data'
+import type { AdminLead, SurveySummary } from '../server/admin-data'
 
 type Props = {
   adminName: string
@@ -13,9 +13,10 @@ type Props = {
     returnVisitors: number; completedProfiles: number; highPotential: number; contactRequests: number
   }
   funnel: Array<{ label: string; value: number }>
+  survey: SurveySummary
 }
 
-export function AdminDashboard({ adminName, privacyReady, leads, kpis, funnel }: Props) {
+export function AdminDashboard({ adminName, privacyReady, leads, kpis, funnel, survey }: Props) {
   const [query, setQuery] = useState('')
   const [company, setCompany] = useState('')
   const [type, setType] = useState('')
@@ -62,6 +63,8 @@ export function AdminDashboard({ adminName, privacyReady, leads, kpis, funnel }:
 
         <section className="admin-card funnel-card"><div className="admin-section-title"><div><h2>Фуния</h2><p>Преминаване между ключовите стъпки.</p></div></div><div className="funnel-list">{funnel.map((item, index) => { const previous = index === 0 ? item.value : funnel[index - 1]?.value ?? 0; const conversion = previous ? item.value / previous * 100 : 0; const max = Math.max(1, funnel[0]?.value ?? 1); return <div className="funnel-row" key={item.label}><span>{item.label}</span><div className="funnel-bar"><i style={{ width: `${Math.max(3, item.value / max * 100)}%` }} /></div><strong>{item.value}</strong><em>{index === 0 ? '100%' : formatPercent(conversion)}</em></div> })}</div></section>
 
+        <SurveySection survey={survey} />
+
         <section className="admin-card leads-card">
           <div className="admin-section-title"><div><h2>Потенциални клиенти</h2><p>{filtered.length} от {leads.length} контакта</p></div></div>
           <div className="lead-toolbar">
@@ -79,6 +82,55 @@ export function AdminDashboard({ adminName, privacyReady, leads, kpis, funnel }:
       </div>
       {selected && <LeadDrawer lead={selected} onClose={() => setSelected(null)} />}
     </main>
+  )
+}
+
+function SurveySection({ survey }: { survey: SurveySummary }) {
+  const profileLabel = survey.completed === 1 ? "1 попълнен профил" : `${survey.completed} попълнени профила`
+  return (
+    <section className="admin-card survey-card">
+      <div className="admin-section-title">
+        <div>
+          <h2>Отговори от анкетата</h2>
+          <p>{survey.completed === 0 ? "Само от завършени анкети." : `${profileLabel}. Един човек може да избере повече от един отговор.`}</p>
+        </div>
+      </div>
+      {survey.completed === 0 ? <div className="admin-empty">Още няма попълнена анкета.</div> : (
+        <>
+          <div className="survey-groups">
+            {survey.groups.map((item) => (
+              <div className="survey-group" key={item.title}>
+                <h3>{item.title}</h3>
+                <div className="survey-choices">
+                  {item.choices.map((choice) => {
+                    const share = choice.count / survey.completed * 100
+                    return (
+                      <div className="survey-choice" key={choice.label}>
+                        <span>{choice.label}</span>
+                        <div className="funnel-bar"><i style={{ width: choice.count ? `${Math.max(3, share)}%` : "0%" }} /></div>
+                        <strong>{choice.count}</strong>
+                        <em>{formatPercent(share)}</em>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          {survey.notes.length > 0 && (
+            <div className="survey-notes">
+              <h3>Свободен текст</h3>
+              {survey.notes.map((note) => (
+                <article className="survey-note" key={`${note.question}-${note.at}-${note.text}`}>
+                  <small>{note.at ? `${note.question} · ${formatDate(note.at)}` : note.question}</small>
+                  <p>{note.text}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </section>
   )
 }
 

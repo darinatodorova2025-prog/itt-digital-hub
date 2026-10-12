@@ -1,6 +1,16 @@
 import "server-only";
 
 import { createSupabaseServiceClient, supabaseServiceRoleConfigured } from "@/lib/cms/supabase-service";
+import {
+  BUSINESS_INTERESTS,
+  INTENDED_USE_CASES,
+  REQUESTED_CAPABILITIES,
+  ROLES,
+  TIME_SINKS,
+  WORK_FREQUENCIES,
+  WORKFLOW_STAGES,
+} from "@/settlement-analyzer/beta/options";
+import type { StoredSurveyAnswers } from "@/settlement-analyzer/beta/types";
 import { calculateLeadScore } from "@/settlement-analyzer/conference/lead-scoring";
 import { StoreUnavailableError } from "./store";
 
@@ -48,6 +58,19 @@ export type AdminSnapshot = {
     contactRequests: number
   }
   funnel: Array<{ label: string; value: number }>
+  survey: SurveySummary
+}
+
+export type SurveyChoice = { label: string; count: number }
+
+export type SurveyGroup = { title: string; choices: SurveyChoice[] }
+
+export type SurveyNote = { question: string; text: string; at: string }
+
+export type SurveySummary = {
+  completed: number
+  groups: SurveyGroup[]
+  notes: SurveyNote[]
 }
 
 type VisitorRow = {
@@ -78,11 +101,18 @@ type LeadRow = {
   created_at: string
 }
 
+type SurveyRow = {
+  visitorId: string
+  completedAt: string | null
+  answers: unknown
+}
+
 export function buildAdminSnapshot(input: {
   visitors: VisitorRow[]
   sessionVisitorIds: string[]
   successfulRuns: Array<{ visitorId: string; settlementName: string | null }>
   leads: LeadRow[]
+  surveys: SurveyRow[]
 }): AdminSnapshot {
   const sessions = countBy(input.sessionVisitorIds)
   const runs = new Map<string, { count: number; settlements: string[] }>()
@@ -122,6 +152,31 @@ export function buildAdminSnapshot(input: {
       { label: "Оставен контакт", value: leads.length },
       { label: "Заявка за разговор", value: contactRequests },
     ],
+    survey: buildSurveySummary(input.surveys),
+  }
+}
+
+const USEFULNESS = ["1", "2", "3", "4", "5"]
+
+export function buildSurveySummary(rows: SurveyRow[]): SurveySummary {
+  const completed = latestCompleted(rows).flatMap((row) => {
+    const answers = storedAnswers(row.answers)
+    return answers ? [{ answers, at: row.completedAt ?? "" }] : []
+  })
+  const count = completed.length
+  return {
+    completed: count,
+    groups: [
+      group("Колко полезен ви се струва този анализ за реалната ви работа?", USEFULNESS, completed, (answers) => scoreLabel(answers.usefulness_score)),
+      group("Имате ли интерес към подобно решение за вашата организация?", BUSINESS_INTERESTS.map((item) => item.bg), completed, (answers) => interestLabel(answers)),
+      group("За какво бихте използвали подобен инструмент?", INTENDED_USE_CASES.map((item) => item.bg), completed, (answers) => answers.intended_use_cases),
+      group("Какво трябва да има, за да го използвате в реален проект?", REQUESTED_CAPABILITIES.map((item) => item.bg), completed, (answers) => answers.requested_capabilities),
+      group("Коя част от предпроектната работа ви отнема най-много време?", TIME_SINKS.map((item) => item.bg), completed, (answers) => answers.time_sink),
+      group("Вашата роля", ROLES.map((item) => item.bg), completed, (answers) => answers.role),
+      group("Колко често организацията ви работи по подобни задачи?", WORK_FREQUENCIES.map((item) => item.bg), completed, (answers) => answers.organisation_work_frequency),
+      group("В кои етапи от работата бихте използвали подобен инструмент?", WORKFLOW_STAGES.map((item) => item.bg), completed, (answers) => answers.workflow_stages),
+    ],
+    notes: surveyNotes(completed).sort((a, b) => b.at.localeCompare(a.at)),
   }
 }
 
@@ -130,13 +185,14 @@ export async function getAdminData(): Promise<AdminSnapshot> {
     throw new StoreUnavailableError("Административният преглед изисква допълнителна сървърна конфигурация.")
   }
   const supabase = createSupabaseServiceClient()
-  const [visitors, sessions, runs, leads] = await Promise.all([
+  const [visitors, sessions, runs, leads, surveys] = await Promise.all([
     supabase.from("sa_beta_visitors").select("id, first_seen_at, last_seen_at, utm_source, utm_campaign, utm_content, survey_status").limit(5000),
     supabase.from("sa_beta_sessions").select("visitor_id").limit(5000),
     supabase.from("sa_beta_analysis_runs").select("visitor_id, settlement_name").eq("status", "success").limit(5000),
     supabase.from("sa_beta_leads").select("id, visitor_id, business_interest, name, organisation, email, phone, role, organisation_work_frequency, intended_use_cases, requested_capabilities, what_they_want_to_discuss, acquisition_source, utm_campaign, created_at").limit(5000),
+    supabase.from("sa_beta_survey_responses").select("visitor_id, completed_at, answers").eq("status", "completed").limit(5000),
   ])
-  const failed = [visitors.error, sessions.error, runs.error, leads.error].find(Boolean)
+  const failed = [visitors.error, sessions.error, runs.error, leads.error, surveys.error].find(Boolean)
   if (failed) throw new StoreUnavailableError("Административният преглед изисква допълнителна сървърна конфигурация.")
   return buildAdminSnapshot({
     visitors: (visitors.data ?? []) as VisitorRow[],
@@ -146,6 +202,11 @@ export async function getAdminData(): Promise<AdminSnapshot> {
       settlementName: row.settlement_name,
     })),
     leads: (leads.data ?? []) as LeadRow[],
+    surveys: ((surveys.data ?? []) as Array<{ visitor_id: string; completed_at: string | null; answers: unknown }>).map((row) => ({
+      visitorId: row.visitor_id,
+      completedAt: row.completed_at,
+      answers: row.answers,
+    })),
   })
 }
 
@@ -199,6 +260,69 @@ function toLead(lead: LeadRow, visitor: VisitorRow | undefined, sessionCount: nu
     scoreBreakdown: scoring.breakdown,
     marketingConsent: false,
   }
+}
+
+function latestCompleted(rows: SurveyRow[]) {
+  const byVisitor = new Map<string, SurveyRow>()
+  for (const row of rows) {
+    const current = byVisitor.get(row.visitorId)
+    if (!current || (row.completedAt ?? "") > (current.completedAt ?? "")) byVisitor.set(row.visitorId, row)
+  }
+  return [...byVisitor.values()]
+}
+
+function storedAnswers(value: unknown): StoredSurveyAnswers | null {
+  if (!value || typeof value !== "object") return null
+  const answers = value as StoredSurveyAnswers
+  if (!Array.isArray(answers.intended_use_cases) && typeof answers.usefulness_score !== "number" && !answers.business_interest) return null
+  return answers
+}
+
+function group(
+  title: string,
+  options: string[],
+  completed: Array<{ answers: StoredSurveyAnswers }>,
+  pick: (answers: StoredSurveyAnswers) => string | string[] | null,
+): SurveyGroup {
+  const counts = new Map(options.map((label) => [label, 0]))
+  for (const row of completed) {
+    const labels = new Set(list(pick(row.answers)))
+    for (const label of labels) counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
+  const extras = [...counts.keys()].filter((label) => !options.includes(label))
+  return {
+    title,
+    choices: [...options, ...extras].map((label) => ({ label, count: counts.get(label) ?? 0 })),
+  }
+}
+
+function list(value: string | string[] | null) {
+  const values = Array.isArray(value) ? value : value ? [value] : []
+  return values.map((item) => item.trim()).filter(Boolean)
+}
+
+function scoreLabel(score: number | null) {
+  return score && USEFULNESS.includes(String(score)) ? String(score) : null
+}
+
+function interestLabel(answers: StoredSurveyAnswers) {
+  if (answers.business_interest_label?.trim()) return answers.business_interest_label.trim()
+  return BUSINESS_INTERESTS.find((item) => item.value === answers.business_interest)?.bg ?? null
+}
+
+function surveyNotes(completed: Array<{ answers: StoredSurveyAnswers; at: string }>): SurveyNote[] {
+  const fields: Array<[string, (answers: StoredSurveyAnswers) => string | null]> = [
+    ["За какво бихте използвали подобен инструмент?", (answers) => answers.intended_use_other],
+    ["Какво трябва да има, за да го използвате в реален проект?", (answers) => answers.requested_capabilities_other],
+    ["Коя част от предпроектната работа ви отнема най-много време?", (answers) => answers.time_sink_other],
+    ["Ако можехте да автоматизирате или улесните още една дейност във вашата работа, коя би била тя?", (answers) => answers.automation_need],
+    ["Вашата роля", (answers) => answers.role_other],
+    ["В кои етапи от работата бихте използвали подобен инструмент?", (answers) => answers.workflow_stages_other],
+  ]
+  return completed.flatMap((row) => fields.flatMap(([question, read]) => {
+    const text = read(row.answers)?.trim()
+    return text ? [{ question, text, at: row.at }] : []
+  }))
 }
 
 function countBy(values: string[]) {
