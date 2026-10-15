@@ -51,8 +51,8 @@ describe("public team", () => {
     expect(people[0]?.portrait?.src).toBe("/images/team/ivan-todorov-portrait-v2.jpg");
     expect(people[0]?.name).toEqual({ bg: "Иван Тодоров", en: "Ivan Todorov" });
     expect(people[0]?.role).toEqual({
-      bg: "Основател и водещ консултант",
-      en: "Founder & Lead Consultant",
+      bg: "Основател и бизнес консултант",
+      en: "Founder & Business Consultant",
     });
     expect(people[0]?.axis).toEqual({ bg: "Бизнес / Процеси", en: "Business / Processes" });
     expect(people[0]?.cardBio?.bg).toEqual([
@@ -179,7 +179,7 @@ describe("public team", () => {
       expect(indexes[1]).toBeLessThan(indexes[2]!);
       expect(html).toContain("team-roster");
       expect(html).toContain("nikolay-milkov-portrait.jpg");
-      expect(html).toContain(locale === "bg" ? "Основател и водещ консултант" : "Founder &amp; Lead Consultant");
+      expect(html).toContain(locale === "bg" ? "Основател и бизнес консултант" : "Founder &amp; Business Consultant");
       expect(html).toContain(locale === "bg" ? "Архитект на софтуерни и ИИ решения" : "Software &amp; AI Solutions Architect");
       expect(html).toContain(locale === "bg" ? "Разработчик на софтуерни приложения" : "Software Application Developer");
       expect(html).toContain(locale === "bg" ? "Разработвам приложения и функционалности" : "I develop applications and features");
