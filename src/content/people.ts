@@ -14,8 +14,8 @@ const confirmedPeople: Person[] = [
     name: { bg: "Иван Тодоров", en: "Ivan Todorov" },
     axis: { bg: "Бизнес / Процеси", en: "Business / Processes" },
     role: {
-      bg: "Основател и ИТ консултант",
-      en: "Founder & IT Consultant",
+      bg: "Основател и консултант по дигитализация",
+      en: "Founder & Digitalization Consultant",
     },
     expertise: {
       bg: ["Процеси", "Автоматизация", "Бизнес оптимизация", "Проследимост", "Корпоративни системи"],
